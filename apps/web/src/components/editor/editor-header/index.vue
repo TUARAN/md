@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Copy, Menu, Palette } from 'lucide-vue-next'
+import { Copy, Database, Menu, Palette } from 'lucide-vue-next'
+import { getDataAcquisitionNavUrl } from '@/constants/branding'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
 import { useRenderStore } from '@/stores/render'
@@ -7,6 +8,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
 import { store } from '@/utils/storage'
+import DataAcquisitionDialog from './DataAcquisitionDialog.vue'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import FormatDropdown from './FormatDropdown.vue'
@@ -41,6 +43,16 @@ const aboutDialogVisible = ref(false)
 const fundDialogVisible = ref(false)
 const editorStateDialogVisible = ref(false)
 const markdownHelpDialogVisible = ref(false)
+const dataAcquisitionDialogVisible = ref(false)
+
+function openDataAcquisition() {
+  const url = getDataAcquisitionNavUrl()
+  if (url) {
+    window.open(url, `_blank`, `noopener,noreferrer`)
+    return
+  }
+  dataAcquisitionDialogVisible.value = true
+}
 
 function handleOpenAbout() {
   aboutDialogVisible.value = true
@@ -239,37 +251,69 @@ function copyToWeChat() {
   <header
     class="header-container h-15 flex flex-wrap items-center justify-between px-5 relative"
   >
-    <!-- 桌面端左侧菜单 -->
-    <div class="space-x-1 hidden md:flex">
-      <Menubar class="menubar border-0">
-        <FileDropdown @open-editor-state="handleOpenEditorState" />
-        <EditDropdown @copy="handleCopy" />
-        <FormatDropdown />
-        <InsertDropdown />
-        <StyleDropdown />
-        <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
-      </Menubar>
-    </div>
+    <div class="flex min-w-0 flex-1 items-center gap-2">
+      <!-- 桌面端左侧菜单 -->
+      <div class="space-x-1 hidden md:flex">
+        <Menubar class="menubar border-0">
+          <FileDropdown @open-editor-state="handleOpenEditorState" />
+          <EditDropdown @copy="handleCopy" />
+          <FormatDropdown />
+          <InsertDropdown />
+          <StyleDropdown />
+          <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
+        </Menubar>
+      </div>
 
-    <!-- 移动端汉堡菜单按钮 -->
-    <div class="md:hidden">
-      <Menubar class="menubar border-0 p-0">
-        <MenubarMenu>
-          <MenubarTrigger class="p-0">
-            <Button variant="outline" size="icon">
-              <Menu class="size-4" />
-            </Button>
-          </MenubarTrigger>
-          <MenubarContent align="start">
-            <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
-            <EditDropdown :as-sub="true" @copy="handleCopy" />
-            <FormatDropdown :as-sub="true" />
-            <InsertDropdown :as-sub="true" />
-            <StyleDropdown :as-sub="true" />
-            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
-          </MenubarContent>
-        </MenubarMenu>
-      </Menubar>
+      <!-- 模块导航：当前以内容同步为主，数据获取另行入口 -->
+      <nav
+        class="hidden shrink-0 items-center gap-1.5 border-l border-border pl-3 md:flex"
+        aria-label="模块导航"
+      >
+        <span
+          class="inline-flex items-center rounded-md bg-primary/12 px-2.5 py-1 text-xs font-medium text-primary"
+        >
+          内容同步
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-8 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          @click="openDataAcquisition"
+        >
+          <Database class="size-3.5 opacity-80" />
+          数据获取
+        </Button>
+      </nav>
+
+      <!-- 移动端：菜单 + 数据获取 -->
+      <div class="flex items-center gap-2 md:hidden">
+        <Menubar class="menubar border-0 p-0">
+          <MenubarMenu>
+            <MenubarTrigger class="p-0">
+              <Button variant="outline" size="icon">
+                <Menu class="size-4" />
+              </Button>
+            </MenubarTrigger>
+            <MenubarContent align="start">
+              <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
+              <EditDropdown :as-sub="true" @copy="handleCopy" />
+              <FormatDropdown :as-sub="true" />
+              <InsertDropdown :as-sub="true" />
+              <StyleDropdown :as-sub="true" />
+              <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-9 shrink-0 gap-1 px-2.5 text-xs"
+          @click="openDataAcquisition"
+        >
+          <Database class="size-3.5" />
+          数据
+        </Button>
+      </div>
     </div>
 
     <!-- 右侧操作区 -->
@@ -305,6 +349,7 @@ function copyToWeChat() {
   <FundDialog :visible="fundDialogVisible" @close="fundDialogVisible = false" />
   <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
   <MarkdownHelpDialog :visible="markdownHelpDialogVisible" @close="markdownHelpDialogVisible = false" />
+  <DataAcquisitionDialog :visible="dataAcquisitionDialogVisible" @close="dataAcquisitionDialogVisible = false" />
   <AIImageGeneratorPanel v-model:open="uiStore.aiImageDialogVisible" />
 </template>
 

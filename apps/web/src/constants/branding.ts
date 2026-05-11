@@ -21,3 +21,9 @@ export const documentTitle = `${APP_NAME} · ${APP_FOCUS}`
 
 /** 启动遮罩主标题 */
 export const APP_SPLASH_HEADLINE = `${APP_NAME} · ${APP_FOCUS}`
+
+/** 可选：配置后顶部「数据获取」将新开此地址，而非说明弹窗（Vite：`VITE_DATA_NAV_URL`） */
+export function getDataAcquisitionNavUrl(): string {
+  const raw = import.meta.env.VITE_DATA_NAV_URL as string | undefined
+  return typeof raw === `string` && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : ``
+}
