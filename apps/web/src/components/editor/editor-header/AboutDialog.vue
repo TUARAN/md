@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  APP_CURRENT_SCOPE,
+  APP_NAME,
+  APP_TAGLINE,
+  APP_WORKFLOW_VISION,
+} from '@/constants/branding'
+
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -27,19 +34,28 @@ function onRedirect(url: string) {
 
 <template>
   <Dialog :open="props.visible" @update:open="onUpdate">
-    <DialogContent>
+    <DialogContent class="max-h-[85vh] overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>关于</DialogTitle>
+        <DialogTitle>关于 {{ APP_NAME }}</DialogTitle>
       </DialogHeader>
-      <div class="text-center">
-        <h3>一款高度简洁的微信 Markdown 编辑器</h3>
-        <p>扫码关注公众号 Doocs，原创技术内容第一时间推送！</p>
-        <img
-          class="mx-auto my-5"
-          src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/1648303220922-7e14aefa-816e-44c1-8604-ade709ca1c69.png"
-          alt="Doocs Markdown 编辑器"
-          style="width: 40%"
-        >
+      <div class="space-y-4 text-left text-sm leading-relaxed">
+        <h3 class="text-center text-base font-semibold">
+          {{ APP_NAME }}
+        </h3>
+        <p class="text-muted-foreground text-center">
+          {{ APP_TAGLINE }}
+        </p>
+        <div class="rounded-lg border border-border bg-muted/40 p-4">
+          <p class="mb-2 font-medium text-foreground">
+            流程设计（目标全链路）
+          </p>
+          <p class="text-muted-foreground">
+            {{ APP_WORKFLOW_VISION }}
+          </p>
+        </div>
+        <p class="text-muted-foreground">
+          {{ APP_CURRENT_SCOPE }}
+        </p>
       </div>
       <DialogFooter class="sm:justify-evenly flex flex-wrap gap-2">
         <Button

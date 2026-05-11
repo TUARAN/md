@@ -35,7 +35,7 @@ function onUpdate(val: boolean) {
         <DialogTitle>赞赏</DialogTitle>
       </DialogHeader>
       <div class="text-center">
-        <p>若觉得项目不错，可以通过以下方式支持我们～</p>
+        <p>若觉得博主联盟同步工具对你有帮助，可以通过以下方式支持维护～</p>
         <div class="grid grid-cols-2 my-5 gap-4">
           <div v-for="contributor in contributors" :key="contributor.name" class="text-center">
             <img

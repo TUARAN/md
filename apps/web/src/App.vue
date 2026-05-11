@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
+import { documentTitle } from '@/constants/branding'
 import { useUIStore } from '@/stores/ui'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
 
@@ -11,6 +12,7 @@ const { isDark } = storeToRefs(uiStore)
 const isUtools = ref(false)
 
 onMounted(() => {
+  document.title = documentTitle
   // 检测是否为 Utools 环境
   isUtools.value = !!(window as any).__MD_UTOOLS__
   if (isUtools.value) {

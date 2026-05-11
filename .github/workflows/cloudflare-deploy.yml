@@ -1,0 +1,74 @@
+# Deploy this app to Cloudflare Workers (Vite + Wrangler).
+#
+# Setup once in GitHub → Settings → Secrets and variables:
+#   Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+# Optional → Variables → Repository:
+#   CLOUDFLARE_AUTO_DEPLOY = true   (enables deploy on every push to main)
+#
+# Manual: Actions → "Deploy Cloudflare Workers" → Run workflow
+
+name: Deploy Cloudflare Workers
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cloudflare-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Push: only when opted in via repo variable (avoid failing forks that have no secrets).
+    # workflow_dispatch: always runs when you click Run workflow.
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && vars.CLOUDFLARE_AUTO_DEPLOY == 'true') }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Verify Cloudflare secrets
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo "::error::Add repository secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (Cloudflare dashboard → My Profile → API Tokens)."
+            exit 1
+          fi
+
+      - name: Build for Cloudflare Workers
+        run: pnpm web build:h5-netlify
+        env:
+          CF_WORKERS: 1
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy
+          workingDirectory: apps/web
+
+      - name: Deployment summary
+        run: |
+          echo "Deployed Worker name from apps/web/wrangler.jsonc (default: md)."
+          echo "Open Workers dashboard → your worker → preview URL *.workers.dev or attach a Custom Domain."

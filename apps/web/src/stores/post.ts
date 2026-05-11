@@ -15,7 +15,7 @@ export const usePostStore = defineStore(`post`, () => {
   const posts = store.reactive<Post[]>(addPrefix(`posts`), [
     {
       id: uuidv4(),
-      title: `内容1`,
+      title: `咳咳！向各位介绍一下"开发者博主联盟"！`,
       content: DEFAULT_CONTENT,
       history: [
         { datetime: new Date().toLocaleString(`zh-cn`), content: DEFAULT_CONTENT },

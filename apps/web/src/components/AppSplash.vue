@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { APP_SPLASH_HEADLINE } from '@/constants/branding'
+
 const loading = ref(true)
 
 onMounted(() => {
@@ -14,7 +16,7 @@ onMounted(() => {
       v-if="loading"
       class="loading"
     >
-      <strong>致力于让 Markdown 编辑更简单</strong>
+      <strong>{{ APP_SPLASH_HEADLINE }}</strong>
     </div>
   </transition>
 </template>

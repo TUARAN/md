@@ -14,6 +14,8 @@ import {
 import juice from 'juice'
 import { Marked } from 'marked'
 
+import { APP_NAME } from '@/constants/branding'
+
 export {
   LocalStorageEngine as LocalEngine,
   RestfulStorageEngine as RestfulEngine,
@@ -144,6 +146,10 @@ export async function exportPDF(title: string = `untitled`) {
   const htmlStr = getHtmlContent()
   const stylesToAdd = await getStylesToAdd()
   const safeTitle = sanitizeTitle(title)
+  const pdfFooterSource = (typeof window !== `undefined` && window.location.origin)
+    ? window.location.origin
+    : APP_NAME
+  const pdfFooterCss = pdfFooterSource.replace(/'/g, `\\'`)
 
   const printHtml = `<!DOCTYPE html>
 <html>
@@ -167,7 +173,7 @@ export async function exportPDF(title: string = `untitled`) {
         color: #666;
       }
       @bottom-left {
-        content: "https://md.doocs.org";
+        content: '${pdfFooterCss}';
         font-size: 10px;
         color: #999;
       }

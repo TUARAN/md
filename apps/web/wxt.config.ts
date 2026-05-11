@@ -24,7 +24,7 @@ export default defineConfig({
   srcDir: `src`,
   modulesDir: `src/modules`,
   manifest: ({ mode, browser }) => ({
-    name: `公众号内容编辑器`,
+    name: `博主联盟同步工具`,
     version,
     icons: {
       256: mode === `development` ? `/mpmd/icon-256-gray.png` : `/mpmd/icon-256.png`,
