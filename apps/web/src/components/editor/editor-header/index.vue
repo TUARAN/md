@@ -52,10 +52,10 @@ const statsDialogVisible = ref(false)
 
 const workflowSteps = [
   { id: `data` as const, label: `数据获取`, icon: Database },
-  { id: `creation` as const, label: `内容创作`, icon: PenLine },
+  { id: `creation` as const, label: `风格二创`, icon: PenLine },
   { id: `sync` as const, label: `内容同步`, icon: RefreshCw },
-  { id: `distribution` as const, label: `内容宣发`, icon: Megaphone },
-  { id: `stats` as const, label: `闭环统计`, icon: BarChart3 },
+  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone },
+  { id: `stats` as const, label: `闭环汇报`, icon: BarChart3 },
 ]
 
 function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
@@ -284,58 +284,79 @@ function copyToWeChat() {
   <header
     class="header-container h-15 flex flex-wrap items-center justify-between px-5 relative"
   >
-    <div class="flex min-w-0 flex-1 items-center gap-2">
-      <!-- 桌面端左侧菜单 -->
-      <div class="space-x-1 hidden md:flex">
-        <Menubar class="menubar border-0">
-          <FileDropdown @open-editor-state="handleOpenEditorState" />
-          <EditDropdown @copy="handleCopy" />
-          <FormatDropdown />
-          <InsertDropdown />
-          <StyleDropdown />
-          <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
-        </Menubar>
+    <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-2 md:gap-x-4 md:gap-y-2">
+      <!-- 工作流导航（桌面）：一级 — 数据获取 → … → 内容同步（当前）→ … -->
+      <div
+        class="workflow-nav-strip hidden min-w-0 shrink md:flex md:items-center rounded-xl bg-muted/30 px-2 py-1"
+      >
+        <nav
+          class="workflow-nav flex min-w-0 items-center gap-0.5"
+          aria-label="工作流"
+        >
+          <template v-for="(step, index) in workflowSteps" :key="step.id">
+            <ChevronRight
+              v-if="index > 0"
+              class="workflow-chevron size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <button
+              v-if="step.id !== 'sync'"
+              type="button"
+              class="workflow-step workflow-step--inactive inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-transparent hover:text-foreground"
+              @click="openWorkflowStep(step.id)"
+            >
+              <component :is="step.icon" class="size-4 shrink-0 text-muted-foreground" />
+              <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
+            </button>
+            <span
+              v-else
+              class="workflow-step workflow-step--current inline-flex shrink-0 items-center gap-1 bg-transparent text-primary underline decoration-primary/45 underline-offset-2"
+              aria-current="step"
+            >
+              <component :is="step.icon" class="size-4 shrink-0 text-primary" />
+              <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
+            </span>
+          </template>
+        </nav>
       </div>
 
-      <!-- 工作流导航：数据获取 → … → 内容同步（当前）→ … -->
-      <nav
-        class="workflow-nav hidden min-w-0 shrink items-center gap-0.5 border-l border-border pl-2 md:flex"
-        aria-label="工作流"
-      >
-        <template v-for="(step, index) in workflowSteps" :key="step.id">
-          <ChevronRight
-            v-if="index > 0"
-            class="size-3.5 shrink-0 text-muted-foreground/70"
-            aria-hidden="true"
-          />
-          <Button
-            v-if="step.id !== 'sync'"
-            variant="ghost"
-            size="sm"
-            class="h-8 shrink-0 gap-1 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-            @click="openWorkflowStep(step.id)"
-          >
-            <component :is="step.icon" class="size-3.5 opacity-80" />
-            <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
-          </Button>
-          <span
-            v-else
-            class="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-primary/12 px-2 text-xs font-medium text-primary"
-          >
-            <component :is="step.icon" class="size-3.5 opacity-90" />
-            <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
-          </span>
-        </template>
-      </nav>
-
-      <!-- 移动端：菜单 + 横向工作流（可滑动） -->
+      <!-- 移动端：工作流优先，其次汉堡菜单 -->
       <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
+        <nav
+          class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-xl bg-muted/30 px-2 py-1 [-ms-overflow-style:none]"
+          aria-label="工作流"
+        >
+          <template v-for="(step, index) in workflowSteps" :key="step.id">
+            <ChevronRight
+              v-if="index > 0"
+              class="workflow-chevron size-4 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <button
+              v-if="step.id !== 'sync'"
+              type="button"
+              class="workflow-step workflow-step--inactive inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-transparent hover:text-foreground"
+              @click="openWorkflowStep(step.id)"
+            >
+              <component :is="step.icon" class="size-4 shrink-0 text-muted-foreground" />
+              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
+            </button>
+            <span
+              v-else
+              class="workflow-step workflow-step--current inline-flex shrink-0 items-center gap-1 bg-transparent text-primary underline decoration-primary/45 underline-offset-2"
+              aria-current="step"
+            >
+              <component :is="step.icon" class="size-4 shrink-0 text-primary" />
+              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
+            </span>
+          </template>
+        </nav>
         <Menubar class="menubar shrink-0 border-0 p-0">
           <MenubarMenu>
-            <MenubarTrigger class="p-0">
-              <Button variant="outline" size="icon">
-                <Menu class="size-4" />
-              </Button>
+            <MenubarTrigger
+              class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none ring-offset-background transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
+            >
+              <Menu class="size-4 pointer-events-none" />
             </MenubarTrigger>
             <MenubarContent align="start">
               <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
@@ -347,40 +368,11 @@ function copyToWeChat() {
             </MenubarContent>
           </MenubarMenu>
         </Menubar>
-        <nav
-          class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto"
-          aria-label="工作流"
-        >
-          <template v-for="(step, index) in workflowSteps" :key="step.id">
-            <ChevronRight
-              v-if="index > 0"
-              class="size-3 shrink-0 text-muted-foreground/60"
-              aria-hidden="true"
-            />
-            <Button
-              v-if="step.id !== 'sync'"
-              variant="outline"
-              size="sm"
-              class="h-8 shrink-0 gap-0.5 px-1.5 text-[11px]"
-              @click="openWorkflowStep(step.id)"
-            >
-              <component :is="step.icon" class="size-3" />
-              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
-            </Button>
-            <span
-              v-else
-              class="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-md bg-primary/12 px-1.5 text-[11px] font-medium text-primary"
-            >
-              <component :is="step.icon" class="size-3" />
-              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
-            </span>
-          </template>
-        </nav>
       </div>
     </div>
 
-    <!-- 右侧操作区 -->
-    <div class="flex flex-wrap items-center gap-2">
+    <!-- 右侧操作区（桌面：复制 → 文章信息 → 样式面板 → 次级编辑菜单） -->
+    <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
       <!-- 复制按钮 -->
       <Button
         variant="outline"
@@ -394,7 +386,7 @@ function copyToWeChat() {
       <!-- 文章信息（移动端隐藏） -->
       <PostInfo class="hidden md:inline-flex" />
 
-      <!-- 样式面板 -->
+      <!-- 样式面板（右侧滑层） -->
       <Button
         variant="outline"
         class="h-9"
@@ -404,6 +396,27 @@ function copyToWeChat() {
         <Palette class="mr-2 h-4 w-4" />
         <span>样式</span>
       </Button>
+
+      <!-- 桌面端：文件 / 编辑 / 格式 / 插入 / 样式(主题菜单) / 帮助 — 与「样式」outline 块视觉一致 -->
+      <div
+        class="menubar-secondary-desktop hidden min-w-0 md:flex md:items-center"
+        aria-label="同步与编辑菜单"
+      >
+        <div
+          class="menubar-secondary-wrap max-w-full rounded-lg border border-border bg-background/80 p-0.5 backdrop-blur-sm"
+        >
+          <Menubar
+            class="menubar menubar--secondary flex h-auto max-w-full min-w-0 flex-nowrap items-center gap-1 border-0 bg-transparent p-0 shadow-none"
+          >
+            <FileDropdown @open-editor-state="handleOpenEditorState" />
+            <EditDropdown @copy="handleCopy" />
+            <FormatDropdown />
+            <InsertDropdown />
+            <StyleDropdown />
+            <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
+          </Menubar>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -416,14 +429,14 @@ function copyToWeChat() {
   <ContentCreationDialog :visible="contentCreationDialogVisible" @close="contentCreationDialogVisible = false" />
   <WorkflowPlaceholderDialog
     :visible="distributionDialogVisible"
-    title="内容宣发"
-    body="多平台投放节奏、加热与社媒联动等能力将在后续版本接入；当前步骤仅占位，便于对齐整条工作流。"
+    title="宣发活跃"
+    body="多平台节奏、加热与社群活跃、渠道联动等能力将在后续版本接入；当前步骤仅占位，便于对齐整条工作流。"
     @close="distributionDialogVisible = false"
   />
   <WorkflowPlaceholderDialog
     :visible="statsDialogVisible"
-    title="闭环统计"
-    body="曝光、阅读、互动与转化等数据回流与复盘看板将在后续版本接入；当前步骤仅占位。"
+    title="闭环汇报"
+    body="曝光、阅读、互动与转化等数据回流与复盘汇报将在后续版本接入；当前步骤仅占位。"
     @close="statsDialogVisible = false"
   />
   <AIImageGeneratorPanel v-model:open="uiStore.aiImageDialogVisible" />
@@ -431,6 +444,11 @@ function copyToWeChat() {
 
 <style lang="less" scoped>
 .header-container {
+  /* Shared with `.menubar--secondary` triggers and workflow steps (parity) */
+  --header-tab-size: 0.875rem;
+  --header-tab-weight: 500;
+  --header-tab-leading: 1.25;
+
   background: hsl(var(--background) / 0.95);
   border-bottom: 1px solid hsl(var(--border));
   backdrop-filter: blur(12px);
@@ -451,31 +469,103 @@ function copyToWeChat() {
   }
 }
 
+.workflow-chevron {
+  opacity: 0.5;
+}
+
+.workflow-step {
+  border: 0;
+  background: transparent;
+  font-size: var(--header-tab-size);
+  font-weight: var(--header-tab-weight);
+  line-height: var(--header-tab-leading);
+  letter-spacing: normal;
+  text-transform: none;
+
+  &:is(button) {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--header-tab-size);
+    font-weight: var(--header-tab-weight);
+    line-height: var(--header-tab-leading);
+  }
+
+  &--inactive:is(button):hover {
+    background: transparent;
+  }
+
+  &--inactive:is(button):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
 .menubar {
   user-select: none;
 
-  :deep([data-radix-menubar-trigger]) {
-    font-size: 0.875rem;
+  &:not(.menubar--secondary) :deep([data-radix-menubar-trigger]) {
+    font-size: 0.75rem;
     font-weight: 500;
-    padding: 0.5rem 0.875rem;
-    border-radius: 6px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    line-height: 1.2;
+    min-height: 1.75rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 5px;
+    transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
 
     &:hover {
-      background: hsl(var(--accent) / 0.8);
+      background: hsl(var(--accent) / 0.75);
       color: hsl(var(--accent-foreground));
-      transform: translateY(-1px);
+      transform: translateY(-0.5px);
+    }
+
+    &[data-state='open'] {
+      background: hsl(var(--accent) / 0.95);
+      color: hsl(var(--accent-foreground));
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  /* 右侧次级菜单：对齐 Button variant=outline size≈sm（h-9） */
+  &.menubar--secondary :deep([data-radix-menubar-trigger]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0 0.75rem;
+    font-size: var(--header-tab-size);
+    font-weight: var(--header-tab-weight);
+    line-height: var(--header-tab-leading);
+    letter-spacing: normal;
+    text-transform: none;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid hsl(var(--border));
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    box-shadow: none;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      background: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
     }
 
     &[data-state='open'] {
       background: hsl(var(--accent));
       color: hsl(var(--accent-foreground));
-      box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
     }
 
-    &:active {
-      transform: translateY(0);
+    &:focus-visible {
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
     }
   }
 
@@ -533,8 +623,9 @@ kbd {
   }
 }
 
-@media (max-width: 768px) {
-  .menubar {
+/* Below Tailwind `md` (768px): stack legacy menubar layouts only (desktop secondary uses md:flex parent) */
+@media (max-width: 767px) {
+  .menubar:not(.shrink-0) {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;

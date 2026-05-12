@@ -18,16 +18,16 @@ function onUpdate(val: boolean) {
 
 const templates = [
   {
-    name: `技术解读 · 开篇`,
-    text: `你是一位资深技术编辑。请根据以下要点，写一篇面向「{读者画像}」的解读文章：\n\n1. 背景：{一句话背景}\n2. 核心问题：{要解决什么}\n3. 结论先行：{你的观点}\n4. 展开：分 3 个小节说明原因与案例\n5. 结尾：可执行建议 + 延伸阅读\n\n语气：专业、克制、少用空话。`,
+    name: `多平台 · 语气重写`,
+    text: `下面是一篇原文梗概（或粘贴要点）：{原文摘要}\n\n请做「风格二创」：分别产出适合公众号、小红书、短视频口播文案三版。每版保持事实一致，调整篇幅、语气和 CTA；用 Markdown，小标题清晰。`,
   },
   {
-    name: `产品 / 功能说明`,
-    text: `请用 Markdown 写一篇「{产品名}」的功能说明，结构如下：\n\n## 解决什么问题\n## 适用人群\n## 核心能力（列表）\n## 如何使用（分步）\n## 常见问题\n\n要求：段落短、列表多、每节不超过 200 字。`,
+    name: `同一主题 · 体裁变换`,
+    text: `主题：{主题}\n平台：{目标平台列表}\n\n在不大改核心信息的前提下，把内容二创为：一则短动态（≤140 字）、一则中长图文大纲（3–5 节）、一条口语化开场钩子（15 秒内可读）。`,
   },
   {
-    name: `观点短评`,
-    text: `针对「{话题或新闻}」，写一段 400 字以内的观点：\n- 第一段：现象复述（客观）\n- 第二段：你的判断（主观但要有依据）\n- 第三段：对读者的一条建议\n\n避免人身攻击与绝对化表述。`,
+    name: `轻量润色 · 保持结构`,
+    text: `以下内容已写好，请只做风格化改写与节奏优化，不改变章节结构与小标题层级：\n\n{粘贴 Markdown}\n\n要求：更口语/更干货二选一；删废话；保留列表与链接；总字数浮动 ±15%。`,
   },
 ] as const
 
@@ -46,15 +46,15 @@ async function copyTemplate(text: string) {
   <Dialog :open="props.visible" @update:open="onUpdate">
     <DialogContent class="max-h-[85vh] max-w-lg overflow-y-auto">
       <DialogHeader>
-        <DialogTitle>内容创作</DialogTitle>
+        <DialogTitle>风格二创</DialogTitle>
       </DialogHeader>
       <p class="text-sm text-muted-foreground">
-        在 {{ APP_NAME }} 中写好正文后，可将下列提示语粘贴到 AI 工具中，按需替换「{}」占位符再生成初稿。
+        在 {{ APP_NAME }} 中定稿或列好要点后，可用下列提示语在 AI 里做「二创」：按平台改编语气与篇幅，统一事实、适配多端分发。请替换「{}」占位符后再生成。
       </p>
 
       <div class="mt-4 space-y-4">
         <h4 class="text-sm font-semibold text-foreground">
-          提示语模版
+          二创提示语模版
         </h4>
         <div
           v-for="tpl in templates"
