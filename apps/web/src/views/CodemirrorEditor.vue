@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { RefreshCw } from 'lucide-vue-next'
+import { provide } from 'vue'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
@@ -7,7 +9,18 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from '@/components/ui/resizable'
+import {
+  EditorWorkflowSyncRail,
+  WorkflowCreationPage,
+  WorkflowDataPage,
+  WorkflowDistributionPage,
+  WorkflowPageShell,
+  WorkflowPageTitle,
+  WorkflowRailPanel,
+  WorkflowStatsPage,
+} from '@/components/workflow'
 import { useCursorSync } from '@/composables/useCursorSync'
+import { EDITOR_WECHAT_COPY_KEY, useEditorWechatCopy } from '@/composables/useEditorWechatCopy'
 import { useScrollSync } from '@/composables/useScrollSync'
 import { useUIStore } from '@/stores/ui'
 
@@ -20,6 +33,7 @@ const {
   isOpenRightSlider,
   viewMode,
   enableScrollSync,
+  workflowAppPage,
 } = storeToRefs(uiStore)
 
 // --- 子组件引用 ---
@@ -56,6 +70,12 @@ function endCopy() {
     isCoping.value = false
   }, 800)
 }
+
+const wechatCopy = useEditorWechatCopy({
+  onStartCopy: startCopy,
+  onEndCopy: endCopy,
+})
+provide(EDITOR_WECHAT_COPY_KEY, wechatCopy)
 
 // --- 上传图片透传 ---
 function handleUploadImage(file: File, cb?: any, applyUrl?: boolean) {
@@ -148,110 +168,136 @@ onUnmounted(() => {
 <template>
   <div class="container flex flex-col">
     <Progress v-model="progressValue" class="absolute left-0 right-0 rounded-none" style="height: 2px;" />
-    <EditorHeader
-      @start-copy="startCopy"
-      @end-copy="endCopy"
-    />
+    <EditorHeader />
 
-    <main class="container-main flex flex-1 flex-col">
+    <main class="container-main bg-muted/40 flex min-h-0 flex-1 flex-col dark:bg-muted/15">
       <div
-        class="container-main-section border-radius-10 relative flex flex-1 overflow-hidden border-x border-b"
+        v-show="workflowAppPage === 'sync'"
+        class="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel
-            :default-size="isMobile ? 0 : 15"
-            :max-size="!isMobile && isOpenPostSlider ? 20 : 0"
-            :min-size="!isMobile && isOpenPostSlider ? 10 : 0"
-          >
-            <PostSlider />
-          </ResizablePanel>
-          <ResizableHandle class="hidden md:block" />
-          <ResizablePanel
-            :default-size="!isMobile && isOpenFolderPanel ? 15 : 0"
-            :max-size="!isMobile && isOpenFolderPanel ? 25 : 0"
-            :min-size="!isMobile && isOpenFolderPanel ? 10 : 0"
-          >
-            <FolderSourcePanel />
-          </ResizablePanel>
-          <ResizableHandle v-if="!isMobile && isOpenFolderPanel" class="hidden md:block" />
+        <WorkflowPageShell :scroll-body="false">
+          <template #header>
+            <WorkflowPageTitle>
+              <template #icon>
+                <RefreshCw />
+              </template>
+              内容同步
+            </WorkflowPageTitle>
+            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+              在此编辑正文、查看预览排版，使用下方操作复制到公众号或继续后续分发步骤。
+            </p>
+          </template>
+          <template #rail>
+            <WorkflowRailPanel title="同步与导出">
+              <EditorWorkflowSyncRail />
+            </WorkflowRailPanel>
+          </template>
 
-          <!-- 主内容区域 (嵌套灵动布局) -->
-          <ResizablePanel :min-size="30">
+          <div
+            class="container-main-section border-radius-10 relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-x border-b"
+          >
             <ResizablePanelGroup direction="horizontal">
-              <!-- Markdown 编辑器 -->
               <ResizablePanel
-                ref="editorResizablePanelRef"
-                :order="1"
-                :default-size="viewMode === 'preview' ? 0 : viewMode === 'edit' ? 100 : 50"
-                :min-size="editorPanelConfig.min"
-                :max-size="editorPanelConfig.max"
-                collapsible
-                :collapsed-size="0"
+                :default-size="isMobile ? 0 : 15"
+                :max-size="!isMobile && isOpenPostSlider ? 20 : 0"
+                :min-size="!isMobile && isOpenPostSlider ? 10 : 0"
               >
-                <EditorPanel
-                  ref="editorPanelCompRef"
-                  :skip-cursor-driven-preview-sync="skipCursorDrivenPreviewSync"
-                  :on-cursor-activity="scheduleSyncPreviewToEditorCursor"
-                />
+                <PostSlider />
               </ResizablePanel>
-              <ResizableHandle v-show="viewMode === 'split'" />
-
-              <!-- 预览区 -->
+              <ResizableHandle class="hidden md:block" />
               <ResizablePanel
-                ref="previewResizablePanelRef"
-                :order="2"
-                :default-size="viewMode === 'edit' ? 0 : viewMode === 'preview' ? 100 : 50"
-                :min-size="previewPanelConfig.min"
-                :max-size="previewPanelConfig.max"
-                collapsible
-                :collapsed-size="0"
+                :default-size="!isMobile && isOpenFolderPanel ? 15 : 0"
+                :max-size="!isMobile && isOpenFolderPanel ? 25 : 0"
+                :min-size="!isMobile && isOpenFolderPanel ? 10 : 0"
               >
-                <PreviewPanel
-                  ref="previewPanelCompRef"
-                  :back-light="backLight"
-                  :is-coping="isCoping"
-                  :on-content-click="handlePreviewContentClick"
-                />
+                <FolderSourcePanel />
               </ResizablePanel>
+              <ResizableHandle v-if="!isMobile && isOpenFolderPanel" class="hidden md:block" />
 
-              <!-- CSS 编辑器面板 -->
-              <ResizableHandle v-show="!isMobile && uiStore.isShowCssEditor" class="hidden md:block" />
-              <ResizablePanel
-                ref="cssEditorPanelRef"
-                :order="3"
-                :default-size="0"
-                :min-size="!isMobile && uiStore.isShowCssEditor ? 10 : 0"
-                :max-size="!isMobile && uiStore.isShowCssEditor ? 60 : 0"
-                collapsible
-                :collapsed-size="0"
-              >
-                <CssEditor v-if="!isMobile" />
-              </ResizablePanel>
+              <!-- 主内容区域 (嵌套灵动布局) -->
+              <ResizablePanel :min-size="30">
+                <ResizablePanelGroup direction="horizontal">
+                  <!-- Markdown 编辑器 -->
+                  <ResizablePanel
+                    ref="editorResizablePanelRef"
+                    :order="1"
+                    :default-size="viewMode === 'preview' ? 0 : viewMode === 'edit' ? 100 : 50"
+                    :min-size="editorPanelConfig.min"
+                    :max-size="editorPanelConfig.max"
+                    collapsible
+                    :collapsed-size="0"
+                  >
+                    <EditorPanel
+                      ref="editorPanelCompRef"
+                      :skip-cursor-driven-preview-sync="skipCursorDrivenPreviewSync"
+                      :on-cursor-activity="scheduleSyncPreviewToEditorCursor"
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle v-show="viewMode === 'split'" />
 
-              <!-- 样式面板 -->
-              <ResizableHandle v-show="!isMobile && isOpenRightSlider" class="hidden md:block" />
-              <ResizablePanel
-                v-if="isOpenRightSlider"
-                ref="rightSliderPanelRef"
-                :order="4"
-                :default-size="0"
-                :min-size="!isMobile && isOpenRightSlider ? 25 : 0"
-                :max-size="!isMobile && isOpenRightSlider ? 60 : 0"
-                collapsible
-                :collapsed-size="0"
-              >
-                <RightSlider v-if="!isMobile" />
+                  <!-- 预览区 -->
+                  <ResizablePanel
+                    ref="previewResizablePanelRef"
+                    :order="2"
+                    :default-size="viewMode === 'edit' ? 0 : viewMode === 'preview' ? 100 : 50"
+                    :min-size="previewPanelConfig.min"
+                    :max-size="previewPanelConfig.max"
+                    collapsible
+                    :collapsed-size="0"
+                  >
+                    <PreviewPanel
+                      ref="previewPanelCompRef"
+                      :back-light="backLight"
+                      :is-coping="isCoping"
+                      :on-content-click="handlePreviewContentClick"
+                    />
+                  </ResizablePanel>
+
+                  <!-- CSS 编辑器面板 -->
+                  <ResizableHandle v-show="!isMobile && uiStore.isShowCssEditor" class="hidden md:block" />
+                  <ResizablePanel
+                    ref="cssEditorPanelRef"
+                    :order="3"
+                    :default-size="0"
+                    :min-size="!isMobile && uiStore.isShowCssEditor ? 10 : 0"
+                    :max-size="!isMobile && uiStore.isShowCssEditor ? 60 : 0"
+                    collapsible
+                    :collapsed-size="0"
+                  >
+                    <CssEditor v-if="!isMobile" />
+                  </ResizablePanel>
+
+                  <!-- 样式面板 -->
+                  <ResizableHandle v-show="!isMobile && isOpenRightSlider" class="hidden md:block" />
+                  <ResizablePanel
+                    v-if="isOpenRightSlider"
+                    ref="rightSliderPanelRef"
+                    :order="4"
+                    :default-size="0"
+                    :min-size="!isMobile && isOpenRightSlider ? 25 : 0"
+                    :max-size="!isMobile && isOpenRightSlider ? 60 : 0"
+                    collapsible
+                    :collapsed-size="0"
+                  >
+                    <RightSlider v-if="!isMobile" />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+
+                <!-- 移动端：CssEditor 和 RightSlider 作为浮层 -->
+                <template v-if="isMobile">
+                  <CssEditor />
+                  <RightSlider />
+                </template>
               </ResizablePanel>
             </ResizablePanelGroup>
-
-            <!-- 移动端：CssEditor 和 RightSlider 作为浮层 -->
-            <template v-if="isMobile">
-              <CssEditor />
-              <RightSlider />
-            </template>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+          </div>
+        </WorkflowPageShell>
       </div>
+
+      <WorkflowDataPage v-show="workflowAppPage === 'data'" />
+      <WorkflowCreationPage v-show="workflowAppPage === 'creation'" />
+      <WorkflowDistributionPage v-show="workflowAppPage === 'distribution'" />
+      <WorkflowStatsPage v-show="workflowAppPage === 'stats'" />
 
       <UploadImgDialog @upload-image="handleUploadImage" />
 

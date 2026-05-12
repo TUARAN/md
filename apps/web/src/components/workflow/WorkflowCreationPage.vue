@@ -1,20 +1,11 @@
 <script setup lang="ts">
+import { PenLine } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { APP_NAME } from '@/constants/branding'
 import { toast } from '@/utils/toast'
-
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false,
-  },
-})
-
-const emit = defineEmits([`close`])
-
-function onUpdate(val: boolean) {
-  if (!val)
-    emit(`close`)
-}
+import WorkflowPageShell from './WorkflowPageShell.vue'
+import WorkflowPageTitle from './WorkflowPageTitle.vue'
+import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
 
 const templates = [
   {
@@ -43,39 +34,41 @@ async function copyTemplate(text: string) {
 </script>
 
 <template>
-  <Dialog :open="props.visible" @update:open="onUpdate">
-    <DialogContent class="max-h-[85vh] max-w-lg overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>风格二创</DialogTitle>
-      </DialogHeader>
-      <p class="text-sm text-muted-foreground">
+  <WorkflowPageShell>
+    <template #header>
+      <WorkflowPageTitle>
+        <template #icon>
+          <PenLine />
+        </template>
+        风格二创
+      </WorkflowPageTitle>
+      <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         在 {{ APP_NAME }} 中定稿或列好要点后，可用下列提示语在 AI 里做「二创」：按平台改编语气与篇幅，统一事实、适配多端分发。请替换「{}」占位符后再生成。
       </p>
+    </template>
 
-      <div class="mt-4 space-y-4">
-        <h4 class="text-sm font-semibold text-foreground">
-          二创提示语模版
-        </h4>
-        <div
-          v-for="tpl in templates"
-          :key="tpl.name"
-          class="rounded-lg border border-border bg-muted/40 p-3"
-        >
-          <div class="mb-2 flex items-center justify-between gap-2">
-            <span class="text-xs font-medium text-foreground">{{ tpl.name }}</span>
-            <Button size="sm" variant="secondary" class="h-7 shrink-0 text-xs" @click="copyTemplate(tpl.text)">
-              复制
-            </Button>
-          </div>
-          <pre class="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-background p-2 text-xs leading-relaxed text-muted-foreground">{{ tpl.text }}</pre>
+    <div class="space-y-4 pb-4">
+      <WorkflowSectionTitle>
+        二创提示语模版
+      </WorkflowSectionTitle>
+      <div
+        v-for="tpl in templates"
+        :key="tpl.name"
+        class="rounded-lg border border-border bg-muted/40 p-3"
+      >
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <span class="text-xs font-medium text-foreground">{{ tpl.name }}</span>
+          <Button
+            class="h-7 shrink-0 text-xs"
+            size="sm"
+            variant="secondary"
+            @click="copyTemplate(tpl.text)"
+          >
+            复制
+          </Button>
         </div>
+        <pre class="max-h-48 overflow-auto whitespace-pre-wrap break-words rounded bg-background p-2 text-xs leading-relaxed text-muted-foreground">{{ tpl.text }}</pre>
       </div>
-
-      <DialogFooter>
-        <Button variant="outline" @click="emit('close')">
-          关闭
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
+    </div>
+  </WorkflowPageShell>
 </template>

@@ -7,7 +7,11 @@ export const APP_NAME = `博主联盟同步工具`
 export const APP_FOCUS = `内容分发与同步`
 
 /** 对外主 slogan（一文多发、多平台同步） */
-export const APP_SLOGAN = `一文多发，半小时完成30+平台同步`
+export const APP_SLOGAN = `一文多发，30分钟完成30+平台同步`
+
+/** 顶栏右上角一行品牌文案（含产品名与定位） */
+export const APP_HEADER_BRAND_LINE
+  = `博主联盟同步工具，30分钟内，一文分发至30+社媒平台`
 
 /** 首屏 / 关于里补充说明 */
 export const APP_TAGLINE = `全链路内容运营工作流，当前阶段聚焦多平台内容的分发与同步。`

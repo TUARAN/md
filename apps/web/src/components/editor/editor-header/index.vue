@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { BarChart3, ChevronRight, Copy, Database, Megaphone, Menu, Palette, PenLine, RefreshCw } from 'lucide-vue-next'
-import { getDataAcquisitionNavUrl } from '@/constants/branding'
-import { useEditorStore } from '@/stores/editor'
-import { useExportStore } from '@/stores/export'
-import { useRenderStore } from '@/stores/render'
-import { useThemeStore } from '@/stores/theme'
+import { BarChart3, ChevronRight, Database, Megaphone, Menu, PenLine, RefreshCw } from 'lucide-vue-next'
+import { inject } from 'vue'
+import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
+import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
+import { APP_HEADER_BRAND_LINE, getDataAcquisitionNavUrl } from '@/constants/branding'
 import { useUIStore } from '@/stores/ui'
-import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
-import { store } from '@/utils/storage'
-import ContentCreationDialog from './ContentCreationDialog.vue'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import FormatDropdown from './FormatDropdown.vue'
@@ -16,38 +12,28 @@ import HelpDropdown from './HelpDropdown.vue'
 import InsertDropdown from './InsertDropdown.vue'
 import MarkdownHelpDialog from './MarkdownHelpDialog.vue'
 import StyleDropdown from './StyleDropdown.vue'
-import WorkflowPlaceholderDialog from './WorkflowPlaceholderDialog.vue'
 
-const emit = defineEmits([`startCopy`, `endCopy`])
+const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 
-const editorStore = useEditorStore()
-const themeStore = useThemeStore()
-const renderStore = useRenderStore()
 const uiStore = useUIStore()
-const exportStore = useExportStore()
 
-const { editor } = storeToRefs(editorStore)
-const { output } = storeToRefs(renderStore)
-const { primaryColor } = storeToRefs(themeStore)
-const { isOpenRightSlider } = storeToRefs(uiStore)
-const { toggleGNewsDialog } = uiStore
+const { workflowAppPage } = storeToRefs(uiStore)
+const { setWorkflowAppPage } = uiStore
 
-// Editor refresh function
-function editorRefresh() {
-  themeStore.updateCodeTheme()
+const {
+  aboutDialogVisible,
+  fundDialogVisible,
+  editorStateDialogVisible,
+  markdownHelpDialogVisible,
+  handleOpenAbout,
+  handleOpenFund,
+  handleOpenEditorState,
+  handleOpenMarkdownHelp,
+} = useEditorHeaderDialogs()
 
-  const raw = editorStore.getContent()
-  renderStore.render(raw)
+function handleCopy(mode: string) {
+  wechatCopy?.handleCopy(mode)
 }
-
-// 对话框状态
-const aboutDialogVisible = ref(false)
-const fundDialogVisible = ref(false)
-const editorStateDialogVisible = ref(false)
-const markdownHelpDialogVisible = ref(false)
-const contentCreationDialogVisible = ref(false)
-const distributionDialogVisible = ref(false)
-const statsDialogVisible = ref(false)
 
 const workflowSteps = [
   { id: `data` as const, label: `数据获取`, icon: Database },
@@ -58,224 +44,14 @@ const workflowSteps = [
 ]
 
 function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
-  if (stepId === `sync`)
-    return
   if (stepId === `data`) {
-    openDataAcquisition()
-    return
-  }
-  if (stepId === `creation`) {
-    contentCreationDialogVisible.value = true
-    return
-  }
-  if (stepId === `distribution`) {
-    distributionDialogVisible.value = true
-    return
-  }
-  if (stepId === `stats`) {
-    statsDialogVisible.value = true
-  }
-}
-
-function openDataAcquisition() {
-  const url = getDataAcquisitionNavUrl()
-  if (url) {
-    window.open(url, `_blank`, `noopener,noreferrer`)
-    return
-  }
-  toggleGNewsDialog(true)
-}
-
-function handleOpenAbout() {
-  aboutDialogVisible.value = true
-}
-
-function handleOpenFund() {
-  fundDialogVisible.value = true
-}
-
-function handleOpenEditorState() {
-  editorStateDialogVisible.value = true
-}
-
-function handleOpenMarkdownHelp() {
-  markdownHelpDialogVisible.value = true
-}
-
-const copyMode = store.reactive(addPrefix(`copyMode`), `txt`)
-
-const { copy: copyContent } = useClipboard({
-  legacy: true,
-})
-
-const delay = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms))
-
-const normalizeErrorMessage = (error: unknown) => (error instanceof Error ? error.message : String(error))
-
-async function writeClipboardItems(items: ClipboardItem[]) {
-  if (!navigator.clipboard?.write) {
-    throw new Error(`Clipboard API not available.`)
-  }
-
-  await delay(0)
-  await navigator.clipboard.write(items)
-}
-
-function fallbackCopyUsingExecCommand(htmlContent: string) {
-  const selection = window.getSelection()
-
-  if (!selection) {
-    return false
-  }
-
-  const tempContainer = document.createElement(`div`)
-  tempContainer.innerHTML = htmlContent
-  tempContainer.style.position = `fixed`
-  tempContainer.style.left = `-9999px`
-  tempContainer.style.top = `0`
-  tempContainer.style.opacity = `0`
-  tempContainer.style.pointerEvents = `none`
-  tempContainer.style.setProperty(`background-color`, `#ffffff`, `important`)
-  tempContainer.style.setProperty(`color`, `#000000`, `important`)
-
-  document.body.appendChild(tempContainer)
-
-  const htmlElement = document.documentElement
-  const wasDark = htmlElement.classList.contains(`dark`)
-  let successful = false
-
-  try {
-    if (wasDark) {
-      htmlElement.classList.remove(`dark`)
-    }
-
-    const range = document.createRange()
-    range.selectNodeContents(tempContainer)
-    selection.removeAllRanges()
-    selection.addRange(range)
-
-    successful = document.execCommand(`copy`)
-  }
-  catch {
-    successful = false
-  }
-  finally {
-    selection.removeAllRanges()
-    tempContainer.remove()
-
-    if (wasDark) {
-      htmlElement.classList.add(`dark`)
+    const url = getDataAcquisitionNavUrl()
+    if (url) {
+      window.open(url, `_blank`, `noopener,noreferrer`)
+      return
     }
   }
-
-  return successful
-}
-
-// 复制到微信公众号
-async function copy() {
-  // 如果是 Markdown 源码，直接复制并返回
-  if (copyMode.value === `md`) {
-    const mdContent = editor.value?.state.doc.toString() || ``
-    await copyContent(mdContent)
-    toast.success(`已复制 Markdown 源码到剪贴板。`)
-    return
-  }
-
-  // 以下处理非 Markdown 的复制流程
-  emit(`startCopy`)
-
-  setTimeout(() => {
-    nextTick(async () => {
-      try {
-        await processClipboardContent(primaryColor.value)
-      }
-      catch (error) {
-        toast.error(`处理 HTML 失败，请联系开发者。${normalizeErrorMessage(error)}`)
-        editorRefresh()
-        emit(`endCopy`)
-        return
-      }
-
-      const clipboardDiv = document.getElementById(`output`)
-
-      if (!clipboardDiv) {
-        toast.error(`未找到复制输出区域，请刷新页面后重试。`)
-        editorRefresh()
-        emit(`endCopy`)
-        return
-      }
-
-      clipboardDiv.focus()
-      window.getSelection()?.removeAllRanges()
-
-      const temp = clipboardDiv.innerHTML
-
-      if (copyMode.value === `txt`) {
-        try {
-          if (typeof ClipboardItem === `undefined`) {
-            throw new TypeError(`ClipboardItem is not supported in this browser.`)
-          }
-
-          const plainText = clipboardDiv.textContent || ``
-          const clipboardItem = new ClipboardItem({
-            'text/html': new Blob([temp], { type: `text/html` }),
-            'text/plain': new Blob([plainText], { type: `text/plain` }),
-          })
-
-          await writeClipboardItems([clipboardItem])
-        }
-        catch (error) {
-          const fallbackSucceeded = fallbackCopyUsingExecCommand(temp)
-          if (!fallbackSucceeded) {
-            clipboardDiv.innerHTML = output.value
-            window.getSelection()?.removeAllRanges()
-            editorRefresh()
-            toast.error(`复制失败，请联系开发者。${normalizeErrorMessage(error)}`)
-            emit(`endCopy`)
-            return
-          }
-        }
-      }
-
-      clipboardDiv.innerHTML = output.value
-
-      if (copyMode.value === `html`) {
-        await copyContent(temp)
-      }
-      else if (copyMode.value === `html-without-style`) {
-        await copyContent(await generatePureHTML(editor.value!.state.doc.toString()))
-      }
-      else if (copyMode.value === `html-and-style`) {
-        await copyContent(exportStore.editorContent2HTML())
-      }
-
-      // 输出提示
-      toast.success(
-        copyMode.value === `html`
-          ? `已复制 HTML 源码，请进行下一步操作。`
-          : `已复制渲染后的内容到剪贴板，可直接到公众号后台粘贴。`,
-      )
-      window.dispatchEvent(
-        new CustomEvent(`copyToMp`, {
-          detail: {
-            content: output.value,
-          },
-        }),
-      )
-      editorRefresh()
-      emit(`endCopy`)
-    })
-  }, 350)
-}
-
-function handleCopy(mode: string) {
-  copyMode.value = mode
-  copy()
-}
-
-function copyToWeChat() {
-  copyMode.value = 'txt'
-  copy()
+  setWorkflowAppPage(stepId)
 }
 </script>
 
@@ -299,22 +75,23 @@ function copyToWeChat() {
               aria-hidden="true"
             />
             <button
-              v-if="step.id !== 'sync'"
               type="button"
-              class="workflow-step workflow-step--inactive inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-transparent hover:text-foreground"
+              class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
+                workflowAppPage === step.id
+                  ? 'workflow-step--current text-primary underline decoration-primary/45 underline-offset-2'
+                  : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
+              ]"
+              :aria-current="workflowAppPage === step.id ? 'step' : undefined"
               @click="openWorkflowStep(step.id)"
             >
-              <component :is="step.icon" class="size-4 shrink-0 text-muted-foreground" />
+              <component
+                :is="step.icon"
+                class="size-4 shrink-0" :class="[
+                  workflowAppPage === step.id ? 'text-primary' : 'text-muted-foreground',
+                ]"
+              />
               <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
             </button>
-            <span
-              v-else
-              class="workflow-step workflow-step--current inline-flex shrink-0 items-center gap-1 bg-transparent text-primary underline decoration-primary/45 underline-offset-2"
-              aria-current="step"
-            >
-              <component :is="step.icon" class="size-4 shrink-0 text-primary" />
-              <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
-            </span>
           </template>
         </nav>
       </div>
@@ -332,22 +109,23 @@ function copyToWeChat() {
               aria-hidden="true"
             />
             <button
-              v-if="step.id !== 'sync'"
               type="button"
-              class="workflow-step workflow-step--inactive inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-transparent hover:text-foreground"
+              class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
+                workflowAppPage === step.id
+                  ? 'workflow-step--current text-primary underline decoration-primary/45 underline-offset-2'
+                  : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
+              ]"
+              :aria-current="workflowAppPage === step.id ? 'step' : undefined"
               @click="openWorkflowStep(step.id)"
             >
-              <component :is="step.icon" class="size-4 shrink-0 text-muted-foreground" />
+              <component
+                :is="step.icon"
+                class="size-4 shrink-0" :class="[
+                  workflowAppPage === step.id ? 'text-primary' : 'text-muted-foreground',
+                ]"
+              />
               <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
             </button>
-            <span
-              v-else
-              class="workflow-step workflow-step--current inline-flex shrink-0 items-center gap-1 bg-transparent text-primary underline decoration-primary/45 underline-offset-2"
-              aria-current="step"
-            >
-              <component :is="step.icon" class="size-4 shrink-0 text-primary" />
-              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
-            </span>
           </template>
         </nav>
         <Menubar class="menubar shrink-0 border-0 p-0">
@@ -370,53 +148,13 @@ function copyToWeChat() {
       </div>
     </div>
 
-    <!-- 右侧操作区（桌面：复制 → 文章信息 → 样式面板 → 次级编辑菜单） -->
-    <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
-      <!-- 复制按钮 -->
-      <Button
-        variant="outline"
-        class="h-9"
-        @click="copyToWeChat"
-      >
-        <Copy class="mr-2 h-4 w-4" />
-        <span>复制</span>
-      </Button>
-
-      <!-- 文章信息（移动端隐藏） -->
-      <PostInfo class="hidden md:inline-flex" />
-
-      <!-- 样式面板（右侧滑层） -->
-      <Button
-        variant="outline"
-        class="h-9"
-        :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
-        @click="isOpenRightSlider = !isOpenRightSlider"
-      >
-        <Palette class="mr-2 h-4 w-4" />
-        <span>样式</span>
-      </Button>
-
-      <!-- 桌面端：文件 / 编辑 / 格式 / 插入 / 样式(主题菜单) / 帮助 — 与「样式」outline 块视觉一致 -->
-      <div
-        class="menubar-secondary-desktop hidden min-w-0 md:flex md:items-center"
-        aria-label="同步与编辑菜单"
-      >
-        <div
-          class="menubar-secondary-wrap max-w-full rounded-lg border border-border bg-background/80 p-0.5 backdrop-blur-sm"
-        >
-          <Menubar
-            class="menubar menubar--secondary flex h-auto max-w-full min-w-0 flex-nowrap items-center gap-1 border-0 bg-transparent p-0 shadow-none"
-          >
-            <FileDropdown @open-editor-state="handleOpenEditorState" />
-            <EditDropdown @copy="handleCopy" />
-            <FormatDropdown />
-            <InsertDropdown />
-            <StyleDropdown />
-            <HelpDropdown @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
-          </Menubar>
-        </div>
-      </div>
-    </div>
+    <!-- 右上角品牌一行艺术字（非按钮、无衬底；小屏省略） -->
+    <p
+      class="header-brand-slogan pointer-events-none m-0 hidden max-w-[min(100%,48rem)] shrink-0 truncate pl-3 text-right md:block"
+      :title="`“${APP_HEADER_BRAND_LINE}”`"
+    >
+      <span class="header-brand-slogan__line">“{{ APP_HEADER_BRAND_LINE }}”</span>
+    </p>
   </header>
 
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->
@@ -424,19 +162,6 @@ function copyToWeChat() {
   <FundDialog :visible="fundDialogVisible" @close="fundDialogVisible = false" />
   <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
   <MarkdownHelpDialog :visible="markdownHelpDialogVisible" @close="markdownHelpDialogVisible = false" />
-  <ContentCreationDialog :visible="contentCreationDialogVisible" @close="contentCreationDialogVisible = false" />
-  <WorkflowPlaceholderDialog
-    :visible="distributionDialogVisible"
-    title="宣发活跃"
-    body="多平台节奏、加热与社群活跃、渠道联动等能力将在后续版本接入；当前步骤仅占位，便于对齐整条工作流。"
-    @close="distributionDialogVisible = false"
-  />
-  <WorkflowPlaceholderDialog
-    :visible="statsDialogVisible"
-    title="闭环汇报"
-    body="曝光、阅读、互动与转化等数据回流与复盘汇报将在后续版本接入；当前步骤仅占位。"
-    @close="statsDialogVisible = false"
-  />
   <AIImageGeneratorPanel v-model:open="uiStore.aiImageDialogVisible" />
 </template>
 
@@ -456,6 +181,70 @@ function copyToWeChat() {
   @media (max-width: 768px) {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+}
+
+/** 顶栏右上角：单行艺术字（渐变 + 衬线气质，无框线、无按钮感） */
+.header-brand-slogan {
+  line-height: 1.25;
+}
+
+.header-brand-slogan__line {
+  display: inline;
+  /* Two identical halves (0–50% / 50–100%) so background-position can loop without a seam */
+  background-image: linear-gradient(
+    100deg,
+    hsl(var(--primary) / 0.72) 0%,
+    hsl(var(--primary)) 11%,
+    hsl(var(--foreground) / 0.82) 20%,
+    hsl(var(--foreground) / 0.96) 25%,
+    hsl(var(--foreground) / 0.82) 30%,
+    hsl(var(--primary)) 39%,
+    hsl(var(--primary) / 0.72) 50%,
+    hsl(var(--primary) / 0.72) 50%,
+    hsl(var(--primary)) 61%,
+    hsl(var(--foreground) / 0.82) 70%,
+    hsl(var(--foreground) / 0.96) 75%,
+    hsl(var(--foreground) / 0.82) 80%,
+    hsl(var(--primary)) 89%,
+    hsl(var(--primary) / 0.72) 100%
+  );
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* 偏书面/刊头气质的衬线（系统有可则用，无则优雅回退） */
+  font-family: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC', ui-serif, Georgia, serif;
+  font-size: clamp(0.8125rem, 0.75rem + 0.5vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  font-feature-settings: 'kern' 1;
+  filter: drop-shadow(0 0 18px hsl(var(--primary) / 0.18));
+  animation: header-brand-sweep 5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-brand-slogan__line {
+    animation: none;
+    background-image: linear-gradient(
+      100deg,
+      hsl(var(--primary)) 0%,
+      hsl(var(--primary) / 0.78) 45%,
+      hsl(var(--foreground) / 0.72) 100%
+    );
+    background-size: 100% 100%;
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes header-brand-sweep {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
   }
 }
 

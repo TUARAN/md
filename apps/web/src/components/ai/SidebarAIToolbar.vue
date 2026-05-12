@@ -3,7 +3,6 @@ import { Bot, Image as ImageIcon, Newspaper, Settings2, Wand2 } from 'lucide-vue
 import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
 import AIAssistantPanel from './chat-box/AIAssistantPanel.vue'
-import { GNewsFetchPanel } from './gnews'
 import AIImageGeneratorPanel from './image-generator/AIImageGeneratorPanel.vue'
 import { AIPolishPopover } from './tool-box'
 
@@ -13,8 +12,8 @@ defineProps<{
 }>()
 
 const uiStore = useUIStore()
-const { aiDialogVisible, aiImageDialogVisible, gnewsDialogVisible } = storeToRefs(uiStore)
-const { toggleAIDialog, toggleAIImageDialog, toggleGNewsDialog } = uiStore
+const { aiDialogVisible, aiImageDialogVisible } = storeToRefs(uiStore)
+const { toggleAIDialog, toggleAIImageDialog, setWorkflowAppPage } = uiStore
 
 const editorStore = useEditorStore()
 const { editor } = storeToRefs(editorStore)
@@ -121,7 +120,7 @@ function openAIImageGenerator() {
 
 // 打开 GNews 资讯
 function openGNewsPanel() {
-  toggleGNewsDialog(true)
+  setWorkflowAppPage(`data`)
 }
 
 // 打开AI工具箱
@@ -164,7 +163,6 @@ onMounted(() => {
       `.floating`,
       `.ai-assistant-panel`,
       `.ai-image-generator-panel`,
-      `.gnews-fetch-panel`,
     ]
 
     const shouldNotCollapse = excludeSelectors.some(selector => target.closest(selector))
@@ -321,7 +319,6 @@ onMounted(() => {
     <!-- AI面板组件 -->
     <AIAssistantPanel v-model:open="aiDialogVisible" />
     <AIImageGeneratorPanel v-model:open="aiImageDialogVisible" />
-    <GNewsFetchPanel v-model:open="gnewsDialogVisible" />
 
     <!-- AI工具箱弹窗 -->
     <AIPolishPopover

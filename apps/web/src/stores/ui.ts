@@ -1,6 +1,9 @@
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
+/** 顶栏工作流对应的整页视图（非弹窗） */
+export type WorkflowAppPage = `data` | `creation` | `sync` | `distribution` | `stats`
+
 /**
  * UI 状态 Store
  * 负责管理全局 UI 状态，包括深色模式、侧边栏、对话框等
@@ -41,8 +44,8 @@ export const useUIStore = defineStore(`ui`, () => {
     viewMode.value = mode
   }
 
-  // 预览设备：desktop（电脑端）| mobile（移动端模拟）
-  const previewDevice = store.reactive<'desktop' | 'mobile'>(`previewDevice`, `mobile`)
+  // 预览设备：desktop（电脑端、更宽）| mobile（移动端模拟 375px）
+  const previewDevice = store.reactive<'desktop' | 'mobile'>(`previewDevice`, `desktop`)
 
   function setPreviewDevice(device: 'desktop' | 'mobile') {
     previewDevice.value = device
@@ -107,10 +110,11 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
-  const gnewsDialogVisible = ref(false)
+  /** 主工作区当前页面：数据获取 / 风格二创 / 内容同步 / 宣发活跃 / 闭环汇报 */
+  const workflowAppPage = store.reactive<WorkflowAppPage>(`workflow_app_page`, `sync`)
 
-  function toggleGNewsDialog(value?: boolean) {
-    gnewsDialogVisible.value = value ?? !gnewsDialogVisible.value
+  function setWorkflowAppPage(page: WorkflowAppPage) {
+    workflowAppPage.value = page
   }
 
   /** 打开 AI 助手时注入到输入框的 Markdown（由 GNews 等入口写入，打开后消费清空） */
@@ -202,8 +206,8 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleAIDialog,
     aiImageDialogVisible,
     toggleAIImageDialog,
-    gnewsDialogVisible,
-    toggleGNewsDialog,
+    workflowAppPage,
+    setWorkflowAppPage,
     queueAiAssistantDraftMarkdown,
     consumeAiAssistantDraftMarkdown,
 
