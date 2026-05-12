@@ -2,6 +2,7 @@
 import {
   APP_CURRENT_SCOPE,
   APP_NAME,
+  APP_SLOGAN,
   APP_TAGLINE,
   APP_WORKFLOW_VISION,
 } from '@/constants/branding'
@@ -42,6 +43,9 @@ function onRedirect(url: string) {
         <h3 class="text-center text-base font-semibold">
           {{ APP_NAME }}
         </h3>
+        <p class="text-center text-sm font-semibold tracking-tight text-primary">
+          {{ APP_SLOGAN }}
+        </p>
         <p class="text-muted-foreground text-center">
           {{ APP_TAGLINE }}
         </p>

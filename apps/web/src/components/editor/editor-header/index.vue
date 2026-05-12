@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Database, Menu, Palette } from 'lucide-vue-next'
+import { BarChart3, ChevronRight, Copy, Database, Megaphone, Menu, Palette, PenLine, RefreshCw } from 'lucide-vue-next'
 import { getDataAcquisitionNavUrl } from '@/constants/branding'
 import { useEditorStore } from '@/stores/editor'
 import { useExportStore } from '@/stores/export'
@@ -8,6 +8,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
 import { store } from '@/utils/storage'
+import ContentCreationDialog from './ContentCreationDialog.vue'
 import DataAcquisitionDialog from './DataAcquisitionDialog.vue'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
@@ -16,6 +17,7 @@ import HelpDropdown from './HelpDropdown.vue'
 import InsertDropdown from './InsertDropdown.vue'
 import MarkdownHelpDialog from './MarkdownHelpDialog.vue'
 import StyleDropdown from './StyleDropdown.vue'
+import WorkflowPlaceholderDialog from './WorkflowPlaceholderDialog.vue'
 
 const emit = defineEmits([`startCopy`, `endCopy`])
 
@@ -44,6 +46,37 @@ const fundDialogVisible = ref(false)
 const editorStateDialogVisible = ref(false)
 const markdownHelpDialogVisible = ref(false)
 const dataAcquisitionDialogVisible = ref(false)
+const contentCreationDialogVisible = ref(false)
+const distributionDialogVisible = ref(false)
+const statsDialogVisible = ref(false)
+
+const workflowSteps = [
+  { id: `data` as const, label: `数据获取`, icon: Database },
+  { id: `creation` as const, label: `内容创作`, icon: PenLine },
+  { id: `sync` as const, label: `内容同步`, icon: RefreshCw },
+  { id: `distribution` as const, label: `内容宣发`, icon: Megaphone },
+  { id: `stats` as const, label: `闭环统计`, icon: BarChart3 },
+]
+
+function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
+  if (stepId === `sync`)
+    return
+  if (stepId === `data`) {
+    openDataAcquisition()
+    return
+  }
+  if (stepId === `creation`) {
+    contentCreationDialogVisible.value = true
+    return
+  }
+  if (stepId === `distribution`) {
+    distributionDialogVisible.value = true
+    return
+  }
+  if (stepId === `stats`) {
+    statsDialogVisible.value = true
+  }
+}
 
 function openDataAcquisition() {
   const url = getDataAcquisitionNavUrl()
@@ -264,30 +297,40 @@ function copyToWeChat() {
         </Menubar>
       </div>
 
-      <!-- 模块导航：当前以内容同步为主，数据获取另行入口 -->
+      <!-- 工作流导航：数据获取 → … → 内容同步（当前）→ … -->
       <nav
-        class="hidden shrink-0 items-center gap-1.5 border-l border-border pl-3 md:flex"
-        aria-label="模块导航"
+        class="workflow-nav hidden min-w-0 shrink items-center gap-0.5 border-l border-border pl-2 md:flex"
+        aria-label="工作流"
       >
-        <span
-          class="inline-flex items-center rounded-md bg-primary/12 px-2.5 py-1 text-xs font-medium text-primary"
-        >
-          内容同步
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          class="h-8 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-          @click="openDataAcquisition"
-        >
-          <Database class="size-3.5 opacity-80" />
-          数据获取
-        </Button>
+        <template v-for="(step, index) in workflowSteps" :key="step.id">
+          <ChevronRight
+            v-if="index > 0"
+            class="size-3.5 shrink-0 text-muted-foreground/70"
+            aria-hidden="true"
+          />
+          <Button
+            v-if="step.id !== 'sync'"
+            variant="ghost"
+            size="sm"
+            class="h-8 shrink-0 gap-1 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+            @click="openWorkflowStep(step.id)"
+          >
+            <component :is="step.icon" class="size-3.5 opacity-80" />
+            <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
+          </Button>
+          <span
+            v-else
+            class="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-primary/12 px-2 text-xs font-medium text-primary"
+          >
+            <component :is="step.icon" class="size-3.5 opacity-90" />
+            <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
+          </span>
+        </template>
       </nav>
 
-      <!-- 移动端：菜单 + 数据获取 -->
-      <div class="flex items-center gap-2 md:hidden">
-        <Menubar class="menubar border-0 p-0">
+      <!-- 移动端：菜单 + 横向工作流（可滑动） -->
+      <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
+        <Menubar class="menubar shrink-0 border-0 p-0">
           <MenubarMenu>
             <MenubarTrigger class="p-0">
               <Button variant="outline" size="icon">
@@ -304,15 +347,35 @@ function copyToWeChat() {
             </MenubarContent>
           </MenubarMenu>
         </Menubar>
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-9 shrink-0 gap-1 px-2.5 text-xs"
-          @click="openDataAcquisition"
+        <nav
+          class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto"
+          aria-label="工作流"
         >
-          <Database class="size-3.5" />
-          数据
-        </Button>
+          <template v-for="(step, index) in workflowSteps" :key="step.id">
+            <ChevronRight
+              v-if="index > 0"
+              class="size-3 shrink-0 text-muted-foreground/60"
+              aria-hidden="true"
+            />
+            <Button
+              v-if="step.id !== 'sync'"
+              variant="outline"
+              size="sm"
+              class="h-8 shrink-0 gap-0.5 px-1.5 text-[11px]"
+              @click="openWorkflowStep(step.id)"
+            >
+              <component :is="step.icon" class="size-3" />
+              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
+            </Button>
+            <span
+              v-else
+              class="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-md bg-primary/12 px-1.5 text-[11px] font-medium text-primary"
+            >
+              <component :is="step.icon" class="size-3" />
+              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
+            </span>
+          </template>
+        </nav>
       </div>
     </div>
 
@@ -350,6 +413,19 @@ function copyToWeChat() {
   <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
   <MarkdownHelpDialog :visible="markdownHelpDialogVisible" @close="markdownHelpDialogVisible = false" />
   <DataAcquisitionDialog :visible="dataAcquisitionDialogVisible" @close="dataAcquisitionDialogVisible = false" />
+  <ContentCreationDialog :visible="contentCreationDialogVisible" @close="contentCreationDialogVisible = false" />
+  <WorkflowPlaceholderDialog
+    :visible="distributionDialogVisible"
+    title="内容宣发"
+    body="多平台投放节奏、加热与社媒联动等能力将在后续版本接入；当前步骤仅占位，便于对齐整条工作流。"
+    @close="distributionDialogVisible = false"
+  />
+  <WorkflowPlaceholderDialog
+    :visible="statsDialogVisible"
+    title="闭环统计"
+    body="曝光、阅读、互动与转化等数据回流与复盘看板将在后续版本接入；当前步骤仅占位。"
+    @close="statsDialogVisible = false"
+  />
   <AIImageGeneratorPanel v-model:open="uiStore.aiImageDialogVisible" />
 </template>
 
@@ -364,6 +440,14 @@ function copyToWeChat() {
   @media (max-width: 768px) {
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+}
+
+.workflow-nav-mobile {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 

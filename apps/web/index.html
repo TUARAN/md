@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-    <meta name="keywords" content="博主联盟,内容同步,分发,Markdown,公众号,工作流,自动化" />
+    <meta name="keywords" content="博主联盟,一文多发,多平台同步,内容同步,Markdown,分发,工作流" />
     <meta
       name="description"
-      content="博主联盟同步工具 — 面向全链路内容运营工作流，当前阶段聚焦内容分发与多平台同步。"
+      content="博主联盟同步工具 — 一文多发，半小时完成30+平台同步。Markdown 编辑与多端内容分发。"
     />
     <meta
       name="viewport"
       content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
     />
-    <title>博主联盟同步工具 · 内容分发与同步</title>
+    <title>博主联盟同步工具 — 一文多发，半小时完成30+平台同步</title>
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="apple-touch-icon-precomposed" href="/favicon.png" />
     <style>
@@ -34,7 +34,25 @@
         content: url('/src/assets/images/favicon.png');
         width: 100px;
         height: 100px;
-        margin-bottom: 26px;
+        margin-bottom: 1rem;
+      }
+
+      .loading .splash-title {
+        margin-bottom: 0.35rem;
+      }
+
+      .loading .splash-slogan {
+        margin: 0 1rem 0.75rem;
+        max-width: 22rem;
+        text-align: center;
+        font-size: 0.95rem;
+        font-weight: 600;
+        line-height: 1.45;
+        color: #555;
+      }
+
+      .loading.dark .splash-slogan {
+        color: #ccc;
       }
 
       .loading.dark {
@@ -75,7 +93,8 @@
     </noscript>
     <div id="app">
       <div class="loading">
-        <strong>博主联盟同步工具 · 内容分发与同步</strong>
+        <strong class="splash-title">博主联盟同步工具</strong>
+        <p class="splash-slogan">一文多发，半小时完成30+平台同步</p>
         <p class="txt">正在加载</p>
         <p class="timeout-tip" style="display: none; color: #e53935; font-size: 16px; margin-top: 2em">
           加载时间过长，请尝试刷新页面或按 F12 查看控制台是否有异常信息

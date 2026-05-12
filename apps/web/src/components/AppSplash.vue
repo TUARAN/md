@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { APP_SPLASH_HEADLINE } from '@/constants/branding'
+import { APP_SPLASH_SLOGAN, APP_SPLASH_TITLE } from '@/constants/branding'
 
 const loading = ref(true)
 
@@ -16,7 +16,10 @@ onMounted(() => {
       v-if="loading"
       class="loading"
     >
-      <strong>{{ APP_SPLASH_HEADLINE }}</strong>
+      <strong class="splash-title">{{ APP_SPLASH_TITLE }}</strong>
+      <p class="splash-slogan">
+        {{ APP_SPLASH_SLOGAN }}
+      </p>
     </div>
   </transition>
 </template>
@@ -40,8 +43,24 @@ onMounted(() => {
     content: url('../assets/images/favicon.png');
     width: 100px;
     height: 100px;
-    margin-bottom: 26px;
+    margin-bottom: 1rem;
   }
+}
+
+.splash-title {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.splash-slogan {
+  margin: 0;
+  max-width: 22rem;
+  padding: 0 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
 }
 
 .fade-enter,
