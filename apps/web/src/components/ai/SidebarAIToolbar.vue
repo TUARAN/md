@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Bot, Image as ImageIcon, Settings2, Wand2 } from 'lucide-vue-next'
+import { Bot, Image as ImageIcon, Newspaper, Settings2, Wand2 } from 'lucide-vue-next'
 import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
 import AIAssistantPanel from './chat-box/AIAssistantPanel.vue'
+import { GNewsFetchPanel } from './gnews'
 import AIImageGeneratorPanel from './image-generator/AIImageGeneratorPanel.vue'
 import { AIPolishPopover } from './tool-box'
 
@@ -12,8 +13,8 @@ defineProps<{
 }>()
 
 const uiStore = useUIStore()
-const { aiDialogVisible, aiImageDialogVisible } = storeToRefs(uiStore)
-const { toggleAIDialog, toggleAIImageDialog } = uiStore
+const { aiDialogVisible, aiImageDialogVisible, gnewsDialogVisible } = storeToRefs(uiStore)
+const { toggleAIDialog, toggleAIImageDialog, toggleGNewsDialog } = uiStore
 
 const editorStore = useEditorStore()
 const { editor } = storeToRefs(editorStore)
@@ -118,6 +119,11 @@ function openAIImageGenerator() {
   toggleAIImageDialog(true)
 }
 
+// 打开 GNews 资讯
+function openGNewsPanel() {
+  toggleGNewsDialog(true)
+}
+
 // 打开AI工具箱
 function openAIToolBox() {
   toolBoxVisible.value = true
@@ -158,6 +164,7 @@ onMounted(() => {
       `.floating`,
       `.ai-assistant-panel`,
       `.ai-image-generator-panel`,
+      `.gnews-fetch-panel`,
     ]
 
     const shouldNotCollapse = excludeSelectors.some(selector => target.closest(selector))
@@ -269,6 +276,26 @@ onMounted(() => {
         </div>
 
         <!-- 分割线 -->
+        <div class="mx-1.5">
+          <div class="h-px bg-gray-200/50 dark:bg-gray-700/50" />
+        </div>
+
+        <!-- GNews 资讯 -->
+        <div class="flex flex-col items-center gap-1 px-1">
+          <button
+            class="group relative w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center utools-ai-button"
+            title="GNews 资讯"
+            @click="openGNewsPanel"
+          >
+            <Newspaper class="h-4 w-4" />
+          </button>
+
+          <span class="text-[9px] text-gray-500 dark:text-gray-400 font-medium text-center leading-tight">
+            资讯
+          </span>
+        </div>
+
+        <!-- 分割线 -->
         <div v-if="hasSelectedText && isExpanded" class="mx-1.5">
           <div class="h-px bg-gray-200/50 dark:bg-gray-700/50" />
         </div>
@@ -294,6 +321,7 @@ onMounted(() => {
     <!-- AI面板组件 -->
     <AIAssistantPanel v-model:open="aiDialogVisible" />
     <AIImageGeneratorPanel v-model:open="aiImageDialogVisible" />
+    <GNewsFetchPanel v-model:open="gnewsDialogVisible" />
 
     <!-- AI工具箱弹窗 -->
     <AIPolishPopover

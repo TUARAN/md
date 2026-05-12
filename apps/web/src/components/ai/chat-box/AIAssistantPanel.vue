@@ -48,15 +48,32 @@ const { toggleAIImageDialog } = uiStore
 
 const dialogVisible = ref(props.open)
 watch(() => props.open, val => (dialogVisible.value = val))
-watch(dialogVisible, (val) => {
-  emit(`update:open`, val)
-  if (val)
-    scrollToBottom(true)
-})
 
 const input = ref<string>(``)
 const inputHistory = ref<string[]>([])
 const historyIndex = ref<number | null>(null)
+
+watch(dialogVisible, (val) => {
+  emit(`update:open`, val)
+  if (val) {
+    const draft = uiStore.consumeAiAssistantDraftMarkdown()
+    if (draft) {
+      input.value
+        = `以下为 GNews 整理的参考资讯（Markdown）。请在此基础上做风格化二创：语气与结构可自由调整，事实与原文链接须保持一致。直接输出二创后的正文即可。\n\n---\n\n${draft}`
+      historyIndex.value = null
+      nextTick(() => {
+        const textarea = document.querySelector(
+          `textarea[placeholder*="说些什么" ]`,
+        ) as HTMLTextAreaElement | null
+        textarea?.focus()
+        if (textarea) {
+          textarea.setSelectionRange(textarea.value.length, textarea.value.length)
+        }
+      })
+    }
+    scrollToBottom(true)
+  }
+})
 
 const configVisible = ref(false)
 const { loading, abort: abortFetch, fetchSSE } = useAIFetch()

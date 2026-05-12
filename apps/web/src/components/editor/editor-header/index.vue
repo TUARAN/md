@@ -9,7 +9,6 @@ import { useUIStore } from '@/stores/ui'
 import { addPrefix, generatePureHTML, processClipboardContent } from '@/utils'
 import { store } from '@/utils/storage'
 import ContentCreationDialog from './ContentCreationDialog.vue'
-import DataAcquisitionDialog from './DataAcquisitionDialog.vue'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import FormatDropdown from './FormatDropdown.vue'
@@ -31,6 +30,7 @@ const { editor } = storeToRefs(editorStore)
 const { output } = storeToRefs(renderStore)
 const { primaryColor } = storeToRefs(themeStore)
 const { isOpenRightSlider } = storeToRefs(uiStore)
+const { toggleGNewsDialog } = uiStore
 
 // Editor refresh function
 function editorRefresh() {
@@ -45,7 +45,6 @@ const aboutDialogVisible = ref(false)
 const fundDialogVisible = ref(false)
 const editorStateDialogVisible = ref(false)
 const markdownHelpDialogVisible = ref(false)
-const dataAcquisitionDialogVisible = ref(false)
 const contentCreationDialogVisible = ref(false)
 const distributionDialogVisible = ref(false)
 const statsDialogVisible = ref(false)
@@ -84,7 +83,7 @@ function openDataAcquisition() {
     window.open(url, `_blank`, `noopener,noreferrer`)
     return
   }
-  dataAcquisitionDialogVisible.value = true
+  toggleGNewsDialog(true)
 }
 
 function handleOpenAbout() {
@@ -425,7 +424,6 @@ function copyToWeChat() {
   <FundDialog :visible="fundDialogVisible" @close="fundDialogVisible = false" />
   <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
   <MarkdownHelpDialog :visible="markdownHelpDialogVisible" @close="markdownHelpDialogVisible = false" />
-  <DataAcquisitionDialog :visible="dataAcquisitionDialogVisible" @close="dataAcquisitionDialogVisible = false" />
   <ContentCreationDialog :visible="contentCreationDialogVisible" @close="contentCreationDialogVisible = false" />
   <WorkflowPlaceholderDialog
     :visible="distributionDialogVisible"

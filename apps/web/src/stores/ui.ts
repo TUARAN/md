@@ -107,6 +107,26 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
+  const gnewsDialogVisible = ref(false)
+
+  function toggleGNewsDialog(value?: boolean) {
+    gnewsDialogVisible.value = value ?? !gnewsDialogVisible.value
+  }
+
+  /** 打开 AI 助手时注入到输入框的 Markdown（由 GNews 等入口写入，打开后消费清空） */
+  const aiAssistantDraftMarkdown = ref<string | null>(null)
+
+  function queueAiAssistantDraftMarkdown(md: string) {
+    const t = md.trim()
+    aiAssistantDraftMarkdown.value = t || null
+  }
+
+  function consumeAiAssistantDraftMarkdown(): string | null {
+    const v = aiAssistantDraftMarkdown.value
+    aiAssistantDraftMarkdown.value = null
+    return v
+  }
+
   // 搜索面板状态
   const searchTabRequest = ref<{ word: string, showReplace: boolean } | null>(null)
 
@@ -182,6 +202,10 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleAIDialog,
     aiImageDialogVisible,
     toggleAIImageDialog,
+    gnewsDialogVisible,
+    toggleGNewsDialog,
+    queueAiAssistantDraftMarkdown,
+    consumeAiAssistantDraftMarkdown,
 
     // ==================== 搜索面板 ====================
     searchTabRequest,
