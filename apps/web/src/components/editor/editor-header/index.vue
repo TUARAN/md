@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BarChart3, ChevronRight, Database, Megaphone, Menu, PenLine, RefreshCw } from 'lucide-vue-next'
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { APP_HEADER_BRAND_LINE, getDataAcquisitionNavUrl } from '@/constants/branding'
@@ -19,6 +19,7 @@ const uiStore = useUIStore()
 
 const { workflowAppPage } = storeToRefs(uiStore)
 const { setWorkflowAppPage } = uiStore
+const isContentFactoryExpanded = ref(true)
 
 const {
   aboutDialogVisible,
@@ -53,6 +54,10 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
   }
   setWorkflowAppPage(stepId)
 }
+
+function toggleContentFactory() {
+  isContentFactoryExpanded.value = !isContentFactoryExpanded.value
+}
 </script>
 
 <template>
@@ -64,17 +69,32 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
       <div
         class="workflow-nav-strip hidden min-w-0 shrink md:flex md:items-center gap-1 rounded-xl bg-muted/30 px-2 py-1"
       >
-        <span class="shrink-0 font-medium text-muted-foreground">内容工厂：</span>
+        <button
+          type="button"
+          class="inline-flex shrink-0 items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-base font-semibold text-foreground shadow-none transition-colors hover:text-primary"
+          :aria-expanded="isContentFactoryExpanded"
+          aria-controls="workflow-nav-desktop"
+          @click="toggleContentFactory"
+        >
+          <span>内容工厂</span>
+          <ChevronRight
+            class="size-4 transition-transform"
+            :class="{ 'rotate-180': !isContentFactoryExpanded }"
+            aria-hidden="true"
+          />
+        </button>
         <nav
+          v-show="isContentFactoryExpanded"
+          id="workflow-nav-desktop"
           class="workflow-nav flex min-w-0 items-center gap-0.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
           aria-label="工作流"
         >
           <template v-for="(step, index) in workflowSteps" :key="step.id">
-            <ChevronRight
+            <span
               v-if="index > 0"
-              class="workflow-chevron size-4 shrink-0 text-muted-foreground"
+              class="workflow-chevron shrink-0 text-muted-foreground"
               aria-hidden="true"
-            />
+            >→</span>
             <button
               type="button"
               class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
@@ -103,14 +123,28 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
           class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap rounded-xl bg-muted/30 px-2 py-1 [-ms-overflow-style:none]"
           aria-label="工作流"
         >
-          <span class="shrink-0 font-medium text-muted-foreground">内容工厂：</span>
-          <template v-for="(step, index) in workflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="inline-flex shrink-0 items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-base font-semibold text-foreground shadow-none transition-colors hover:text-primary"
+            :aria-expanded="isContentFactoryExpanded"
+            aria-controls="workflow-nav-mobile"
+            @click="toggleContentFactory"
+          >
+            <span>内容工厂</span>
             <ChevronRight
-              v-if="index > 0"
-              class="workflow-chevron size-4 shrink-0 text-muted-foreground"
+              class="size-4 transition-transform"
+              :class="{ 'rotate-180': !isContentFactoryExpanded }"
               aria-hidden="true"
             />
+          </button>
+          <template v-for="(step, index) in workflowSteps" :key="step.id">
+            <span
+              v-if="isContentFactoryExpanded && index > 0"
+              class="workflow-chevron shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            >→</span>
             <button
+              v-show="isContentFactoryExpanded"
               type="button"
               class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
                 workflowAppPage === step.id
