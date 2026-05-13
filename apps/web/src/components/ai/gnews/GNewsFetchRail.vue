@@ -17,10 +17,6 @@ const {
   loading,
   abort,
   searchQuery,
-  langSelect,
-  country,
-  maxArticles,
-  sortby,
   configPanelExpanded,
   configSummary,
   storedApiKey,
@@ -36,6 +32,8 @@ const {
   fetchPrevPage,
   goFirstPage,
 } = useGNewsFetchSession()
+
+const showApiKeyPanel = computed(() => provider.value !== `hackernews`)
 </script>
 
 <template>
@@ -122,14 +120,17 @@ const {
       </Button>
     </div>
 
-    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white/80 shadow-sm dark:border-border dark:bg-background/60">
+    <div
+      v-if="showApiKeyPanel"
+      class="overflow-hidden rounded-xl border border-slate-200 bg-white/80 shadow-sm dark:border-border dark:bg-background/60"
+    >
       <button
         class="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-50 dark:hover:bg-muted/40"
         type="button"
         @click="configPanelExpanded = !configPanelExpanded"
       >
         <Settings2 class="size-3.5 shrink-0 text-muted-foreground" />
-        <span class="shrink-0 text-xs font-medium">检索配置</span>
+        <span class="shrink-0 text-xs font-medium">API Key</span>
         <span class="text-muted-foreground min-w-0 flex-1 truncate text-[11px] leading-tight">
           {{ configSummary }}
         </span>
@@ -139,12 +140,9 @@ const {
       </button>
       <div
         v-show="configPanelExpanded"
-        class="grid gap-3 border-t border-border/50 px-3 pb-3 pt-3 lg:grid-cols-[minmax(18rem,1fr)_minmax(16rem,0.9fr)]"
+        class="border-t border-border/50 px-3 pb-3 pt-3"
       >
-        <div
-          v-if="provider !== 'hackernews'"
-          class="space-y-1.5"
-        >
+        <div class="space-y-1.5">
           <Label class="text-xs text-muted-foreground" for="gnews-key">{{ activeSource.keyLabel }}</Label>
           <p class="text-[11px] leading-relaxed text-muted-foreground">
             <template v-if="isGNewsProxyEnabled">
@@ -166,74 +164,6 @@ const {
             class="h-8 text-sm"
             :placeholder="isGNewsProxyEnabled ? `可留空` : envKey ? `可留空（已用环境变量 VITE_GNEWS_API_KEY）` : `粘贴 API Key`"
           />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">语言</Label>
-            <Select v-model="langSelect">
-              <SelectTrigger
-                class="h-8 text-xs"
-                :disabled="provider === 'hackernews'"
-              >
-                <SelectValue placeholder="不限" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem class="text-xs" value="_unset">
-                  不限
-                </SelectItem>
-                <SelectItem class="text-xs" value="zh">
-                  中文 zh
-                </SelectItem>
-                <SelectItem class="text-xs" value="en">
-                  English en
-                </SelectItem>
-                <SelectItem class="text-xs" value="ja">
-                  日本語 ja
-                </SelectItem>
-                <SelectItem class="text-xs" value="fr">
-                  Français fr
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground" for="gnews-country">国家 ISO2</Label>
-            <Input
-              id="gnews-country"
-              v-model="country"
-              class="h-8 text-xs"
-              :disabled="provider === 'hackernews'"
-              maxlength="2"
-              :placeholder="provider === 'hackernews' ? 'HN 不使用' : '如 cn，留空不限'"
-            />
-          </div>
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground" for="gnews-max">每页条数</Label>
-            <Input
-              id="gnews-max"
-              v-model.number="maxArticles"
-              class="h-8 text-xs"
-              max="100"
-              min="1"
-              type="number"
-            />
-          </div>
-          <div class="space-y-1">
-            <Label class="text-xs text-muted-foreground">排序</Label>
-            <Select v-model="sortby">
-              <SelectTrigger class="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem class="text-xs" value="publishedAt">
-                  发布时间
-                </SelectItem>
-                <SelectItem class="text-xs" value="relevance">
-                  相关度
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Copy, Eye, FileText, Wand2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import WorkflowSectionTitle from '@/components/workflow/WorkflowSectionTitle.vue'
@@ -12,6 +20,8 @@ const {
   formatted,
   meta,
   lastError,
+  maxArticles,
+  sortby,
   resultTab,
   previewHtml,
   copyMarkdownSource,
@@ -42,12 +52,50 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="gnews-fetch-results flex min-h-0 flex-1 flex-col gap-4">
-    <p
-      v-if="meta"
-      class="text-muted-foreground shrink-0 text-xs"
+    <div
+      class="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-4 sm:gap-y-1"
     >
-      {{ meta }}
-    </p>
+      <p
+        v-if="meta"
+        class="text-muted-foreground text-xs leading-relaxed"
+      >
+        {{ meta }}
+      </p>
+      <div
+        class="flex flex-wrap items-center gap-2 sm:justify-end"
+      >
+        <div class="inline-flex items-center gap-1.5">
+          <span class="text-muted-foreground whitespace-nowrap text-[11px]">每页</span>
+          <Input
+            id="gnews-result-max"
+            v-model.number="maxArticles"
+            class="h-8 w-[3.25rem] px-2 text-center text-xs tabular-nums"
+            max="100"
+            min="1"
+            type="number"
+          />
+        </div>
+        <div class="inline-flex items-center gap-1.5">
+          <span class="text-muted-foreground whitespace-nowrap text-[11px]">排序</span>
+          <Select v-model="sortby">
+            <SelectTrigger
+              id="gnews-result-sort"
+              class="h-8 w-[6.75rem] text-xs"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem class="text-xs" value="publishedAt">
+                发布时间
+              </SelectItem>
+              <SelectItem class="text-xs" value="relevance">
+                相关度
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </div>
     <p
       v-if="lastError"
       class="text-destructive shrink-0 text-sm"

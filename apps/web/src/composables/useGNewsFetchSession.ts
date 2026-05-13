@@ -90,13 +90,6 @@ function createGNewsFetchSession() {
     sourceOptions.find(item => item.value === provider.value) ?? sourceOptions[0],
   )
 
-  const langSelect = computed({
-    get: () => lang.value || `_unset`,
-    set: (v: string) => {
-      lang.value = v === `_unset` ? `` : v
-    },
-  })
-
   const effectiveMax = computed(() => Math.min(100, Math.max(1, maxArticles.value)))
 
   const hasNextPage = computed(() => {
@@ -114,12 +107,8 @@ function createGNewsFetchSession() {
     const source = activeSource.value.label
     const q = searchQuery.value.trim() || `未填关键词`
     if (provider.value === `hackernews`)
-      return `${source} · ${q} · 免 Key · 每页 ${maxArticles.value}`
-    const langLabel = lang.value ? lang.value.toUpperCase() : `不限语言`
-    const cc = country.value.trim().toLowerCase()
-    const nation = cc ? cc.toUpperCase() : `不限地区`
-    const sortLabel = sortby.value === `publishedAt` ? `发布时间` : `相关度`
-    return `${source} · ${q} · ${langLabel} · ${nation} · 每页 ${maxArticles.value} · ${sortLabel}`
+      return `${source} · ${q} · 免 Key`
+    return `${source} · ${q}`
   })
 
   function resetPaginationState() {
@@ -294,7 +283,6 @@ function createGNewsFetchSession() {
     page,
     hasNextPage,
     configSummary,
-    langSelect,
     effectiveApiKey,
     envKey,
     gnewsProxyUrl,
