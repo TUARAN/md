@@ -7,7 +7,7 @@ import {
 
 export interface GNewsFetchOptions {
   q: string
-  apikey: string
+  apikey?: string
   lang?: string
   country?: string
   max?: number
@@ -22,6 +22,23 @@ export interface GNewsFetchResult {
   formatted: string
   totalArticles?: number
   error?: string
+}
+
+export const DEFAULT_GNEWS_PROXY_URL = `https://md-gnews-proxy.tuaran666.workers.dev/api/v4`
+
+export function resolveGNewsProxyBase(): string {
+  const configured = (import.meta.env.VITE_GNEWS_PROXY_URL ?? ``).trim()
+  if (configured)
+    return configured
+
+  if (
+    typeof window !== `undefined`
+    && window.location.hostname === `md.tuaran666.workers.dev`
+  ) {
+    return DEFAULT_GNEWS_PROXY_URL
+  }
+
+  return ``
 }
 
 /**
@@ -40,8 +57,9 @@ export function useGNews() {
   }
 
   async function search(opts: GNewsFetchOptions): Promise<GNewsFetchResult> {
-    const key = opts.apikey.trim()
-    if (!key)
+    const proxyBase = resolveGNewsProxyBase()
+    const key = opts.apikey?.trim() ?? ``
+    if (!proxyBase && !key)
       return { articles: [], formatted: ``, error: `请填写 GNews API Key，或在环境变量中配置 VITE_GNEWS_API_KEY` }
     if (!opts.q.trim())
       return { articles: [], formatted: ``, error: `请填写搜索关键词` }
@@ -51,7 +69,6 @@ export function useGNews() {
     loading.value = true
 
     try {
-      const proxyBase = (import.meta.env.VITE_GNEWS_PROXY_URL ?? ``).trim()
       const url = buildGNewsSearchUrl(
         {
           q: opts.q,

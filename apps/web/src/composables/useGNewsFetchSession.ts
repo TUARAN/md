@@ -2,7 +2,7 @@ import type { RendererAPI } from '@md/shared/types'
 import { highlightPendingBlocks, hljs, initRenderer } from '@md/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
-import { useGNews } from '@/composables/useGNews'
+import { resolveGNewsProxyBase, useGNews } from '@/composables/useGNews'
 import useGNewsConfigStore from '@/stores/gnewsConfig'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
@@ -78,6 +78,8 @@ function createGNewsFetchSession() {
   )
 
   const envKey = (import.meta.env.VITE_GNEWS_API_KEY ?? ``).trim()
+  const gnewsProxyUrl = resolveGNewsProxyBase()
+  const isGNewsProxyEnabled = computed(() => Boolean(gnewsProxyUrl))
 
   const effectiveApiKey = computed(() => storedApiKey.value.trim() || envKey)
 
@@ -142,8 +144,11 @@ function createGNewsFetchSession() {
       lastError.value = result.error
       lastPageItemCount.value = 0
       if (
-        result.error.includes(`GNews API Key`)
-        || result.error.includes(`VITE_GNEWS_API_KEY`)
+        !isGNewsProxyEnabled.value
+        && (
+          result.error.includes(`GNews API Key`)
+          || result.error.includes(`VITE_GNEWS_API_KEY`)
+        )
       ) {
         configPanelExpanded.value = true
         nextTick(() => {
@@ -271,6 +276,8 @@ function createGNewsFetchSession() {
     langSelect,
     effectiveApiKey,
     envKey,
+    gnewsProxyUrl,
+    isGNewsProxyEnabled,
     formatted,
     meta,
     lastError,

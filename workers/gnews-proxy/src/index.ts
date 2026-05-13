@@ -3,7 +3,7 @@
  */
 
 export interface Env {
-  /** Optional; when set, replaces any client `apikey` query param */
+  /** Optional; used only when the client does not provide an `apikey` query param */
   GNEWS_API_KEY?: string
   /** Comma-separated origins, or "*" */
   ALLOWED_ORIGINS?: string
@@ -62,6 +62,17 @@ function mergeResponseCors(
   })
 }
 
+function jsonResponse(
+  data: unknown,
+  status: number,
+  request: Request,
+  env: Env,
+): Response {
+  const h = corsHeaders(request, env)
+  h.set(`Content-Type`, `application/json; charset=utf-8`)
+  return new Response(JSON.stringify(data), { status, headers: h })
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
@@ -92,8 +103,17 @@ export default {
     })
 
     const secret = env.GNEWS_API_KEY?.trim()
-    if (secret)
+    if (!upstreamUrl.searchParams.get(`apikey`)?.trim() && secret)
       upstreamUrl.searchParams.set(`apikey`, secret)
+
+    if (!upstreamUrl.searchParams.get(`apikey`)?.trim()) {
+      return jsonResponse(
+        { errors: [`GNEWS_API_KEY is not configured on the proxy worker`] },
+        400,
+        request,
+        env,
+      )
+    }
 
     const upstream = await fetch(upstreamUrl.toString(), {
       method: request.method,

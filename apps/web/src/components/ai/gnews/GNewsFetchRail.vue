@@ -25,6 +25,7 @@ const {
   configSummary,
   storedApiKey,
   envKey,
+  isGNewsProxyEnabled,
   page,
   hasNextPage,
   fetchCurrentPage,
@@ -124,7 +125,12 @@ const {
         <div class="space-y-1.5">
           <Label class="text-xs text-muted-foreground" for="gnews-key">API Key</Label>
           <p class="text-[11px] leading-relaxed text-muted-foreground">
-            免费注册后可获得 Key。
+            <template v-if="isGNewsProxyEnabled">
+              留空用默认 Key；填写则用你的 Key。
+            </template>
+            <template v-else>
+              免费注册后可获得 Key。
+            </template>
             <a
               class="text-primary underline-offset-2 hover:underline"
               href="https://gnews.io/"
@@ -136,7 +142,7 @@ const {
             id="gnews-key"
             v-model="storedApiKey"
             class="h-8 text-sm"
-            :placeholder="envKey ? `可留空（已用环境变量 VITE_GNEWS_API_KEY）` : `粘贴 API Key`"
+            :placeholder="isGNewsProxyEnabled ? `可留空` : envKey ? `可留空（已用环境变量 VITE_GNEWS_API_KEY）` : `粘贴 API Key`"
           />
         </div>
         <div class="grid grid-cols-2 gap-2">

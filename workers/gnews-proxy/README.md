@@ -18,9 +18,9 @@ npx wrangler deploy
 
 ### Environment variables
 
-| Name              | Required | Description                                                                                                                                                                                                |
-| ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ALLOWED_ORIGINS` | No       | Comma-separated allowed `Origin` values for CORS, or `*` for any origin. If unset, defaults to `*` (permissive). Set explicitly in production (e.g. `https://your-app.pages.dev,https://your-domain.com`). |
+| Name              | Required | Description                                                                                                                                             |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGINS` | No       | Comma-separated allowed `Origin` values for CORS, or `*` for any origin. This project sets it to `https://md.tuaran666.workers.dev` in `wrangler.toml`. |
 
 Set plain vars in the Cloudflare dashboard (**Workers** → your worker → **Settings** → **Variables**) or via `wrangler.toml` `[vars]` for non-secret values.
 
@@ -52,7 +52,7 @@ Set Vite env (e.g. `.env.production`):
 
 ```bash
 # Must match worker origin + /api/v4 (same logical base as https://gnews.io/api/v4)
-VITE_GNEWS_PROXY_URL=https://md-gnews-proxy.<your-subdomain>.workers.dev/api/v4
+VITE_GNEWS_PROXY_URL=https://md-gnews-proxy.tuaran666.workers.dev/api/v4
 ```
 
-When unset, the app continues to call `https://gnews.io/api/v4` directly (localhost default unchanged).
+When unset on `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api/v4` by default. Other hosts continue to call `https://gnews.io/api/v4` directly unless `VITE_GNEWS_PROXY_URL` is configured.
