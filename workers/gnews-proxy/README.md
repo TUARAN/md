@@ -1,6 +1,14 @@
-# GNews API proxy (Cloudflare Worker)
+# News API proxy (Cloudflare Worker)
 
-Proxies browser-safe `GET` / `HEAD` to [GNews API v4 search](https://gnews.io/docs/v4) at `/api/v4/search`, matching the URL shape built by `@md/shared/utils/gnews` (`buildGNewsSearchUrl`).
+Proxies browser-safe `GET` / `HEAD` requests to multiple news providers:
+
+- `/api/gnews/search`
+- `/api/newsapi/search`
+- `/api/mediastack/search`
+- `/api/guardian/search`
+- `/api/currents/search`
+
+Legacy `/api/v4/search` still maps to GNews.
 
 ## Deploy
 
@@ -26,14 +34,22 @@ Set plain vars in the Cloudflare dashboard (**Workers** → your worker → **Se
 
 ### Secrets
 
-| Name            | Required | Description                                                                                                                                                                            |
-| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GNEWS_API_KEY` | No       | If set, the worker **replaces** the client `apikey` query parameter before calling GNews (key stays off the client). If unset, the incoming request’s `apikey` is forwarded unchanged. |
+| Name                 | Required | Description                                                      |
+| -------------------- | -------- | ---------------------------------------------------------------- |
+| `GNEWS_API_KEY`      | No       | Used when the client does not provide `apikey`.                  |
+| `NEWSAPI_API_KEY`    | No       | Used when the client does not provide `apikey` for NewsAPI.      |
+| `MEDIASTACK_API_KEY` | No       | Used when the client does not provide `apikey` for Mediastack.   |
+| `GUARDIAN_API_KEY`   | No       | Used when the client does not provide `apikey` for The Guardian. |
+| `CURRENTS_API_KEY`   | No       | Used when the client does not provide `apikey` for Currents.     |
 
 Bind the secret:
 
 ```bash
 npx wrangler secret put GNEWS_API_KEY
+npx wrangler secret put NEWSAPI_API_KEY
+npx wrangler secret put MEDIASTACK_API_KEY
+npx wrangler secret put GUARDIAN_API_KEY
+npx wrangler secret put CURRENTS_API_KEY
 ```
 
 (Paste the API key when prompted; it is stored encrypted in the dashboard.)
@@ -51,8 +67,8 @@ The dev server prints a `*.workers.dev`-style URL; use it as `VITE_GNEWS_PROXY_U
 Set Vite env (e.g. `.env.production`):
 
 ```bash
-# Must match worker origin + /api/v4 (same logical base as https://gnews.io/api/v4)
-VITE_GNEWS_PROXY_URL=https://md-gnews-proxy.tuaran666.workers.dev/api/v4
+# Must match worker origin + /api
+VITE_GNEWS_PROXY_URL=https://md-gnews-proxy.tuaran666.workers.dev/api
 ```
 
-When unset on `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api/v4` by default. Other hosts continue to call `https://gnews.io/api/v4` directly unless `VITE_GNEWS_PROXY_URL` is configured.
+When unset on `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api` by default. Other hosts can still call GNews directly, but additional providers require the proxy.

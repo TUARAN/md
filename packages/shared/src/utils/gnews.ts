@@ -5,6 +5,58 @@
 
 export const GNEWS_API_BASE = `https://gnews.io/api/v4`
 
+export type NewsSourceProvider = `gnews` | `newsapi` | `mediastack` | `guardian` | `currents`
+
+export interface NewsSourceOption {
+  value: NewsSourceProvider
+  label: string
+  keyLabel: string
+  docsUrl: string
+  note: string
+}
+
+export const NEWS_SOURCE_OPTIONS: NewsSourceOption[] = [
+  {
+    value: `gnews`,
+    label: `GNews`,
+    keyLabel: `GNews API Key`,
+    docsUrl: `https://gnews.io/`,
+    note: `留空用默认 Key；填写则用你的 Key。`,
+  },
+  {
+    value: `newsapi`,
+    label: `NewsAPI`,
+    keyLabel: `NewsAPI Key`,
+    docsUrl: `https://newsapi.org/`,
+    note: `需填写你的 Key。`,
+  },
+  {
+    value: `mediastack`,
+    label: `Mediastack`,
+    keyLabel: `Mediastack Access Key`,
+    docsUrl: `https://mediastack.com/`,
+    note: `需填写你的 Key。`,
+  },
+  {
+    value: `guardian`,
+    label: `The Guardian`,
+    keyLabel: `Guardian API Key`,
+    docsUrl: `https://open-platform.theguardian.com/`,
+    note: `需填写你的 Key。`,
+  },
+  {
+    value: `currents`,
+    label: `Currents`,
+    keyLabel: `Currents API Key`,
+    docsUrl: `https://currentsapi.services/`,
+    note: `需填写你的 Key。`,
+  },
+]
+
+export function getNewsSourceLabel(provider: NewsSourceProvider): string {
+  return NEWS_SOURCE_OPTIONS.find(item => item.value === provider)?.label ?? provider
+}
+
 export interface GNewsArticleSource {
   name: string
   url?: string
@@ -27,6 +79,7 @@ export interface GNewsSearchResponse {
 }
 
 export interface GNewsSearchParams {
+  provider?: NewsSourceProvider
   q: string
   apikey: string
   lang?: string
@@ -39,7 +92,7 @@ export interface GNewsSearchParams {
 }
 
 export interface BuildGNewsSearchUrlOptions {
-  /** 默认 `GNEWS_API_BASE`；代理场景传入 Worker 上的 `/api/v4` 前缀，如 `https://xxx.workers.dev/api/v4` */
+  /** 默认 `GNEWS_API_BASE`；代理场景传入 Worker 上的 `/api` 前缀，如 `https://xxx.workers.dev/api` */
   apiBase?: string
 }
 
@@ -50,10 +103,17 @@ export function buildGNewsSearchUrl(
   params: GNewsSearchParams,
   options?: BuildGNewsSearchUrlOptions,
 ): string {
+  const provider = params.provider ?? `gnews`
   const base = (options?.apiBase ?? GNEWS_API_BASE).replace(/\/$/u, ``)
-  const u = new URL(`${base}/search`)
+  const path = options?.apiBase
+    ? base.endsWith(`/api/v4`) && provider === `gnews`
+      ? `${base}/search`
+      : `${base}/${provider}/search`
+    : `${base}/search`
+  const u = new URL(path)
   u.searchParams.set(`q`, params.q.trim())
-  u.searchParams.set(`apikey`, params.apikey)
+  if (params.apikey)
+    u.searchParams.set(`apikey`, params.apikey)
   if (params.lang)
     u.searchParams.set(`lang`, params.lang)
   if (params.country)
@@ -81,6 +141,16 @@ export function parseGNewsSearchResponse(data: unknown): GNewsSearchResponse {
     return { articles: [], errors: [`无效的响应体`] }
 
   const d = data as Record<string, unknown>
+  if (typeof d.message === `string` && (d.status === `error` || d.status === `ERROR`))
+    return { articles: [], errors: [d.message] }
+  if (typeof d.error === `string`)
+    return { articles: [], errors: [d.error] }
+  if (d.error && typeof d.error === `object`) {
+    const e = d.error as Record<string, unknown>
+    const msg = typeof e.message === `string` ? e.message : JSON.stringify(e)
+    return { articles: [], errors: [msg] }
+  }
+
   const rawErrors = d.errors
   if (Array.isArray(rawErrors) && rawErrors.length > 0) {
     return {
@@ -89,19 +159,85 @@ export function parseGNewsSearchResponse(data: unknown): GNewsSearchResponse {
     }
   }
 
-  const rawArticles = d.articles
+  const rawArticles = Array.isArray(d.articles)
+    ? d.articles
+    : Array.isArray(d.data)
+      ? d.data
+      : Array.isArray(d.news)
+        ? d.news
+        : Array.isArray((d.response as Record<string, unknown> | undefined)?.results)
+          ? (d.response as Record<string, unknown>).results
+          : []
+
   const articles: GNewsArticle[] = Array.isArray(rawArticles)
-    ? rawArticles.filter(
-        (a): a is GNewsArticle =>
-          !!a
-          && typeof a === `object`
-          && typeof (a as GNewsArticle).url === `string`,
-      )
+    ? rawArticles.map(normalizeArticle).filter((a): a is GNewsArticle => Boolean(a))
     : []
 
-  const totalArticles = typeof d.totalArticles === `number` ? d.totalArticles : undefined
+  const response = d.response as Record<string, unknown> | undefined
+  const pagination = d.pagination as Record<string, unknown> | undefined
+  const totalArticles = typeof d.totalArticles === `number`
+    ? d.totalArticles
+    : typeof d.totalResults === `number`
+      ? d.totalResults
+      : typeof pagination?.total === `number`
+        ? pagination.total
+        : typeof response?.total === `number`
+          ? response.total
+          : undefined
 
   return { totalArticles, articles }
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === `string` && value.trim() ? value.trim() : undefined
+}
+
+function normalizeArticle(raw: unknown): GNewsArticle | null {
+  if (!raw || typeof raw !== `object`)
+    return null
+
+  const a = raw as Record<string, unknown>
+  const fields = a.fields as Record<string, unknown> | undefined
+  const source = a.source as Record<string, unknown> | string | undefined
+  const headline = a.headline as Record<string, unknown> | undefined
+
+  const url = stringValue(a.url)
+    ?? stringValue(a.webUrl)
+    ?? stringValue(a.web_url)
+  if (!url)
+    return null
+
+  const sourceName = typeof source === `string`
+    ? source
+    : stringValue(source?.name)
+      ?? stringValue(a.source)
+      ?? stringValue(a.sectionName)
+      ?? stringValue(a.author)
+
+  return {
+    title: stringValue(a.title)
+      ?? stringValue(a.webTitle)
+      ?? stringValue(headline?.main),
+    description: stringValue(a.description)
+      ?? stringValue(a.abstract)
+      ?? stringValue(a.snippet)
+      ?? stringValue(a.lead_paragraph)
+      ?? stringValue(fields?.trailText),
+    content: stringValue(a.content)
+      ?? stringValue(fields?.bodyText)
+      ?? stringValue(fields?.body),
+    url,
+    image: stringValue(a.image)
+      ?? stringValue(a.urlToImage)
+      ?? stringValue(fields?.thumbnail)
+      ?? null,
+    publishedAt: stringValue(a.publishedAt)
+      ?? stringValue(a.published_at)
+      ?? stringValue(a.published)
+      ?? stringValue(a.webPublicationDate)
+      ?? stringValue(a.pub_date),
+    source: sourceName ? { name: sourceName } : undefined,
+  }
 }
 
 /** 去掉 GNews 返回的正文末尾截断提示，如「... [2094 chars]」 */
@@ -139,14 +275,15 @@ function quoteBlock(text: string): string[] {
  */
 export function formatGNewsArticlesAsPromptPack(
   articles: GNewsArticle[],
-  options?: { query?: string, intro?: string },
+  options?: { query?: string, intro?: string, provider?: NewsSourceProvider },
 ): string {
+  const providerLabel = getNewsSourceLabel(options?.provider ?? `gnews`)
   const intro = options?.intro
-    ?? `本素材来自 GNews 检索结果，**写作或二创前请对照下方原文链接核对事实与数据**（摘要/节选可能经过 API 截断）。`
+    ?? `本素材来自 ${providerLabel} 检索结果，**写作或二创前请对照下方原文链接核对事实与数据**（摘要/节选可能经过 API 截断）。`
   const q = options?.query?.trim()
 
   const lines: string[] = [
-    `## 📰 GNews 参考资讯包`,
+    `## 📰 ${providerLabel} 参考资讯包`,
     ``,
     `> ${intro}`,
     ``,

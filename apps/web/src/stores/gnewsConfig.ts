@@ -1,12 +1,15 @@
+import type { NewsSourceProvider } from '@md/shared/utils/gnews'
 import { DEFAULT_SERVICE_KEY } from '@md/shared/constants'
 import { store } from '@/utils/storage'
 
 /**
- * GNews 检索配置（API Key 与常用筛选项持久化到本地）。
- * 亦可配合构建期环境变量 VITE_GNEWS_API_KEY 作为默认 Key。
+ * 资讯检索配置（信息源、API Key 与常用筛选项持久化到本地）。
+ * API Key 按信息源分别存储。
  */
 export const useGNewsConfigStore = defineStore(`GNewsConfig`, () => {
   const searchQuery = store.reactive(`gnews_search_q`, `大模型`)
+
+  const provider = store.reactive<NewsSourceProvider>(`news_source_provider`, `gnews`)
 
   /** 不设或空表示不限制语言（GNews 默认 Any） */
   const lang = store.reactive(`gnews_lang`, ``)
@@ -22,28 +25,42 @@ export const useGNewsConfigStore = defineStore(`GNewsConfig`, () => {
   const configPanelExpanded = store.reactive(`gnews_config_panel_expanded`, false)
 
   const apiKey = customRef<string>((track, trigger) => {
-    let cachedKey = ``
+    const cached = new Map<NewsSourceProvider, string>()
 
-    store.get(`gnews_api_key`).then((value) => {
-      cachedKey = value ?? DEFAULT_SERVICE_KEY
-      trigger()
-    })
+    function storageKey() {
+      return `news_api_key_${provider.value}`
+    }
+
+    function loadKey() {
+      const activeProvider = provider.value
+      store.get(storageKey()).then((value) => {
+        cached.set(
+          activeProvider,
+          value ?? (activeProvider === `gnews` ? DEFAULT_SERVICE_KEY : ``),
+        )
+        trigger()
+      })
+    }
+
+    loadKey()
+    watch(provider, loadKey)
 
     return {
       get() {
         track()
-        return cachedKey
+        return cached.get(provider.value) ?? ``
       },
       set(val: string) {
-        cachedKey = val
+        cached.set(provider.value, val)
         trigger()
-        void store.set(`gnews_api_key`, val)
+        void store.set(storageKey(), val)
       },
     }
   })
 
   return {
     apiKey,
+    provider,
     searchQuery,
     lang,
     country,

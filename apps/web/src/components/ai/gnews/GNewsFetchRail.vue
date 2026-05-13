@@ -25,6 +25,9 @@ const {
   configSummary,
   storedApiKey,
   envKey,
+  provider,
+  sourceOptions,
+  activeSource,
   isGNewsProxyEnabled,
   page,
   hasNextPage,
@@ -122,21 +125,39 @@ const {
         v-show="configPanelExpanded"
         class="space-y-2 border-t border-border/50 px-2.5 pb-2.5 pt-2"
       >
+        <div class="space-y-1">
+          <Label class="text-xs text-muted-foreground">信息源</Label>
+          <Select v-model="provider">
+            <SelectTrigger class="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="source in sourceOptions"
+                :key="source.value"
+                class="text-xs"
+                :value="source.value"
+              >
+                {{ source.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div class="space-y-1.5">
-          <Label class="text-xs text-muted-foreground" for="gnews-key">API Key</Label>
+          <Label class="text-xs text-muted-foreground" for="gnews-key">{{ activeSource.keyLabel }}</Label>
           <p class="text-[11px] leading-relaxed text-muted-foreground">
             <template v-if="isGNewsProxyEnabled">
-              留空用默认 Key；填写则用你的 Key。
+              {{ activeSource.note }}
             </template>
             <template v-else>
               免费注册后可获得 Key。
             </template>
             <a
               class="text-primary underline-offset-2 hover:underline"
-              href="https://gnews.io/"
+              :href="activeSource.docsUrl"
               rel="noopener noreferrer"
               target="_blank"
-            >在 gnews.io 获取</a>
+            >获取 Key</a>
           </p>
           <PasswordInput
             id="gnews-key"

@@ -1,5 +1,6 @@
 import type { RendererAPI } from '@md/shared/types'
 import { highlightPendingBlocks, hljs, initRenderer } from '@md/core'
+import { NEWS_SOURCE_OPTIONS } from '@md/shared/utils/gnews'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { resolveGNewsProxyBase, useGNews } from '@/composables/useGNews'
@@ -18,6 +19,7 @@ function createGNewsFetchSession() {
   const gnewsStore = useGNewsConfigStore()
   const {
     apiKey: storedApiKey,
+    provider,
     searchQuery,
     lang,
     country,
@@ -82,6 +84,10 @@ function createGNewsFetchSession() {
   const isGNewsProxyEnabled = computed(() => Boolean(gnewsProxyUrl))
 
   const effectiveApiKey = computed(() => storedApiKey.value.trim() || envKey)
+  const sourceOptions = NEWS_SOURCE_OPTIONS
+  const activeSource = computed(() =>
+    sourceOptions.find(item => item.value === provider.value) ?? sourceOptions[0],
+  )
 
   const langSelect = computed({
     get: () => lang.value || `_unset`,
@@ -104,12 +110,13 @@ function createGNewsFetchSession() {
   })
 
   const configSummary = computed(() => {
+    const source = activeSource.value.label
     const q = searchQuery.value.trim() || `未填关键词`
     const langLabel = lang.value ? lang.value.toUpperCase() : `不限语言`
     const cc = country.value.trim().toLowerCase()
     const nation = cc ? cc.toUpperCase() : `不限地区`
     const sortLabel = sortby.value === `publishedAt` ? `发布时间` : `相关度`
-    return `${q} · ${langLabel} · ${nation} · 每页 ${maxArticles.value} · ${sortLabel}`
+    return `${source} · ${q} · ${langLabel} · ${nation} · 每页 ${maxArticles.value} · ${sortLabel}`
   })
 
   function resetPaginationState() {
@@ -122,7 +129,7 @@ function createGNewsFetchSession() {
     resetPaginationState()
   })
 
-  watch([lang, country, maxArticles, sortby], () => {
+  watch([provider, lang, country, maxArticles, sortby], () => {
     resetPaginationState()
   })
 
@@ -131,6 +138,7 @@ function createGNewsFetchSession() {
     formatted.value = ``
 
     const result = await search({
+      provider: provider.value,
       q: searchQuery.value,
       apikey: effectiveApiKey.value,
       lang: lang.value || undefined,
@@ -264,6 +272,9 @@ function createGNewsFetchSession() {
     loading,
     abort,
     storedApiKey,
+    provider,
+    sourceOptions,
+    activeSource,
     searchQuery,
     lang,
     country,

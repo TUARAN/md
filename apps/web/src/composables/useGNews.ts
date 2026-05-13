@@ -1,11 +1,13 @@
-import type { GNewsArticle } from '@md/shared/utils/gnews'
+import type { GNewsArticle, NewsSourceProvider } from '@md/shared/utils/gnews'
 import {
   buildGNewsSearchUrl,
   formatGNewsArticlesAsPromptPack,
+  getNewsSourceLabel,
   parseGNewsSearchResponse,
 } from '@md/shared/utils/gnews'
 
 export interface GNewsFetchOptions {
+  provider?: NewsSourceProvider
   q: string
   apikey?: string
   lang?: string
@@ -24,7 +26,8 @@ export interface GNewsFetchResult {
   error?: string
 }
 
-export const DEFAULT_GNEWS_PROXY_URL = `https://md-gnews-proxy.tuaran666.workers.dev/api/v4`
+export const DEFAULT_NEWS_PROXY_URL = `https://md-gnews-proxy.tuaran666.workers.dev/api`
+export const DEFAULT_GNEWS_PROXY_URL = DEFAULT_NEWS_PROXY_URL
 
 export function resolveGNewsProxyBase(): string {
   const configured = (import.meta.env.VITE_GNEWS_PROXY_URL ?? ``).trim()
@@ -42,9 +45,8 @@ export function resolveGNewsProxyBase(): string {
 }
 
 /**
- * 浏览器端请求 GNews GET /api/v4/search。
- * 未配置 `VITE_GNEWS_PROXY_URL` 时直连 gnews.io（免费档一般仅 localhost CORS）。
- * 配置后经由 Cloudflare Worker 等同路径代理（见 `workers/gnews-proxy`）。
+ * 浏览器端统一请求资讯源。
+ * 生产环境默认经由 Cloudflare Worker 代理；本地未配置代理时仅 GNews 支持直连。
  */
 export function useGNews() {
   const loading = ref(false)
@@ -57,10 +59,14 @@ export function useGNews() {
   }
 
   async function search(opts: GNewsFetchOptions): Promise<GNewsFetchResult> {
+    const provider = opts.provider ?? `gnews`
     const proxyBase = resolveGNewsProxyBase()
     const key = opts.apikey?.trim() ?? ``
+    const providerLabel = getNewsSourceLabel(provider)
+    if (!proxyBase && provider !== `gnews`)
+      return { articles: [], formatted: ``, error: `${providerLabel} 需要通过资讯 Worker 请求，请配置 VITE_GNEWS_PROXY_URL` }
     if (!proxyBase && !key)
-      return { articles: [], formatted: ``, error: `请填写 GNews API Key，或在环境变量中配置 VITE_GNEWS_API_KEY` }
+      return { articles: [], formatted: ``, error: `请填写 ${providerLabel} API Key，或配置默认 Key` }
     if (!opts.q.trim())
       return { articles: [], formatted: ``, error: `请填写搜索关键词` }
 
@@ -71,6 +77,7 @@ export function useGNews() {
     try {
       const url = buildGNewsSearchUrl(
         {
+          provider,
           q: opts.q,
           apikey: key,
           lang: opts.lang || undefined,
@@ -121,6 +128,7 @@ export function useGNews() {
 
       const formatted = formatGNewsArticlesAsPromptPack(parsed.articles, {
         query: opts.q,
+        provider,
       })
 
       return {

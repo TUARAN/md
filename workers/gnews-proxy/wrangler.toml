@@ -6,4 +6,9 @@ compatibility_date = "2024-04-01"
 [vars]
 ALLOWED_ORIGINS = "https://md.tuaran666.workers.dev"
 
-# Optional secret — masks client key: `wrangler secret put GNEWS_API_KEY`
+# Optional secrets — used when the client does not provide `apikey`.
+# `wrangler secret put GNEWS_API_KEY`
+# `wrangler secret put NEWSAPI_API_KEY`
+# `wrangler secret put MEDIASTACK_API_KEY`
+# `wrangler secret put GUARDIAN_API_KEY`
+# `wrangler secret put CURRENTS_API_KEY`

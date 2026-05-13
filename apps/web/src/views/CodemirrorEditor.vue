@@ -16,7 +16,6 @@ import {
   WorkflowDistributionPage,
   WorkflowPageShell,
   WorkflowPageTitle,
-  WorkflowRailPanel,
   WorkflowStatsPage,
 } from '@/components/workflow'
 import { useCursorSync } from '@/composables/useCursorSync'
@@ -177,20 +176,22 @@ onUnmounted(() => {
       >
         <WorkflowPageShell :scroll-body="false">
           <template #header>
-            <WorkflowPageTitle>
-              <template #icon>
-                <RefreshCw />
-              </template>
-              内容同步
-            </WorkflowPageTitle>
-            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-              在此编辑正文、查看预览排版，使用下方操作复制到公众号或继续后续分发步骤。
-            </p>
-          </template>
-          <template #rail>
-            <WorkflowRailPanel title="同步与导出">
-              <EditorWorkflowSyncRail />
-            </WorkflowRailPanel>
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div class="min-w-0">
+                <WorkflowPageTitle>
+                  <template #icon>
+                    <RefreshCw />
+                  </template>
+                  内容同步
+                </WorkflowPageTitle>
+                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  在此编辑正文、查看预览排版，复制到公众号或继续后续分发步骤。
+                </p>
+              </div>
+              <div class="min-w-0 shrink-0 lg:max-w-[70%]">
+                <EditorWorkflowSyncRail />
+              </div>
+            </div>
           </template>
 
           <div

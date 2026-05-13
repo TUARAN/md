@@ -16,14 +16,7 @@ import WorkflowRailPanel from './WorkflowRailPanel.vue'
         数据获取
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        通过
-        <a
-          class="text-primary underline-offset-2 hover:underline"
-          href="https://gnews.io/"
-          rel="noopener noreferrer"
-          target="_blank"
-        >GNews</a>
-        检索资讯并整理为参考材料；默认写入本地浏览器。免费档通常仅允许从 localhost 跨域访问接口。
+        选择信息源检索资讯，统一经资讯 Worker 请求并整理为参考材料。
       </p>
     </template>
 

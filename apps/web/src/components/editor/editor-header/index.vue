@@ -62,10 +62,11 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
     <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-2 md:gap-x-4 md:gap-y-2">
       <!-- 工作流导航（桌面）：一级 — 数据获取 → … → 内容同步（当前）→ … -->
       <div
-        class="workflow-nav-strip hidden min-w-0 shrink md:flex md:items-center rounded-xl bg-muted/30 px-2 py-1"
+        class="workflow-nav-strip hidden min-w-0 shrink md:flex md:items-center gap-1 rounded-xl bg-muted/30 px-2 py-1"
       >
+        <span class="shrink-0 font-medium text-muted-foreground">内容工厂：</span>
         <nav
-          class="workflow-nav flex min-w-0 items-center gap-0.5"
+          class="workflow-nav flex min-w-0 items-center gap-0.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
           aria-label="工作流"
         >
           <template v-for="(step, index) in workflowSteps" :key="step.id">
@@ -99,9 +100,10 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
       <!-- 移动端：工作流优先，其次汉堡菜单 -->
       <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
         <nav
-          class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-xl bg-muted/30 px-2 py-1 [-ms-overflow-style:none]"
+          class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap rounded-xl bg-muted/30 px-2 py-1 [-ms-overflow-style:none]"
           aria-label="工作流"
         >
+          <span class="shrink-0 font-medium text-muted-foreground">内容工厂：</span>
           <template v-for="(step, index) in workflowSteps" :key="step.id">
             <ChevronRight
               v-if="index > 0"

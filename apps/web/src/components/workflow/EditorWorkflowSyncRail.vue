@@ -35,7 +35,7 @@ function copyToWeChat() {
 </script>
 
 <template>
-  <div class="editor-workflow-sync-rail flex w-full flex-wrap items-center gap-x-2 gap-y-2">
+  <div class="editor-workflow-sync-rail flex w-full flex-wrap items-center justify-start gap-x-2 gap-y-2 lg:justify-end">
     <Button
       variant="outline"
       class="h-9 shrink-0"
