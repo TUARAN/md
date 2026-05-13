@@ -25,8 +25,9 @@ export interface GNewsFetchResult {
 }
 
 /**
- * 浏览器端直连 GNews GET /api/v4/search。
- * 注意：免费档一般仅对 localhost 开放 CORS；生产环境需订阅以开启域名 CORS 或自建反向代理。
+ * 浏览器端请求 GNews GET /api/v4/search。
+ * 未配置 `VITE_GNEWS_PROXY_URL` 时直连 gnews.io（免费档一般仅 localhost CORS）。
+ * 配置后经由 Cloudflare Worker 等同路径代理（见 `workers/gnews-proxy`）。
  */
 export function useGNews() {
   const loading = ref(false)
@@ -50,16 +51,20 @@ export function useGNews() {
     loading.value = true
 
     try {
-      const url = buildGNewsSearchUrl({
-        q: opts.q,
-        apikey: key,
-        lang: opts.lang || undefined,
-        country: opts.country || undefined,
-        max: opts.max ?? 3,
-        page: opts.page ?? 1,
-        sortby: opts.sortby ?? `publishedAt`,
-        in: opts.in ?? `title,description`,
-      })
+      const proxyBase = (import.meta.env.VITE_GNEWS_PROXY_URL ?? ``).trim()
+      const url = buildGNewsSearchUrl(
+        {
+          q: opts.q,
+          apikey: key,
+          lang: opts.lang || undefined,
+          country: opts.country || undefined,
+          max: opts.max ?? 3,
+          page: opts.page ?? 1,
+          sortby: opts.sortby ?? `publishedAt`,
+          in: opts.in ?? `title,description`,
+        },
+        proxyBase ? { apiBase: proxyBase } : undefined,
+      )
 
       const res = await fetch(url, {
         method: `GET`,

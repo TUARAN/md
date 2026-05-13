@@ -2,6 +2,7 @@
 #
 # Setup once in GitHub → Settings → Secrets and variables:
 #   Secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+#   Optional (web GNews): VITE_GNEWS_PROXY_URL, VITE_GNEWS_API_KEY
 # Optional → Variables → Repository:
 #   CLOUDFLARE_AUTO_DEPLOY = true   (enables deploy on every push to main)
 #
@@ -59,6 +60,8 @@ jobs:
         run: pnpm web build:h5-netlify
         env:
           CF_WORKERS: 1
+          VITE_GNEWS_PROXY_URL: ${{ secrets.VITE_GNEWS_PROXY_URL }}
+          VITE_GNEWS_API_KEY: ${{ secrets.VITE_GNEWS_API_KEY }}
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3

@@ -1,4 +1,5 @@
-﻿name: Cloudflare Workers Preview
+﻿# Optional Secrets (web GNews at build time): VITE_GNEWS_PROXY_URL, VITE_GNEWS_API_KEY
+name: Cloudflare Workers Preview
 
 on:
   pull_request:
@@ -40,6 +41,8 @@ jobs:
         run: pnpm web build:h5-netlify
         env:
           CF_WORKERS: 1
+          VITE_GNEWS_PROXY_URL: ${{ secrets.VITE_GNEWS_PROXY_URL }}
+          VITE_GNEWS_API_KEY: ${{ secrets.VITE_GNEWS_API_KEY }}
 
       - name: Deploy to Cloudflare Workers
         id: deploy

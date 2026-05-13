@@ -62,11 +62,11 @@ function copyToWeChat() {
     </Button>
 
     <div
-      class="sync-rail-menubar hidden min-w-0 w-full md:block md:w-auto md:flex-1 md:min-w-[12rem]"
+      class="sync-rail-menubar hidden min-w-0 w-full md:block md:w-fit md:max-w-full md:shrink-0"
       aria-label="同步与编辑菜单"
     >
       <div
-        class="max-w-full rounded-lg border border-border bg-background/80 p-0.5 backdrop-blur-sm"
+        class="w-fit max-w-full rounded-lg border border-border bg-background/80 p-0.5 backdrop-blur-sm"
       >
         <Menubar
           class="menubar menubar--secondary flex h-auto max-w-full min-w-0 flex-row flex-wrap items-center gap-1 border-0 bg-transparent p-0 shadow-none"

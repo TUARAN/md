@@ -38,11 +38,20 @@ export interface GNewsSearchParams {
   in?: string
 }
 
+export interface BuildGNewsSearchUrlOptions {
+  /** 默认 `GNEWS_API_BASE`；代理场景传入 Worker 上的 `/api/v4` 前缀，如 `https://xxx.workers.dev/api/v4` */
+  apiBase?: string
+}
+
 /**
  * 构造 GNews Search GET URL（参数经 URLSearchParams 编码）。
  */
-export function buildGNewsSearchUrl(params: GNewsSearchParams): string {
-  const u = new URL(`${GNEWS_API_BASE}/search`)
+export function buildGNewsSearchUrl(
+  params: GNewsSearchParams,
+  options?: BuildGNewsSearchUrlOptions,
+): string {
+  const base = (options?.apiBase ?? GNEWS_API_BASE).replace(/\/$/u, ``)
+  const u = new URL(`${base}/search`)
   u.searchParams.set(`q`, params.q.trim())
   u.searchParams.set(`apikey`, params.apikey)
   if (params.lang)
