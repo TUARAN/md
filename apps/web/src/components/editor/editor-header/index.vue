@@ -37,11 +37,11 @@ function handleCopy(mode: string) {
 }
 
 const workflowSteps = [
-  { id: `data` as const, label: `数据获取`, icon: Database },
-  { id: `creation` as const, label: `风格二创`, icon: PenLine },
-  { id: `sync` as const, label: `内容同步`, icon: RefreshCw },
-  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone },
-  { id: `stats` as const, label: `闭环汇报`, icon: BarChart3 },
+  { id: `data` as const, label: `数据获取`, icon: Database, phase: `主链路` },
+  { id: `creation` as const, label: `风格二创`, icon: PenLine, phase: `主链路` },
+  { id: `sync` as const, label: `内容同步`, icon: RefreshCw, phase: `主链路` },
+  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone, phase: `后续`, comingSoon: true },
+  { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `后续`, comingSoon: true },
 ]
 
 function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
@@ -100,8 +100,11 @@ function toggleContentFactory() {
               class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
                 workflowAppPage === step.id
                   ? 'workflow-step--current text-primary underline decoration-primary/45 underline-offset-2'
-                  : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
+                  : step.comingSoon
+                    ? 'workflow-step--pending text-muted-foreground/60 hover:bg-transparent hover:text-muted-foreground'
+                    : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
               ]"
+              :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
               :aria-current="workflowAppPage === step.id ? 'step' : undefined"
               @click="openWorkflowStep(step.id)"
             >
@@ -112,6 +115,10 @@ function toggleContentFactory() {
                 ]"
               />
               <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
+              <span
+                v-if="step.comingSoon"
+                class="workflow-step-badge"
+              >后续</span>
             </button>
           </template>
         </nav>
@@ -149,8 +156,11 @@ function toggleContentFactory() {
               class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
                 workflowAppPage === step.id
                   ? 'workflow-step--current text-primary underline decoration-primary/45 underline-offset-2'
-                  : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
+                  : step.comingSoon
+                    ? 'workflow-step--pending text-muted-foreground/60 hover:bg-transparent hover:text-muted-foreground'
+                    : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
               ]"
+              :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
               :aria-current="workflowAppPage === step.id ? 'step' : undefined"
               @click="openWorkflowStep(step.id)"
             >
@@ -161,6 +171,10 @@ function toggleContentFactory() {
                 ]"
               />
               <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
+              <span
+                v-if="step.comingSoon"
+                class="workflow-step-badge hidden sm:inline"
+              >后续</span>
             </button>
           </template>
         </nav>
@@ -317,10 +331,24 @@ function toggleContentFactory() {
     background: transparent;
   }
 
+  &--pending {
+    opacity: 0.72;
+  }
+
   &--inactive:is(button):focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
+}
+
+.workflow-step-badge {
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border));
+  padding: 0 0.25rem;
+  font-size: 0.625rem;
+  line-height: 1rem;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.45);
 }
 
 .menubar {

@@ -12,10 +12,10 @@ export const useGNewsConfigStore = defineStore(`GNewsConfig`, () => {
   const provider = store.reactive<NewsSourceProvider>(`news_source_provider`, `gnews`)
 
   /** 不设或空表示不限制语言（GNews 默认 Any） */
-  const lang = store.reactive(`gnews_lang`, ``)
+  const lang = store.reactive(`gnews_lang`, `zh`)
 
   /** 不设或空表示不限制国家 */
-  const country = store.reactive(`gnews_country`, ``)
+  const country = store.reactive(`gnews_country`, `cn`)
 
   const maxArticles = store.reactive(`gnews_max`, 3)
 

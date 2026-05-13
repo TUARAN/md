@@ -30,7 +30,7 @@ function createGNewsFetchSession() {
 
   const themeStore = useThemeStore()
   const uiStore = useUIStore()
-  const { setWorkflowAppPage, toggleAIDialog, queueAiAssistantDraftMarkdown } = uiStore
+  const { setCreationDraftMarkdown, setWorkflowAppPage } = uiStore
   const { isCiteStatus, legend, isCountStatus, isMacCodeBlock, isShowLineNumber } = storeToRefs(themeStore)
   const { isDark } = storeToRefs(uiStore)
 
@@ -43,6 +43,7 @@ function createGNewsFetchSession() {
   const formatted = ref(``)
   const meta = ref(``)
   const lastError = ref(``)
+  const lastRequestUrl = ref(``)
 
   const resultTab = ref<`preview` | `source`>(`preview`)
   const previewHtml = ref(``)
@@ -112,6 +113,8 @@ function createGNewsFetchSession() {
   const configSummary = computed(() => {
     const source = activeSource.value.label
     const q = searchQuery.value.trim() || `未填关键词`
+    if (provider.value === `hackernews`)
+      return `${source} · ${q} · 免 Key · 每页 ${maxArticles.value}`
     const langLabel = lang.value ? lang.value.toUpperCase() : `不限语言`
     const cc = country.value.trim().toLowerCase()
     const nation = cc ? cc.toUpperCase() : `不限地区`
@@ -136,17 +139,19 @@ function createGNewsFetchSession() {
   async function runFetch() {
     lastError.value = ``
     formatted.value = ``
+    lastRequestUrl.value = ``
 
     const result = await search({
       provider: provider.value,
       q: searchQuery.value,
       apikey: effectiveApiKey.value,
-      lang: lang.value || undefined,
-      country: country.value.trim().toLowerCase() || undefined,
+      lang: provider.value === `gnews` ? (lang.value || `zh`) : lang.value || undefined,
+      country: provider.value === `gnews` ? (country.value.trim().toLowerCase() || `cn`) : country.value.trim().toLowerCase() || undefined,
       max: effectiveMax.value,
       page: page.value,
       sortby: sortby.value,
     })
+    lastRequestUrl.value = result.requestUrl ?? ``
 
     if (result.error) {
       lastError.value = result.error
@@ -163,7 +168,12 @@ function createGNewsFetchSession() {
           document.getElementById(`gnews-key`)?.focus()
         })
       }
-      toast.error(result.error)
+      if (
+        result.error.includes(`API Key`)
+        || result.error.includes(`请填写`)
+      ) {
+        toast.error(result.error)
+      }
       return
     }
 
@@ -235,9 +245,9 @@ function createGNewsFetchSession() {
       toast.error(`请先获取资讯`)
       return
     }
-    queueAiAssistantDraftMarkdown(formatted.value)
-    setWorkflowAppPage(`sync`)
-    toggleAIDialog(true)
+    setCreationDraftMarkdown(formatted.value)
+    setWorkflowAppPage(`creation`)
+    toast.success(`已送入风格二创工作台`)
   }
 
   function onPreviewClick(e: MouseEvent) {

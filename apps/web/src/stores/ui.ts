@@ -131,6 +131,13 @@ export const useUIStore = defineStore(`ui`, () => {
     return v
   }
 
+  /** 风格二创工作台的输入材料（可由数据获取页写入） */
+  const creationDraftMarkdown = ref(``)
+
+  function setCreationDraftMarkdown(md: string) {
+    creationDraftMarkdown.value = md.trim()
+  }
+
   // 搜索面板状态
   const searchTabRequest = ref<{ word: string, showReplace: boolean } | null>(null)
 
@@ -208,6 +215,8 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleAIImageDialog,
     workflowAppPage,
     setWorkflowAppPage,
+    creationDraftMarkdown,
+    setCreationDraftMarkdown,
     queueAiAssistantDraftMarkdown,
     consumeAiAssistantDraftMarkdown,
 

@@ -24,6 +24,7 @@ export interface GNewsFetchResult {
   formatted: string
   totalArticles?: number
   error?: string
+  requestUrl?: string
 }
 
 export const DEFAULT_NEWS_PROXY_URL = `https://md-gnews-proxy.tuaran666.workers.dev/api`
@@ -63,9 +64,9 @@ export function useGNews() {
     const proxyBase = resolveGNewsProxyBase()
     const key = opts.apikey?.trim() ?? ``
     const providerLabel = getNewsSourceLabel(provider)
-    if (!proxyBase && provider !== `gnews`)
+    if (!proxyBase && provider !== `gnews` && provider !== `hackernews`)
       return { articles: [], formatted: ``, error: `${providerLabel} 需要通过资讯 Worker 请求，请配置 VITE_GNEWS_PROXY_URL` }
-    if (!proxyBase && !key)
+    if (!proxyBase && provider !== `hackernews` && !key)
       return { articles: [], formatted: ``, error: `请填写 ${providerLabel} API Key，或配置默认 Key` }
     if (!opts.q.trim())
       return { articles: [], formatted: ``, error: `请填写搜索关键词` }
@@ -104,6 +105,7 @@ export function useGNews() {
         return {
           articles: [],
           formatted: ``,
+          requestUrl: url,
           error: `无法解析响应（HTTP ${res.status}）`,
         }
       }
@@ -114,6 +116,7 @@ export function useGNews() {
         return {
           articles: [],
           formatted: ``,
+          requestUrl: url,
           error: parsed.errors.join(`；`),
         }
       }
@@ -122,6 +125,7 @@ export function useGNews() {
         return {
           articles: [],
           formatted: ``,
+          requestUrl: url,
           error: `请求失败 HTTP ${res.status}: ${text.slice(0, 280)}`,
         }
       }
@@ -135,15 +139,26 @@ export function useGNews() {
         articles: parsed.articles,
         formatted,
         totalArticles: parsed.totalArticles,
+        requestUrl: url,
       }
     }
     catch (e) {
       if ((e as Error).name === `AbortError`)
         return { articles: [], formatted: `` }
+      const message = (e as Error).message || String(e)
+      if (provider === `hackernews`) {
+        return {
+          articles: [],
+          formatted: ``,
+          error: `Hacker News 偏海外技术社区，当前网络或中文关键词可能不可用。中文资讯请切回「GNews 中文推荐」。`,
+        }
+      }
       return {
         articles: [],
         formatted: ``,
-        error: (e as Error).message || String(e),
+        error: message === `Failed to fetch`
+          ? `请求未到达资讯服务，可能是网络超时、浏览器拦截或代理不可达。可稍后重试，或切换资讯源。`
+          : message,
       }
     }
     finally {

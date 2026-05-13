@@ -59,7 +59,9 @@ watch(dialogVisible, (val) => {
     const draft = uiStore.consumeAiAssistantDraftMarkdown()
     if (draft) {
       input.value
-        = `以下为 GNews 整理的参考资讯（Markdown）。请在此基础上做风格化二创：语气与结构可自由调整，事实与原文链接须保持一致。直接输出二创后的正文即可。\n\n---\n\n${draft}`
+        = draft.startsWith(`你是 `)
+          ? draft
+          : `以下为 GNews 整理的参考资讯（Markdown）。请在此基础上做风格化二创：语气与结构可自由调整，事实与原文链接须保持一致。直接输出二创后的正文即可。\n\n---\n\n${draft}`
       historyIndex.value = null
       nextTick(() => {
         const textarea = document.querySelector(

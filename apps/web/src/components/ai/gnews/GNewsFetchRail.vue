@@ -39,12 +39,28 @@ const {
 </script>
 
 <template>
-  <div class="gnews-fetch-rail flex flex-col gap-2.5">
+  <div class="gnews-fetch-rail flex flex-col gap-2">
     <div class="flex flex-wrap items-center gap-2">
+      <Select v-model="provider">
+        <SelectTrigger class="h-9 w-full rounded-lg border-slate-300 bg-white text-sm focus:ring-indigo-500 dark:border-border dark:bg-background sm:w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem
+            v-for="source in sourceOptions"
+            :key="source.value"
+            class="text-xs"
+            :value="source.value"
+          >
+            {{ source.label }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+
       <Input
         id="gnews-q"
         v-model="searchQuery"
-        class="h-9 min-w-[9rem] flex-1 text-sm"
+        class="h-9 min-w-[14rem] flex-1 text-sm"
         placeholder="关键词，例如 大模型"
         @keydown.enter.prevent="fetchCurrentPage"
       />
@@ -106,9 +122,9 @@ const {
       </Button>
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-border/60 bg-muted/15">
+    <div class="overflow-hidden rounded-xl border border-slate-200 bg-white/80 shadow-sm dark:border-border dark:bg-background/60">
       <button
-        class="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/40"
+        class="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-slate-50 dark:hover:bg-muted/40"
         type="button"
         @click="configPanelExpanded = !configPanelExpanded"
       >
@@ -123,27 +139,12 @@ const {
       </button>
       <div
         v-show="configPanelExpanded"
-        class="space-y-2 border-t border-border/50 px-2.5 pb-2.5 pt-2"
+        class="grid gap-3 border-t border-border/50 px-3 pb-3 pt-3 lg:grid-cols-[minmax(18rem,1fr)_minmax(16rem,0.9fr)]"
       >
-        <div class="space-y-1">
-          <Label class="text-xs text-muted-foreground">信息源</Label>
-          <Select v-model="provider">
-            <SelectTrigger class="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                v-for="source in sourceOptions"
-                :key="source.value"
-                class="text-xs"
-                :value="source.value"
-              >
-                {{ source.label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div class="space-y-1.5">
+        <div
+          v-if="provider !== 'hackernews'"
+          class="space-y-1.5"
+        >
           <Label class="text-xs text-muted-foreground" for="gnews-key">{{ activeSource.keyLabel }}</Label>
           <p class="text-[11px] leading-relaxed text-muted-foreground">
             <template v-if="isGNewsProxyEnabled">
@@ -170,7 +171,10 @@ const {
           <div class="space-y-1">
             <Label class="text-xs text-muted-foreground">语言</Label>
             <Select v-model="langSelect">
-              <SelectTrigger class="h-8 text-xs">
+              <SelectTrigger
+                class="h-8 text-xs"
+                :disabled="provider === 'hackernews'"
+              >
                 <SelectValue placeholder="不限" />
               </SelectTrigger>
               <SelectContent>
@@ -198,8 +202,9 @@ const {
               id="gnews-country"
               v-model="country"
               class="h-8 text-xs"
+              :disabled="provider === 'hackernews'"
               maxlength="2"
-              placeholder="如 cn，留空不限"
+              :placeholder="provider === 'hackernews' ? 'HN 不使用' : '如 cn，留空不限'"
             />
           </div>
           <div class="space-y-1">

@@ -3,7 +3,6 @@ import { Database } from 'lucide-vue-next'
 import { GNewsFetchRail, GNewsFetchResults } from '@/components/ai/gnews'
 import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
-import WorkflowRailPanel from './WorkflowRailPanel.vue'
 </script>
 
 <template>
@@ -16,14 +15,11 @@ import WorkflowRailPanel from './WorkflowRailPanel.vue'
         数据获取
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        选择信息源检索资讯，统一经资讯 Worker 请求并整理为参考材料。
+        已接入 6 个资讯源，可按关键词批量检索最新内容，筛选高价值素材后进入理解、二创与传播流程。
       </p>
-    </template>
-
-    <template #rail>
-      <WorkflowRailPanel title="检索与配置">
+      <div class="mt-3">
         <GNewsFetchRail />
-      </WorkflowRailPanel>
+      </div>
     </template>
 
     <GNewsFetchResults class="min-h-0" />

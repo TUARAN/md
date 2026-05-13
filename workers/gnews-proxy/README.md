@@ -3,6 +3,7 @@
 Proxies browser-safe `GET` / `HEAD` requests to multiple news providers:
 
 - `/api/gnews/search`
+- `/api/hackernews/search` (no API key required)
 - `/api/newsapi/search`
 - `/api/mediastack/search`
 - `/api/guardian/search`
@@ -71,4 +72,4 @@ Set Vite env (e.g. `.env.production`):
 VITE_GNEWS_PROXY_URL=https://md-gnews-proxy.tuaran666.workers.dev/api
 ```
 
-When unset on `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api` by default. Other hosts can still call GNews directly, but additional providers require the proxy.
+When unset on `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api` by default. Other hosts can still call GNews and Hacker News directly, but API-key providers require the proxy.

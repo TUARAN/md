@@ -16,14 +16,14 @@ const hasRail = computed(() => Boolean(slots.rail))
 <template>
   <!-- 与顶栏区分的「工作区」衬底；实际内容在 surface 卡片内 -->
   <div
-    class="workflow-page flex min-h-0 flex-1 flex-col overflow-hidden text-foreground"
+    class="workflow-page flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f6f7f8] text-foreground dark:bg-muted/15"
   >
     <div
       class="workflow-page-shell-inner flex min-h-0 flex-1 flex-col px-3 pb-3 pt-2 md:px-4 md:pb-4 md:pt-3"
       :class="props.scrollBody ? `overflow-y-auto` : `min-h-0 overflow-hidden`"
     >
       <div
-        class="workflow-page-shell-surface flex min-h-0 flex-1 flex-col rounded-xl border border-border/90 bg-card p-4 shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06] md:p-5"
+        class="workflow-page-shell-surface flex min-h-0 flex-1 flex-col rounded-[22px] border border-gray-200 bg-[#fafafa] p-4 shadow-sm ring-1 ring-black/[0.03] dark:border-border/70 dark:bg-card dark:ring-white/[0.06] md:p-5"
         :class="props.scrollBody ? `min-h-min` : `min-h-0 overflow-hidden`"
       >
         <div

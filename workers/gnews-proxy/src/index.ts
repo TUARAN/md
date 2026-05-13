@@ -14,9 +14,9 @@ export interface Env {
   ALLOWED_ORIGINS?: string
 }
 
-type Provider = `gnews` | `newsapi` | `mediastack` | `guardian` | `currents`
+type Provider = `gnews` | `hackernews` | `newsapi` | `mediastack` | `guardian` | `currents`
 
-const PROVIDERS = new Set<Provider>([`gnews`, `newsapi`, `mediastack`, `guardian`, `currents`])
+const PROVIDERS = new Set<Provider>([`gnews`, `hackernews`, `newsapi`, `mediastack`, `guardian`, `currents`])
 
 function normalizePath(pathname: string): string {
   if (pathname.length > 1 && pathname.endsWith(`/`))
@@ -105,6 +105,7 @@ function resolveApiKey(provider: Provider, params: URLSearchParams, env: Env): s
 
   const secrets: Record<Provider, string | undefined> = {
     gnews: env.GNEWS_API_KEY,
+    hackernews: undefined,
     newsapi: env.NEWSAPI_API_KEY,
     mediastack: env.MEDIASTACK_API_KEY,
     guardian: env.GUARDIAN_API_KEY,
@@ -121,6 +122,15 @@ function buildUpstreamUrl(provider: Provider, requestUrl: URL, apiKey: string): 
   const lang = p.get(`lang`)?.trim()
   const country = p.get(`country`)?.trim()
   const sortby = p.get(`sortby`) === `relevance` ? `relevance` : `publishedAt`
+
+  if (provider === `hackernews`) {
+    const u = new URL(`https://hn.algolia.com/api/v1/${sortby === `relevance` ? `search` : `search_by_date`}`)
+    u.searchParams.set(`query`, q)
+    u.searchParams.set(`tags`, `story`)
+    u.searchParams.set(`hitsPerPage`, String(max))
+    u.searchParams.set(`page`, String(page - 1))
+    return u
+  }
 
   if (provider === `gnews`) {
     const u = new URL(`https://gnews.io/api/v4/search`)
@@ -212,7 +222,7 @@ export default {
     }
 
     const apiKey = resolveApiKey(provider, url.searchParams, env)
-    if (!apiKey) {
+    if (provider !== `hackernews` && !apiKey) {
       return jsonResponse(
         { errors: [`${provider.toUpperCase()} API key is not configured`] },
         400,

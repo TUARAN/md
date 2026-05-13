@@ -4,8 +4,9 @@
  */
 
 export const GNEWS_API_BASE = `https://gnews.io/api/v4`
+export const HACKER_NEWS_API_BASE = `https://hn.algolia.com/api/v1`
 
-export type NewsSourceProvider = `gnews` | `newsapi` | `mediastack` | `guardian` | `currents`
+export type NewsSourceProvider = `gnews` | `hackernews` | `newsapi` | `mediastack` | `guardian` | `currents`
 
 export interface NewsSourceOption {
   value: NewsSourceProvider
@@ -18,10 +19,17 @@ export interface NewsSourceOption {
 export const NEWS_SOURCE_OPTIONS: NewsSourceOption[] = [
   {
     value: `gnews`,
-    label: `GNews`,
+    label: `GNews 中文推荐`,
     keyLabel: `GNews API Key`,
     docsUrl: `https://gnews.io/`,
-    note: `留空用默认 Key；填写则用你的 Key。`,
+    note: `中文资讯主入口，留空用默认 Key；填写则用你的 Key。`,
+  },
+  {
+    value: `hackernews`,
+    label: `Hacker News 海外技术`,
+    keyLabel: `无需 API Key`,
+    docsUrl: `https://hn.algolia.com/api`,
+    note: `海外技术社区检索源，无需 Key；中文关键词不作为主入口。`,
   },
   {
     value: `newsapi`,
@@ -109,8 +117,18 @@ export function buildGNewsSearchUrl(
     ? base.endsWith(`/api/v4`) && provider === `gnews`
       ? `${base}/search`
       : `${base}/${provider}/search`
-    : `${base}/search`
+    : provider === `hackernews`
+      ? `${HACKER_NEWS_API_BASE}/${params.sortby === `relevance` ? `search` : `search_by_date`}`
+      : `${base}/search`
   const u = new URL(path)
+  if (provider === `hackernews`) {
+    u.searchParams.set(`query`, params.q.trim())
+    u.searchParams.set(`tags`, `story`)
+    u.searchParams.set(`hitsPerPage`, String(Math.min(100, Math.max(1, params.max ?? 10))))
+    u.searchParams.set(`page`, String(Math.max(0, (params.page ?? 1) - 1)))
+    return u.toString()
+  }
+
   u.searchParams.set(`q`, params.q.trim())
   if (params.apikey)
     u.searchParams.set(`apikey`, params.apikey)
@@ -145,6 +163,8 @@ export function parseGNewsSearchResponse(data: unknown): GNewsSearchResponse {
     return { articles: [], errors: [d.message] }
   if (typeof d.error === `string`)
     return { articles: [], errors: [d.error] }
+  if (typeof d.message === `string` && !Array.isArray(d.articles) && !Array.isArray(d.hits))
+    return { articles: [], errors: [d.message] }
   if (d.error && typeof d.error === `object`) {
     const e = d.error as Record<string, unknown>
     const msg = typeof e.message === `string` ? e.message : JSON.stringify(e)
@@ -161,13 +181,15 @@ export function parseGNewsSearchResponse(data: unknown): GNewsSearchResponse {
 
   const rawArticles = Array.isArray(d.articles)
     ? d.articles
-    : Array.isArray(d.data)
-      ? d.data
-      : Array.isArray(d.news)
-        ? d.news
-        : Array.isArray((d.response as Record<string, unknown> | undefined)?.results)
-          ? (d.response as Record<string, unknown>).results
-          : []
+    : Array.isArray(d.hits)
+      ? d.hits
+      : Array.isArray(d.data)
+        ? d.data
+        : Array.isArray(d.news)
+          ? d.news
+          : Array.isArray((d.response as Record<string, unknown> | undefined)?.results)
+            ? (d.response as Record<string, unknown>).results
+            : []
 
   const articles: GNewsArticle[] = Array.isArray(rawArticles)
     ? rawArticles.map(normalizeArticle).filter((a): a is GNewsArticle => Boolean(a))
@@ -179,11 +201,13 @@ export function parseGNewsSearchResponse(data: unknown): GNewsSearchResponse {
     ? d.totalArticles
     : typeof d.totalResults === `number`
       ? d.totalResults
-      : typeof pagination?.total === `number`
-        ? pagination.total
-        : typeof response?.total === `number`
-          ? response.total
-          : undefined
+      : typeof d.nbHits === `number`
+        ? d.nbHits
+        : typeof pagination?.total === `number`
+          ? pagination.total
+          : typeof response?.total === `number`
+            ? response.total
+            : undefined
 
   return { totalArticles, articles }
 }
@@ -202,6 +226,7 @@ function normalizeArticle(raw: unknown): GNewsArticle | null {
   const headline = a.headline as Record<string, unknown> | undefined
 
   const url = stringValue(a.url)
+    ?? stringValue(a.story_url)
     ?? stringValue(a.webUrl)
     ?? stringValue(a.web_url)
   if (!url)
@@ -211,11 +236,14 @@ function normalizeArticle(raw: unknown): GNewsArticle | null {
     ? source
     : stringValue(source?.name)
       ?? stringValue(a.source)
+      ?? stringValue(a.domain)
       ?? stringValue(a.sectionName)
+      ?? (stringValue(a.author) ? `Hacker News / ${stringValue(a.author)}` : undefined)
       ?? stringValue(a.author)
 
   return {
     title: stringValue(a.title)
+      ?? stringValue(a.story_title)
       ?? stringValue(a.webTitle)
       ?? stringValue(headline?.main),
     description: stringValue(a.description)
@@ -229,11 +257,14 @@ function normalizeArticle(raw: unknown): GNewsArticle | null {
     url,
     image: stringValue(a.image)
       ?? stringValue(a.urlToImage)
+      ?? stringValue(a.socialimage)
       ?? stringValue(fields?.thumbnail)
       ?? null,
     publishedAt: stringValue(a.publishedAt)
       ?? stringValue(a.published_at)
+      ?? stringValue(a.created_at)
       ?? stringValue(a.published)
+      ?? stringValue(a.seendate)
       ?? stringValue(a.webPublicationDate)
       ?? stringValue(a.pub_date),
     source: sourceName ? { name: sourceName } : undefined,
