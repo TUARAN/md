@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { Bot, Copy, PenLine, SendHorizontal } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { APP_NAME } from '@/constants/branding'
 import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
+import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
 import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
@@ -17,8 +20,53 @@ const uiStore = useUIStore()
 const { creationDraftMarkdown } = storeToRefs(uiStore)
 const { queueAiAssistantDraftMarkdown, toggleAIDialog } = uiStore
 
-const templateTopic = ref(`XXX`)
-const activeFixedTemplate = ref<`none` | `insight` | `techCommunity`>(`none`)
+// ==================== 工作台选项 ====================
+type TargetPlatform = `general` | `mp` | `juejin` | `zhihu` | `xiaohongshu` | `jike` | `x`
+type LengthBucket = `short` | `medium` | `long`
+type Tone = `solid` | `plain` | `sharp` | `lyrical`
+type FixedTemplate = `none` | `insight` | `techCommunity`
+
+const platformOptions: { value: TargetPlatform, label: string, snippet: string }[] = [
+  { value: `general`, label: `通用（不指定平台）`, snippet: `` },
+  { value: `mp`, label: `公众号`, snippet: `面向微信公众号：段落短、节奏明快；少代码块多图文穿插；避免过长嵌套列表；标题口语化、信息密度均衡。` },
+  { value: `juejin`, label: `掘金 / CSDN`, snippet: `面向掘金 / CSDN 等技术社区：保留代码块、命令行示例、版本号与外链；可有「踩坑 / 实测 / 对比」小节；标题偏检索友好。` },
+  { value: `zhihu`, label: `知乎`, snippet: `面向知乎：长段落叙事，可加入个人观点、行业对比与反例；开头给读者一句钩子；论据先于结论。` },
+  { value: `xiaohongshu`, label: `小红书`, snippet: `面向小红书：标题带钩子；正文 800 字内；要点用 1️⃣ 2️⃣ 3️⃣ 分段；情绪标签与 emoji 适度；结尾给一个 CTA。` },
+  { value: `jike`, label: `即刻`, snippet: `面向即刻：单条 200-500 字小观察体，口语化、信息密度高、有钩子；可保留 1-2 个原文链接。` },
+  { value: `x`, label: `X · Twitter`, snippet: `面向 X：英文输出；先一条 280 字主推作为钩子，再展开 3-5 条 thread 续推；每条独立成立、避免硬切句。` },
+]
+
+const lengthOptions: { value: LengthBucket, label: string, snippet: string }[] = [
+  { value: `short`, label: `短篇 ~800 字`, snippet: `目标字数约 800 字，单一主张、信息密度高。` },
+  { value: `medium`, label: `中篇 1500-2500 字`, snippet: `目标字数 1500-2500 字，3-5 个小节，论点 + 论据 + 收尾。` },
+  { value: `long`, label: `长篇 3000+ 字`, snippet: `目标字数 3000 字以上，完整骨架：背景 → 拆解 → 对比 → 趋势。` },
+]
+
+const toneOptions: { value: Tone, label: string, snippet: string }[] = [
+  { value: `solid`, label: `干货`, snippet: `干货语气：结论先行、少寒暄、术语精确。` },
+  { value: `plain`, label: `通俗科普`, snippet: `通俗语气：多用类比与生活化案例，避免学术腔。` },
+  { value: `sharp`, label: `观点犀利`, snippet: `观点语气：立场鲜明、敢做对比与判断、可有反例。` },
+  { value: `lyrical`, label: `叙事抒情`, snippet: `叙事语气：节奏与画面感，可有人物视角与时间线。` },
+]
+
+const platform = store.reactive<TargetPlatform>(`creation_platform`, `general`)
+const lengthBucket = store.reactive<LengthBucket>(`creation_length`, `medium`)
+const tone = store.reactive<Tone>(`creation_tone`, `solid`)
+const templateTopic = store.reactive(`creation_template_topic`, ``)
+const activeFixedTemplate = store.reactive<FixedTemplate>(`creation_active_fixed_template`, `none`)
+
+// ==================== 提示词拼装 ====================
+const activePlatform = computed(() => platformOptions.find(p => p.value === platform.value) ?? platformOptions[0])
+const activeLength = computed(() => lengthOptions.find(l => l.value === lengthBucket.value) ?? lengthOptions[1])
+const activeTone = computed(() => toneOptions.find(t => t.value === tone.value) ?? toneOptions[0])
+
+const extraConstraints = computed(() => {
+  const parts: string[] = []
+  if (activePlatform.value.snippet)
+    parts.push(activePlatform.value.snippet)
+  parts.push(activeLength.value.snippet, activeTone.value.snippet)
+  return parts
+})
 
 const insightTemplatePrompt = computed(() =>
   `撰写一篇通俗深度科技科普长文，围绕通用人工智能、科技行业、大厂技术、AI 底层技术相关内容展开，从行业发展、技术演进视角切入，梳理技术 / 产品 / 生态的发展脉络、核心逻辑、解决的实际问题与行业意义；行文自然流畅，减少生硬分段分点，采用段落式结构化叙事，逻辑层层递进，文风偏向行业洞察 + 大白话科普，面向开发者与科技爱好者，避免过度学术化；文中在对应章节节点插入主题配图，搭配配图建议；叙事结构为先抛出大众普遍困惑，引出背景，逐个拆解核心要点，串联完整演进线，最后升华行业趋势。\n主题是：${templateTopic.value.trim() || `XXX`}`,
@@ -41,23 +89,28 @@ const techCommunityTemplatePrompt = computed(() =>
 
 const remixPrompt = computed(() => {
   const material = creationDraftMarkdown.value.trim()
+  const constraints = extraConstraints.value
   if (activeFixedTemplate.value !== `none`) {
     const fixedPrompt = activeFixedTemplate.value === `techCommunity`
       ? techCommunityTemplatePrompt.value
       : insightTemplatePrompt.value
-    return [
-      fixedPrompt,
-      ``,
-      `参考素材：`,
-      `---`,
-      material || `{在这里粘贴资讯、提纲或原文}`,
-    ].join(`\n`)
+    const lines = [fixedPrompt]
+    if (constraints.length) {
+      lines.push(
+        ``,
+        `本批附加约束：`,
+        ...constraints.map((c, i) => `${i + 1}. ${c}`),
+      )
+    }
+    lines.push(``, `参考素材：`, `---`, material || `{在这里粘贴资讯、提纲或原文}`)
+    return lines.join(`\n`)
   }
 
-  return [
+  const lines = [
     `你是 ${APP_NAME} 的内容二创助手。请基于下方素材，写成一版可直接在编辑器里继续排版的 Markdown 正文。`,
     ``,
-    `写作取向：中文读者可读；结构与标题层次清晰；口吻偏干货但不僵硬，适合公众号或技术专栏阅读场景。`,
+    `平台与风格：`,
+    ...constraints.map((c, i) => `${i + 1}. ${c}`),
     ``,
     `硬性要求：`,
     `1. 事实、数据、人物、机构和链接须与素材一致，不要编造来源。`,
@@ -67,17 +120,20 @@ const remixPrompt = computed(() => {
     `素材：`,
     `---`,
     material || `{在这里粘贴资讯、提纲或原文}`,
-  ].join(`\n`)
+  ]
+  return lines.join(`\n`)
 })
 
 const activeTemplateFooterLabel = computed(() => {
+  const platformLabel = activePlatform.value.label
   if (activeFixedTemplate.value === `techCommunity`)
-    return `豆包 · 技术社区结构化模版`
+    return `豆包 · 技术社区模版 → ${platformLabel}`
   if (activeFixedTemplate.value === `insight`)
-    return `GPT · 通俗深度科普模版`
-  return `通用二创提示词`
+    return `GPT · 通俗深度科普模版 → ${platformLabel}`
+  return `通用二创 → ${platformLabel}`
 })
 
+// ==================== 动作 ====================
 async function copyPrompt() {
   try {
     await copyPlain(remixPrompt.value)
@@ -119,7 +175,7 @@ function openAssistantWithPrompt() {
         风格二创
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        承接数据获取页的材料；可选用面向 GPT Web 或豆包的长模版，再配合右侧提示词交给 AI。
+        承接「数据获取」素材：先选目标平台 / 篇幅 / 语气，再决定是否叠加长模版；右侧提示词会自动拼好，复制走或交给 AI。
       </p>
     </template>
 
@@ -137,8 +193,65 @@ function openAssistantWithPrompt() {
 
       <section class="flex min-h-0 flex-col gap-4">
         <div class="grid gap-3 rounded-[22px] border border-gray-200 bg-white/80 p-5 shadow-sm dark:border-border dark:bg-card">
+          <div class="grid gap-2 sm:grid-cols-3">
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-slate-500 dark:text-muted-foreground">目标平台</Label>
+              <Select v-model="platform">
+                <SelectTrigger class="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in platformOptions"
+                    :key="option.value"
+                    class="text-xs"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-slate-500 dark:text-muted-foreground">篇幅</Label>
+              <Select v-model="lengthBucket">
+                <SelectTrigger class="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in lengthOptions"
+                    :key="option.value"
+                    class="text-xs"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-slate-500 dark:text-muted-foreground">语气</Label>
+              <Select v-model="tone">
+                <SelectTrigger class="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="option in toneOptions"
+                    :key="option.value"
+                    class="text-xs"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div class="grid gap-1.5">
-            <Label class="text-xs text-slate-500 dark:text-muted-foreground">模版主题（写入两条长模版里的「主题」占位）</Label>
+            <Label class="text-xs text-slate-500 dark:text-muted-foreground">模版主题（写入两条长模版里的「主题」占位，选了长模版才生效）</Label>
             <Input
               v-model="templateTopic"
               class="h-9 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
@@ -147,7 +260,14 @@ function openAssistantWithPrompt() {
           </div>
 
           <div class="grid gap-2">
-            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 dark:border-border dark:bg-background">
+            <div
+              class="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-2.5 transition-colors"
+              :class="[
+                activeFixedTemplate === 'insight'
+                  ? 'border-indigo-300 bg-indigo-50 dark:border-primary dark:bg-background'
+                  : 'border-indigo-100 bg-indigo-50/60 dark:border-border dark:bg-background',
+              ]"
+            >
               <div>
                 <div class="text-xs font-semibold text-indigo-800 dark:text-primary">
                   GPT · 通俗深度科普长文
@@ -157,15 +277,23 @@ function openAssistantWithPrompt() {
                 </p>
               </div>
               <Button
-                class="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                :variant="activeFixedTemplate === 'insight' ? 'default' : 'secondary'"
+                class="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
                 type="button"
                 @click="applyFixedTemplate('insight')"
               >
-                套用
+                {{ activeFixedTemplate === 'insight' ? '已套用' : '套用' }}
               </Button>
             </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5 dark:border-border dark:bg-card">
+            <div
+              class="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-2.5 transition-colors"
+              :class="[
+                activeFixedTemplate === 'techCommunity'
+                  ? 'border-violet-300 bg-violet-50 dark:border-primary dark:bg-card'
+                  : 'border-violet-100 bg-violet-50/50 dark:border-border dark:bg-card',
+              ]"
+            >
               <div>
                 <div class="text-xs font-semibold text-violet-900 dark:text-primary">
                   豆包 · 技术社区结构化长文
@@ -175,11 +303,12 @@ function openAssistantWithPrompt() {
                 </p>
               </div>
               <Button
-                class="h-8 shrink-0 rounded-lg bg-violet-700 px-3 text-xs font-semibold text-white hover:bg-violet-800"
+                :variant="activeFixedTemplate === 'techCommunity' ? 'default' : 'secondary'"
+                class="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold"
                 type="button"
                 @click="applyFixedTemplate('techCommunity')"
               >
-                套用
+                {{ activeFixedTemplate === 'techCommunity' ? '已套用' : '套用' }}
               </Button>
             </div>
           </div>
@@ -224,7 +353,7 @@ function openAssistantWithPrompt() {
 
           <p class="flex items-start gap-1.5 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate-600 dark:border-border dark:bg-card dark:text-muted-foreground">
             <SendHorizontal class="mt-0.5 size-3.5 shrink-0 text-indigo-600" />
-            当前：{{ activeTemplateFooterLabel }}。未点「套用」时为通用二创。生成后可插入编辑器，再到「内容同步」排版核对。
+            当前：{{ activeTemplateFooterLabel }} · {{ activeLength.label }} · {{ activeTone.label }}。生成后送进编辑器，再到「内容同步」排版核对。
           </p>
         </div>
       </section>

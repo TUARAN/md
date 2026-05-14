@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Copy, Palette } from 'lucide-vue-next'
+import { CheckCircle2, ClipboardCheck, Copy, Palette, RotateCcw } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
-import { inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 import EditDropdown from '@/components/editor/editor-header/EditDropdown.vue'
 import FileDropdown from '@/components/editor/editor-header/FileDropdown.vue'
 import FormatDropdown from '@/components/editor/editor-header/FormatDropdown.vue'
@@ -10,6 +10,7 @@ import InsertDropdown from '@/components/editor/editor-header/InsertDropdown.vue
 import StyleDropdown from '@/components/editor/editor-header/StyleDropdown.vue'
 import { Button } from '@/components/ui/button'
 import { Menubar } from '@/components/ui/menubar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { useUIStore } from '@/stores/ui'
@@ -32,6 +33,34 @@ function handleCopy(mode: string) {
 function copyToWeChat() {
   wechatCopy?.copyToWeChat()
 }
+
+// ==================== 发布前检查 ====================
+const checklistItems = [
+  { key: `image`, label: `图片`, hint: `图片已上传到图床、外链可访问；目标平台不会再次压缩。` },
+  { key: `link`, label: `外链`, hint: `所有外部链接打开正常，没有 404 或被墙的页面。` },
+  { key: `code`, label: `代码块`, hint: `代码语言高亮、行号、换行符在预览里没有错位。` },
+  { key: `headings`, label: `标题层级`, hint: `H1-H4 嵌套合理，没有跳级；目录正确折叠。` },
+  { key: `source`, label: `来源`, hint: `保留了事实出处与原文链接，方便后续核验。` },
+] as const
+
+type ChecklistKey = (typeof checklistItems)[number]['key']
+const checklistState = ref<Record<ChecklistKey, boolean>>({
+  image: false,
+  link: false,
+  code: false,
+  headings: false,
+  source: false,
+})
+
+const checklistDoneCount = computed(() =>
+  Object.values(checklistState.value).filter(Boolean).length,
+)
+const checklistAllDone = computed(() => checklistDoneCount.value === checklistItems.length)
+
+function resetChecklist() {
+  for (const item of checklistItems)
+    checklistState.value[item.key] = false
+}
 </script>
 
 <template>
@@ -45,6 +74,64 @@ function copyToWeChat() {
       <Copy class="mr-2 h-4 w-4" />
       <span>复制</span>
     </Button>
+
+    <Popover>
+      <PopoverTrigger as-child>
+        <Button
+          variant="outline"
+          class="h-9 shrink-0"
+          type="button"
+          :class="{ 'bg-accent text-accent-foreground': checklistAllDone }"
+        >
+          <ClipboardCheck class="mr-2 h-4 w-4" />
+          <span>发布前检查</span>
+          <span class="text-muted-foreground ml-1.5 text-[11px] tabular-nums">
+            {{ checklistDoneCount }}/{{ checklistItems.length }}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" class="w-80 p-3">
+        <div class="flex items-center justify-between gap-2 pb-2">
+          <p class="text-xs font-semibold text-foreground">
+            发布前 checklist
+          </p>
+          <button
+            class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-[11px] underline-offset-4 hover:underline"
+            type="button"
+            @click="resetChecklist"
+          >
+            <RotateCcw class="size-3" />
+            重置
+          </button>
+        </div>
+        <ul class="space-y-1.5">
+          <li v-for="item in checklistItems" :key="item.key">
+            <label
+              class="hover:bg-muted/40 flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 transition-colors"
+            >
+              <input
+                v-model="checklistState[item.key]"
+                type="checkbox"
+                class="mt-0.5 size-3.5 shrink-0 accent-primary"
+              >
+              <span class="min-w-0 flex-1">
+                <span class="block text-xs font-medium text-foreground">{{ item.label }}</span>
+                <span class="text-muted-foreground mt-0.5 block text-[11px] leading-relaxed">
+                  {{ item.hint }}
+                </span>
+              </span>
+            </label>
+          </li>
+        </ul>
+        <p
+          v-if="checklistAllDone"
+          class="text-primary mt-2 inline-flex items-center gap-1 text-[11px] font-medium"
+        >
+          <CheckCircle2 class="size-3.5" />
+          5 项已全部确认，可以放心粘贴到目标平台。
+        </p>
+      </PopoverContent>
+    </Popover>
 
     <div class="hidden min-w-0 md:block md:max-w-[min(100%,24rem)]">
       <PostInfo class="w-full" />
