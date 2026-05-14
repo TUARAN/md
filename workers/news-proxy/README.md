@@ -1,5 +1,7 @@
 # News API proxy (Cloudflare Worker)
 
+> 历史 Worker 名沿用 `md-gnews-proxy`（URL: `https://md-gnews-proxy.tuaran666.workers.dev`）。文件夹和文档已改为 `news-proxy`，名字与实际服务的 7 个源对齐；URL 暂不改名以避免破坏前端。
+
 Proxies browser-safe `GET` / `HEAD` requests to multiple news providers:
 
 - `/api/gnews/search`
@@ -25,6 +27,19 @@ From this directory:
 ```bash
 npx wrangler deploy
 ```
+
+### 用 API Token 部署（无法 OAuth 登录时）
+
+`dash.cloudflare.com` 走不通的网络环境下，可改用 API Token：
+
+1. 控制台 → Profile → API Tokens → Create Token，选 "Edit Cloudflare Workers" 模板生成。
+2. 在该目录执行：
+
+```bash
+CLOUDFLARE_API_TOKEN='xxx' npx wrangler deploy
+```
+
+部署只需要访问 `api.cloudflare.com`（境内多数网络直连可达），与 OAuth 登录分离。
 
 ### Environment variables
 

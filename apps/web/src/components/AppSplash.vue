@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { APP_SPLASH_SLOGAN, APP_SPLASH_TITLE } from '@/constants/branding'
+import { APP_CURRENT_STAGE, APP_SPLASH_SLOGAN, APP_SPLASH_TITLE } from '@/constants/branding'
 
 const loading = ref(true)
 
@@ -19,6 +19,9 @@ onMounted(() => {
       <strong class="splash-title">{{ APP_SPLASH_TITLE }}</strong>
       <p class="splash-slogan">
         {{ APP_SPLASH_SLOGAN }}
+      </p>
+      <p class="splash-stage">
+        {{ APP_CURRENT_STAGE }}
       </p>
     </div>
   </transition>
@@ -61,6 +64,16 @@ onMounted(() => {
   font-weight: 500;
   line-height: 1.45;
   color: hsl(var(--muted-foreground));
+}
+
+.splash-stage {
+  margin: 0.4rem 0 0;
+  max-width: 26rem;
+  padding: 0 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground) / 0.75);
 }
 
 .fade-enter,

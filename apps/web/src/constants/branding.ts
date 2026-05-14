@@ -24,6 +24,10 @@ export const APP_WORKFLOW_VISION
 export const APP_CURRENT_SCOPE
   = `当前版本以内容整理、Markdown 编辑与渲染、多图床与向公众号等渠道同步为主，为后续全链路能力打基础。`
 
+/** 当前可走通的主链路（一行短句，用于 splash / About 顶部） */
+export const APP_CURRENT_STAGE
+  = `当前阶段：数据获取 → 风格二创 → Markdown 排版 → 平台复制同步`
+
 export const documentTitle = `${APP_NAME} — ${APP_SLOGAN}`
 
 /** 启动遮罩：产品名 */

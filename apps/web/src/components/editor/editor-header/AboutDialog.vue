@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
   APP_CURRENT_SCOPE,
+  APP_CURRENT_STAGE,
   APP_NAME,
   APP_SLOGAN,
   APP_TAGLINE,
@@ -45,6 +46,9 @@ function onRedirect(url: string) {
         </h3>
         <p class="text-center text-sm font-semibold tracking-tight text-primary">
           {{ APP_SLOGAN }}
+        </p>
+        <p class="text-muted-foreground text-center text-xs">
+          {{ APP_CURRENT_STAGE }}
         </p>
         <p class="text-muted-foreground text-center">
           {{ APP_TAGLINE }}

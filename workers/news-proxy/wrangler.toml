@@ -1,3 +1,6 @@
+# 历史名沿用 "md-gnews-proxy"——线上 Worker URL 即 https://md-gnews-proxy.tuaran666.workers.dev
+# 文件夹和文档已统一改为 "news-proxy"，因为实际服务于 GNews / HackerNews / BenZhi / NewsAPI / Mediastack / Guardian / Currents 共 7 个源。
+# 若决定整体改名，需要：(1) 改 name；(2) 同步前端 DEFAULT_NEWS_PROXY_URL；(3) 重新部署并删除旧 Worker。
 name = "md-gnews-proxy"
 main = "src/index.ts"
 compatibility_date = "2024-04-01"
