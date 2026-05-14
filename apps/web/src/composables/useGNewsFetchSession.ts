@@ -106,7 +106,7 @@ function createGNewsFetchSession() {
   const configSummary = computed(() => {
     const source = activeSource.value.label
     const q = searchQuery.value.trim() || `未填关键词`
-    if (provider.value === `hackernews`)
+    if (provider.value === `hackernews` || provider.value === `benzhi`)
       return `${source} · ${q} · 免 Key`
     return `${source} · ${q}`
   })

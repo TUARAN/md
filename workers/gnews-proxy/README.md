@@ -4,6 +4,7 @@ Proxies browser-safe `GET` / `HEAD` requests to multiple news providers:
 
 - `/api/gnews/search`
 - `/api/hackernews/search` (no API key required)
+- `/api/benzhi/search` (no API key required; upstream https://benzhi.online/api/news)
 - `/api/newsapi/search`
 - `/api/mediastack/search`
 - `/api/guardian/search`

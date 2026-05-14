@@ -88,26 +88,6 @@ async function copyPrompt() {
   }
 }
 
-async function copyInsightTemplate() {
-  try {
-    await copyPlain(insightTemplatePrompt.value)
-    toast.success(`已复制 GPT 模版正文`)
-  }
-  catch {
-    toast.error(`复制失败`)
-  }
-}
-
-async function copyTechCommunityTemplate() {
-  try {
-    await copyPlain(techCommunityTemplatePrompt.value)
-    toast.success(`已复制豆包模版正文`)
-  }
-  catch {
-    toast.error(`复制失败`)
-  }
-}
-
 function applyFixedTemplate(template: `insight` | `techCommunity`) {
   activeFixedTemplate.value = template
   const label = template === `techCommunity` ? `豆包 · 技术社区` : `GPT · 通俗科普`
@@ -176,24 +156,13 @@ function openAssistantWithPrompt() {
                   适合 ChatGPT 网页端：行业洞察 + 大白话叙事，可按章节配图建议延展。
                 </p>
               </div>
-              <div class="flex items-center gap-2">
-                <Button
-                  class="h-8 rounded-lg border border-indigo-200 bg-white px-2.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-border dark:bg-background dark:text-primary"
-                  type="button"
-                  variant="secondary"
-                  @click="copyInsightTemplate"
-                >
-                  <Copy class="mr-1.5 size-3.5" />
-                  复制
-                </Button>
-                <Button
-                  class="h-8 rounded-lg bg-indigo-600 px-2.5 text-xs font-semibold text-white hover:bg-indigo-700"
-                  type="button"
-                  @click="applyFixedTemplate('insight')"
-                >
-                  套用
-                </Button>
-              </div>
+              <Button
+                class="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                type="button"
+                @click="applyFixedTemplate('insight')"
+              >
+                套用
+              </Button>
             </div>
 
             <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5 dark:border-border dark:bg-card">
@@ -205,24 +174,13 @@ function openAssistantWithPrompt() {
                   适合豆包等国内模型：掘金 / CSDN / InfoQ 式章节骨架，含工具链与代码块规范。
                 </p>
               </div>
-              <div class="flex items-center gap-2">
-                <Button
-                  class="h-8 rounded-lg border border-violet-200 bg-white px-2.5 text-xs font-semibold text-violet-800 hover:bg-violet-50 dark:border-border dark:bg-background dark:text-primary"
-                  type="button"
-                  variant="secondary"
-                  @click="copyTechCommunityTemplate"
-                >
-                  <Copy class="mr-1.5 size-3.5" />
-                  复制
-                </Button>
-                <Button
-                  class="h-8 rounded-lg bg-violet-700 px-2.5 text-xs font-semibold text-white hover:bg-violet-800"
-                  type="button"
-                  @click="applyFixedTemplate('techCommunity')"
-                >
-                  套用
-                </Button>
-              </div>
+              <Button
+                class="h-8 shrink-0 rounded-lg bg-violet-700 px-3 text-xs font-semibold text-white hover:bg-violet-800"
+                type="button"
+                @click="applyFixedTemplate('techCommunity')"
+              >
+                套用
+              </Button>
             </div>
           </div>
 

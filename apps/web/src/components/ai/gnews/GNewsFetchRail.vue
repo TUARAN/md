@@ -33,7 +33,7 @@ const {
   goFirstPage,
 } = useGNewsFetchSession()
 
-const showApiKeyPanel = computed(() => provider.value !== `hackernews`)
+const showApiKeyPanel = computed(() => provider.value !== `hackernews` && provider.value !== `benzhi`)
 </script>
 
 <template>

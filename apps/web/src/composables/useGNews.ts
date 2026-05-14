@@ -47,7 +47,7 @@ export function resolveGNewsProxyBase(): string {
 
 /**
  * 浏览器端统一请求资讯源。
- * 生产环境默认经由 Cloudflare Worker 代理；本地未配置代理时仅 GNews 支持直连。
+ * 生产环境默认经由 Cloudflare Worker 代理；未配置代理时，GNews、Hacker News、本真 BenZhi 可浏览器直连。
  */
 export function useGNews() {
   const loading = ref(false)
@@ -64,11 +64,11 @@ export function useGNews() {
     const proxyBase = resolveGNewsProxyBase()
     const key = opts.apikey?.trim() ?? ``
     const providerLabel = getNewsSourceLabel(provider)
-    if (!proxyBase && provider !== `gnews` && provider !== `hackernews`)
+    if (!proxyBase && provider !== `gnews` && provider !== `hackernews` && provider !== `benzhi`)
       return { articles: [], formatted: ``, error: `${providerLabel} 需要通过资讯 Worker 请求，请配置 VITE_GNEWS_PROXY_URL` }
-    if (!proxyBase && provider !== `hackernews` && !key)
+    if (!proxyBase && provider !== `hackernews` && provider !== `benzhi` && !key)
       return { articles: [], formatted: ``, error: `请填写 ${providerLabel} API Key，或配置默认 Key` }
-    if (!opts.q.trim())
+    if (!opts.q.trim() && provider !== `benzhi`)
       return { articles: [], formatted: ``, error: `请填写搜索关键词` }
 
     abort()
@@ -110,6 +110,15 @@ export function useGNews() {
         }
       }
 
+      if (!res.ok) {
+        return {
+          articles: [],
+          formatted: ``,
+          requestUrl: url,
+          error: `请求失败 HTTP ${res.status}: ${text.slice(0, 280)}`,
+        }
+      }
+
       const parsed = parseGNewsSearchResponse(json)
 
       if (parsed.errors?.length) {
@@ -121,22 +130,28 @@ export function useGNews() {
         }
       }
 
-      if (!res.ok) {
-        return {
-          articles: [],
-          formatted: ``,
-          requestUrl: url,
-          error: `请求失败 HTTP ${res.status}: ${text.slice(0, 280)}`,
-        }
+      let articles = parsed.articles
+      const qTrim = opts.q.trim()
+      if (provider === `benzhi` && qTrim) {
+        const needle = qTrim.toLowerCase()
+        articles = articles.filter((a) => {
+          const blob = [
+            a.title,
+            a.description,
+            a.content,
+            a.source?.name,
+          ].filter(Boolean).join(`\n`).toLowerCase()
+          return blob.includes(needle)
+        })
       }
 
-      const formatted = formatGNewsArticlesAsPromptPack(parsed.articles, {
-        query: opts.q,
+      const formatted = formatGNewsArticlesAsPromptPack(articles, {
+        query: qTrim || undefined,
         provider,
       })
 
       return {
-        articles: parsed.articles,
+        articles,
         formatted,
         totalArticles: parsed.totalArticles,
         requestUrl: url,

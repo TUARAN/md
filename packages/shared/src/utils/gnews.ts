@@ -5,8 +5,10 @@
 
 export const GNEWS_API_BASE = `https://gnews.io/api/v4`
 export const HACKER_NEWS_API_BASE = `https://hn.algolia.com/api/v1`
+/** 本真资讯聚合 JSON API（分页列表；关键词由客户端在当前页结果中过滤）。 */
+export const BENZHI_NEWS_API_BASE = `https://benzhi.online/api/news`
 
-export type NewsSourceProvider = `gnews` | `hackernews` | `newsapi` | `mediastack` | `guardian` | `currents`
+export type NewsSourceProvider = `gnews` | `hackernews` | `benzhi` | `newsapi` | `mediastack` | `guardian` | `currents`
 
 export interface NewsSourceOption {
   value: NewsSourceProvider
@@ -30,6 +32,13 @@ export const NEWS_SOURCE_OPTIONS: NewsSourceOption[] = [
     keyLabel: `无需 API Key`,
     docsUrl: `https://hn.algolia.com/api`,
     note: `海外技术社区检索源，无需 Key；中文关键词不作为主入口。`,
+  },
+  {
+    value: `benzhi`,
+    label: `本真 BenZhi 聚合`,
+    keyLabel: `无需 API Key`,
+    docsUrl: `https://benzhi.online/api/news`,
+    note: `中文资讯聚合，免 Key；关键词在本页返回条目中筛选，可翻页查看更多。`,
   },
   {
     value: `newsapi`,
@@ -84,6 +93,8 @@ export interface GNewsSearchResponse {
   totalArticles?: number
   articles: GNewsArticle[]
   errors?: string[]
+  /** 本真分页：用于判断末页（与当前页条目是否被关键词过滤无关） */
+  benzhi?: { totalPages: number }
 }
 
 export interface GNewsSearchParams {
@@ -113,19 +124,44 @@ export function buildGNewsSearchUrl(
 ): string {
   const provider = params.provider ?? `gnews`
   const base = (options?.apiBase ?? GNEWS_API_BASE).replace(/\/$/u, ``)
-  const path = options?.apiBase
-    ? base.endsWith(`/api/v4`) && provider === `gnews`
+
+  let path: string
+  if (options?.apiBase) {
+    path = base.endsWith(`/api/v4`) && provider === `gnews`
       ? `${base}/search`
       : `${base}/${provider}/search`
-    : provider === `hackernews`
-      ? `${HACKER_NEWS_API_BASE}/${params.sortby === `relevance` ? `search` : `search_by_date`}`
-      : `${base}/search`
+  }
+  else if (provider === `hackernews`) {
+    path = `${HACKER_NEWS_API_BASE}/${params.sortby === `relevance` ? `search` : `search_by_date`}`
+  }
+  else if (provider === `benzhi`) {
+    path = BENZHI_NEWS_API_BASE
+  }
+  else {
+    path = `${base}/search`
+  }
+
   const u = new URL(path)
   if (provider === `hackernews`) {
     u.searchParams.set(`query`, params.q.trim())
     u.searchParams.set(`tags`, `story`)
     u.searchParams.set(`hitsPerPage`, String(Math.min(100, Math.max(1, params.max ?? 10))))
     u.searchParams.set(`page`, String(Math.max(0, (params.page ?? 1) - 1)))
+    return u.toString()
+  }
+
+  if (provider === `benzhi`) {
+    const page = params.page ?? 1
+    const max = Math.min(100, Math.max(1, params.max ?? 10))
+    if (options?.apiBase) {
+      const proxy = new URL(`${base.replace(/\/$/u, ``)}/benzhi/search`)
+      proxy.searchParams.set(`page`, String(Math.max(1, page)))
+      proxy.searchParams.set(`max`, String(max))
+      proxy.searchParams.set(`q`, params.q.trim())
+      return proxy.toString()
+    }
+    u.searchParams.set(`page`, String(Math.max(1, page)))
+    u.searchParams.set(`limit`, String(max))
     return u.toString()
   }
 
@@ -159,6 +195,24 @@ export function parseGNewsSearchResponse(data: unknown): GNewsSearchResponse {
     return { articles: [], errors: [`无效的响应体`] }
 
   const d = data as Record<string, unknown>
+
+  if (typeof d.success === `boolean` && d.success === false && typeof d.message === `string`)
+    return { articles: [], errors: [d.message] }
+
+  if (d.success === true && Array.isArray(d.data) && d.pagination && typeof d.pagination === `object`) {
+    const pag = d.pagination as Record<string, unknown>
+    const rawArticles = d.data as unknown[]
+    const articles = Array.isArray(rawArticles)
+      ? rawArticles.map(normalizeArticle).filter((a): a is GNewsArticle => Boolean(a))
+      : []
+
+    const totalArticles = typeof pag.total === `number` ? pag.total : undefined
+    const totalPages = typeof pag.totalPages === `number` ? pag.totalPages : undefined
+    const benzhi = totalPages != null ? { totalPages } : undefined
+
+    return { totalArticles, articles, benzhi }
+  }
+
   if (typeof d.message === `string` && (d.status === `error` || d.status === `ERROR`))
     return { articles: [], errors: [d.message] }
   if (typeof d.error === `string`)
@@ -225,6 +279,10 @@ function normalizeArticle(raw: unknown): GNewsArticle | null {
   const source = a.source as Record<string, unknown> | string | undefined
   const headline = a.headline as Record<string, unknown> | undefined
 
+  const keywordsJoined = Array.isArray(a.keywords)
+    ? (a.keywords as unknown[]).filter((x): x is string => typeof x === `string`).map(s => s.trim()).filter(Boolean).join(`、`)
+    : ``
+
   const url = stringValue(a.url)
     ?? stringValue(a.story_url)
     ?? stringValue(a.webUrl)
@@ -232,26 +290,38 @@ function normalizeArticle(raw: unknown): GNewsArticle | null {
   if (!url)
     return null
 
+  const cat = stringValue(a.category)
+  const sourceFromBenzhi = cat ? `BenZhi / ${cat}` : `BenZhi`
+  const isBenzhiShape = typeof a.newsMarkdown === `string`
+
   const sourceName = typeof source === `string`
     ? source
     : stringValue(source?.name)
       ?? stringValue(a.source)
+      ?? (isBenzhiShape ? sourceFromBenzhi : undefined)
       ?? stringValue(a.domain)
       ?? stringValue(a.sectionName)
       ?? (stringValue(a.author) ? `Hacker News / ${stringValue(a.author)}` : undefined)
       ?? stringValue(a.author)
+
+  const summary = stringValue(a.summary)
+    ?? stringValue(a.description)
+    ?? stringValue(a.abstract)
+    ?? stringValue(a.snippet)
+    ?? stringValue(a.lead_paragraph)
+    ?? stringValue(fields?.trailText)
+  const descriptionWithKeywords = summary && keywordsJoined
+    ? `${summary}\n关键词：${keywordsJoined}`
+    : summary ?? (keywordsJoined ? `关键词：${keywordsJoined}` : undefined)
 
   return {
     title: stringValue(a.title)
       ?? stringValue(a.story_title)
       ?? stringValue(a.webTitle)
       ?? stringValue(headline?.main),
-    description: stringValue(a.description)
-      ?? stringValue(a.abstract)
-      ?? stringValue(a.snippet)
-      ?? stringValue(a.lead_paragraph)
-      ?? stringValue(fields?.trailText),
+    description: descriptionWithKeywords,
     content: stringValue(a.content)
+      ?? stringValue(a.newsMarkdown)
       ?? stringValue(fields?.bodyText)
       ?? stringValue(fields?.body),
     url,
@@ -261,6 +331,8 @@ function normalizeArticle(raw: unknown): GNewsArticle | null {
       ?? stringValue(fields?.thumbnail)
       ?? null,
     publishedAt: stringValue(a.publishedAt)
+      ?? stringValue(a.processedAt)
+      ?? stringValue(a.updatedAt)
       ?? stringValue(a.published_at)
       ?? stringValue(a.created_at)
       ?? stringValue(a.published)
