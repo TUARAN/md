@@ -1,14 +1,7 @@
 <script setup lang="ts">
-import { Copy, Eye, FileText, Wand2 } from 'lucide-vue-next'
+import { AlertTriangle, Copy, Eye, FileText, RefreshCw, Wand2 } from 'lucide-vue-next'
+import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import WorkflowSectionTitle from '@/components/workflow/WorkflowSectionTitle.vue'
@@ -17,13 +10,15 @@ import { useGNewsFetchSession } from '@/composables/useGNewsFetchSession'
 const previewContainerRef = useTemplateRef<HTMLElement>(`previewContainerRef`)
 
 const {
+  loading,
   formatted,
   meta,
   lastError,
-  maxArticles,
-  sortby,
   resultTab,
   previewHtml,
+  provider,
+  configPanelExpanded,
+  fetchCurrentPage,
   copyMarkdownSource,
   goRemixWithAssistant,
   onPreviewClick,
@@ -31,6 +26,26 @@ const {
   disposePreviewRenderer,
   runHighlightInPreview,
 } = useGNewsFetchSession()
+
+// 错误归类，给一句可操作的「下一步该做什么」
+const errorHint = computed(() => {
+  const msg = lastError.value
+  if (!msg)
+    return ``
+  if (msg.includes(`API Key`) || msg.includes(`请填写`))
+    return `点击右上「API Key · 展开」填入或更换 Key；GNews 也可直接换到「Hacker News」「本真 BenZhi」免 Key 源试一下。`
+  if (msg.includes(`Failed to fetch`) || msg.includes(`未到达`))
+    return `通常是浏览器拦截或代理不可达。可稍后重试，或先换到另一个资讯源观察。`
+  if (msg.includes(`本页未返回`))
+    return `当前关键词在本页没有命中，换关键词或回第 1 页再试。`
+  return `换关键词 / 换资讯源 / 稍后重试。`
+})
+
+function handleOpenApiKey() {
+  configPanelExpanded.value = true
+}
+
+const isFreeKeyProvider = computed(() => provider.value === `hackernews` || provider.value === `benzhi`)
 
 watch(previewHtml, () => {
   if (!previewHtml.value.trim()) {
@@ -52,56 +67,53 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="gnews-fetch-results flex min-h-0 flex-1 flex-col gap-4">
-    <div
-      class="flex shrink-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-4 sm:gap-y-1"
+    <p
+      v-if="meta"
+      class="text-muted-foreground shrink-0 text-xs leading-relaxed"
     >
-      <p
-        v-if="meta"
-        class="text-muted-foreground text-xs leading-relaxed"
-      >
-        {{ meta }}
-      </p>
-      <div
-        class="flex flex-wrap items-center gap-2 sm:justify-end"
-      >
-        <div class="inline-flex items-center gap-1.5">
-          <span class="text-muted-foreground whitespace-nowrap text-[11px]">每页</span>
-          <Input
-            id="gnews-result-max"
-            v-model.number="maxArticles"
-            class="h-8 w-[3.25rem] px-2 text-center text-xs tabular-nums"
-            max="100"
-            min="1"
-            type="number"
-          />
-        </div>
-        <div class="inline-flex items-center gap-1.5">
-          <span class="text-muted-foreground whitespace-nowrap text-[11px]">排序</span>
-          <Select v-model="sortby">
-            <SelectTrigger
-              id="gnews-result-sort"
-              class="h-8 w-[6.75rem] text-xs"
+      {{ meta }}
+    </p>
+    <div
+      v-if="lastError"
+      class="shrink-0 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive"
+      role="alert"
+    >
+      <div class="flex items-start gap-2">
+        <AlertTriangle class="mt-0.5 size-4 shrink-0" />
+        <div class="min-w-0 flex-1 space-y-1.5">
+          <p class="break-words font-medium leading-snug">
+            {{ lastError }}
+          </p>
+          <p
+            v-if="errorHint"
+            class="text-destructive/85 text-xs leading-relaxed"
+          >
+            {{ errorHint }}
+          </p>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <Button
+              :disabled="loading"
+              size="sm"
+              type="button"
+              variant="secondary"
+              @click="fetchCurrentPage"
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem class="text-xs" value="publishedAt">
-                发布时间
-              </SelectItem>
-              <SelectItem class="text-xs" value="relevance">
-                相关度
-              </SelectItem>
-            </SelectContent>
-          </Select>
+              <RefreshCw class="mr-1.5 size-3.5" />
+              重试本页
+            </Button>
+            <Button
+              v-if="!isFreeKeyProvider"
+              size="sm"
+              type="button"
+              variant="ghost"
+              @click="handleOpenApiKey"
+            >
+              检查 API Key
+            </Button>
+          </div>
         </div>
       </div>
     </div>
-    <p
-      v-if="lastError"
-      class="text-destructive shrink-0 text-sm"
-    >
-      {{ lastError }}
-    </p>
 
     <div class="flex min-h-[200px] min-w-0 flex-1 shrink-0 flex-col space-y-2">
       <div class="flex flex-wrap items-center justify-between gap-2">

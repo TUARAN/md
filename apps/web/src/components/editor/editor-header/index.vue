@@ -3,8 +3,9 @@ import { BarChart3, ChevronRight, Database, Megaphone, Menu, PenLine, RefreshCw 
 import { inject, ref } from 'vue'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
-import { APP_HEADER_BRAND_LINE, getDataAcquisitionNavUrl } from '@/constants/branding'
+import { APP_HEADER_BRAND_LINE } from '@/constants/branding'
 import { useUIStore } from '@/stores/ui'
+import { toast } from '@/utils/toast'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
 import FormatDropdown from './FormatDropdown.vue'
@@ -44,15 +45,12 @@ const workflowSteps = [
   { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `后续`, comingSoon: true },
 ]
 
-function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
-  if (stepId === `data`) {
-    const url = getDataAcquisitionNavUrl()
-    if (url) {
-      window.open(url, `_blank`, `noopener,noreferrer`)
-      return
-    }
+function openWorkflowStep(step: (typeof workflowSteps)[number]) {
+  if (step.comingSoon) {
+    toast.warning(`${step.label}：仍在建设中，先用左侧已开放的步骤。`)
+    return
   }
-  setWorkflowAppPage(stepId)
+  setWorkflowAppPage(step.id)
 }
 
 function toggleContentFactory() {
@@ -106,7 +104,8 @@ function toggleContentFactory() {
               ]"
               :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
               :aria-current="workflowAppPage === step.id ? 'step' : undefined"
-              @click="openWorkflowStep(step.id)"
+              :aria-disabled="step.comingSoon ? 'true' : undefined"
+              @click="openWorkflowStep(step)"
             >
               <component
                 :is="step.icon"
@@ -162,7 +161,8 @@ function toggleContentFactory() {
               ]"
               :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
               :aria-current="workflowAppPage === step.id ? 'step' : undefined"
-              @click="openWorkflowStep(step.id)"
+              :aria-disabled="step.comingSoon ? 'true' : undefined"
+              @click="openWorkflowStep(step)"
             >
               <component
                 :is="step.icon"

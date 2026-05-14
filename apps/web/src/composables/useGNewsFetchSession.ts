@@ -121,7 +121,9 @@ function createGNewsFetchSession() {
     resetPaginationState()
   })
 
-  watch([provider, lang, country, maxArticles, sortby], () => {
+  // 仅在「结果集合」会变的维度上重置分页；maxArticles 只是改每页条数，
+  // 用户在第 3 页把每页从 10 改到 20，仍停在第 3 页更符合预期。
+  watch([provider, lang, country, sortby], () => {
     resetPaginationState()
   })
 

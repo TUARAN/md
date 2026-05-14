@@ -27,6 +27,8 @@ const {
   isGNewsProxyEnabled,
   page,
   hasNextPage,
+  maxArticles,
+  sortby,
   fetchCurrentPage,
   fetchNextPage,
   fetchPrevPage,
@@ -85,9 +87,15 @@ const showApiKeyPanel = computed(() => provider.value !== `hackernews` && provid
         >
           <ChevronLeft class="size-4" />
         </Button>
-        <span class="text-muted-foreground min-w-[2.75rem] px-0.5 text-center text-xs tabular-nums">
-          {{ page }} / 页
-        </span>
+        <button
+          :disabled="loading || page <= 1"
+          class="text-muted-foreground hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground min-w-[3.25rem] px-1 text-center text-xs tabular-nums transition-colors"
+          title="回第 1 页"
+          type="button"
+          @click="goFirstPage"
+        >
+          第 {{ page }} 页
+        </button>
         <Button
           :disabled="loading || !hasNextPage"
           class="size-8 p-0"
@@ -99,18 +107,38 @@ const showApiKeyPanel = computed(() => provider.value !== `hackernews` && provid
           <ChevronRight class="size-4" />
         </Button>
       </div>
+      <div class="inline-flex items-center gap-1.5">
+        <span class="text-muted-foreground whitespace-nowrap text-[11px]">每页</span>
+        <Input
+          id="gnews-result-max"
+          v-model.number="maxArticles"
+          class="h-9 w-[3.25rem] px-2 text-center text-xs tabular-nums"
+          max="100"
+          min="1"
+          type="number"
+        />
+      </div>
+      <div class="inline-flex items-center gap-1.5">
+        <span class="text-muted-foreground whitespace-nowrap text-[11px]">排序</span>
+        <Select v-model="sortby">
+          <SelectTrigger
+            id="gnews-result-sort"
+            class="h-9 w-[6.75rem] text-xs"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem class="text-xs" value="publishedAt">
+              发布时间
+            </SelectItem>
+            <SelectItem class="text-xs" value="relevance">
+              相关度
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       <Button
-        v-if="page > 1"
-        :disabled="loading"
-        class="h-8 shrink-0 px-2 text-xs"
-        type="button"
-        variant="ghost"
-        @click="goFirstPage"
-      >
-        回第 1 页
-      </Button>
-      <Button
-        :disabled="loading"
+        v-if="loading"
         class="h-9 shrink-0 px-2 text-xs text-muted-foreground"
         type="button"
         variant="ghost"

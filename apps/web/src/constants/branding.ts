@@ -31,9 +31,3 @@ export const APP_SPLASH_TITLE = APP_NAME
 
 /** 启动遮罩：slogan */
 export const APP_SPLASH_SLOGAN = APP_SLOGAN
-
-/** 可选：配置后顶部「数据获取」将新开此外链，覆盖默认的 GNews 资讯面板（Vite：`VITE_DATA_NAV_URL`） */
-export function getDataAcquisitionNavUrl(): string {
-  const raw = import.meta.env.VITE_DATA_NAV_URL as string | undefined
-  return typeof raw === `string` && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : ``
-}

@@ -3,8 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2024-04-01"
 
 # Plain-text vars (dashboard or --var): comma-separated origins, or "*" for any origin.
+# 该 Worker 仅做新闻 API 透传转发，不持有用户敏感数据，放行所有来源，
+# 让本地 dev / Netlify / 自定义域都能调用同一份代理。需要收紧时改成逗号分隔白名单。
 [vars]
-ALLOWED_ORIGINS = "https://md.tuaran666.workers.dev"
+ALLOWED_ORIGINS = "*"
 
 # Optional secrets — used when the client does not provide `apikey`.
 # `wrangler secret put GNEWS_API_KEY`

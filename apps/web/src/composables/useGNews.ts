@@ -35,12 +35,12 @@ export function resolveGNewsProxyBase(): string {
   if (configured)
     return configured
 
-  if (
-    typeof window !== `undefined`
-    && window.location.hostname === `md.tuaran666.workers.dev`
-  ) {
+  // 浏览器环境一律走默认资讯代理 Worker：
+  // - 本地 dev 通过代理规避 benzhi 等上游缺 CORS 的问题；
+  // - 任意线上域名（Netlify / Workers / 自定义域）共用同一份代理。
+  // 如需直连或指向本地 wrangler dev，显式设置 VITE_GNEWS_PROXY_URL='' / 指定 URL 即可。
+  if (typeof window !== `undefined`)
     return DEFAULT_GNEWS_PROXY_URL
-  }
 
   return ``
 }
@@ -172,7 +172,9 @@ export function useGNews() {
         articles: [],
         formatted: ``,
         error: message === `Failed to fetch`
-          ? `请求未到达资讯服务，可能是网络超时、浏览器拦截或代理不可达。可稍后重试，或切换资讯源。`
+          ? proxyBase
+            ? `请求未到达资讯 Worker（${proxyBase}），可能是 Worker 离线 / 域名解析失败 / 被网络拦截。稍后重试或切换资讯源。`
+            : `直连资讯接口失败，多数为浏览器 CORS 或网络问题。建议配置 VITE_GNEWS_PROXY_URL 走 Worker 代理。`
           : message,
       }
     }
