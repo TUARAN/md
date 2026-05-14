@@ -35,10 +35,13 @@ export function resolveGNewsProxyBase(): string {
   if (configured)
     return configured
 
-  // 浏览器环境一律走默认资讯代理 Worker：
-  // - 本地 dev 通过代理规避 benzhi 等上游缺 CORS 的问题；
-  // - 任意线上域名（Netlify / Workers / 自定义域）共用同一份代理。
-  // 如需直连或指向本地 wrangler dev，显式设置 VITE_GNEWS_PROXY_URL='' / 指定 URL 即可。
+  // 生产环境默认走资讯代理 Worker（统一 CORS、统一上游可达性）。
+  // 本地 dev（import.meta.env.DEV）默认直连：很多用户的本地网络到 *.workers.dev
+  // 反而比直连上游更糟（CF 边缘不可达），直连 gnews/HN 即可工作；
+  // 需要本地经过 Worker 时显式设 VITE_GNEWS_PROXY_URL 即可。
+  if (import.meta.env.DEV)
+    return ``
+
   if (typeof window !== `undefined`)
     return DEFAULT_GNEWS_PROXY_URL
 
@@ -173,8 +176,8 @@ export function useGNews() {
         formatted: ``,
         error: message === `Failed to fetch`
           ? proxyBase
-            ? `请求未到达资讯 Worker（${proxyBase}），可能是 Worker 离线 / 域名解析失败 / 被网络拦截。稍后重试或切换资讯源。`
-            : `直连资讯接口失败，多数为浏览器 CORS 或网络问题。建议配置 VITE_GNEWS_PROXY_URL 走 Worker 代理。`
+            ? `请求未到达资讯 Worker（${proxyBase}），可能是 Worker 离线 / 域名解析失败 / 国内网络到 *.workers.dev 不通。试试切换到 Hacker News / GNews 这类可直连源，或暂时清空 VITE_GNEWS_PROXY_URL。`
+            : `直连资讯接口失败，多数为浏览器 CORS、网络拦截或 VPN 抽风。换一个资讯源（GNews / Hacker News 一般 OK），或检查网络后重试。`
           : message,
       }
     }
