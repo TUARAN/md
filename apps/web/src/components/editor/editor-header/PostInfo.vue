@@ -37,10 +37,11 @@ const form = ref<Post>({
 const allowPost = computed(() => extensionInstalled.value && allAccounts.value.some(a => a.checked && a.loggedIn))
 
 // 平台分类配置
+// 注：toutiao / jianshu / qianfan / modelscope 对站外图片审核较严格，统一排到各分类靠后
 const platformCategories = [
   {
     name: `媒体平台`,
-    platforms: [`wechat`, `toutiao`, `zhihu`, `baijiahao`, `wangyihao`, `sohu`, `weibo`, `bilibili`, `sspai`, `twitter`, `douyin`, `xiaohongshu`, `douban`],
+    platforms: [`wechat`, `zhihu`, `baijiahao`, `wangyihao`, `sohu`, `weibo`, `bilibili`, `sspai`, `twitter`, `douyin`, `xiaohongshu`, `douban`, `toutiao`],
   },
   {
     name: `博客平台`,
@@ -48,7 +49,7 @@ const platformCategories = [
   },
   {
     name: `云平台及开发者社区`,
-    platforms: [`tencentcloud`, `aliyun`, `huaweicloud`, `huaweidev`, `qianfan`, `alipayopen`, `modelscope`, `volcengine`, `elecfans`],
+    platforms: [`tencentcloud`, `aliyun`, `huaweicloud`, `huaweidev`, `alipayopen`, `volcengine`, `elecfans`, `qianfan`, `modelscope`],
   },
 ]
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import type { Post } from '@md/shared/types'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type { Post, PostAccount } from '@md/shared/types'
+import { RotateCw } from 'lucide-vue-next'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 declare global {
   interface Window {
@@ -23,8 +24,22 @@ const dialogVisible = computed({
 const taskStatus = ref<any>(null)
 const submitting = ref(false)
 
-async function startPost() {
+function accountKey(a: PostAccount) {
+  return `${a.uid}-${a.displayName}`
+}
+
+const failedAccounts = computed<PostAccount[]>(() => {
+  return (taskStatus.value?.accounts || []).filter((a: PostAccount) => a.status === `failed`)
+})
+
+const hasFailed = computed(() => failedAccounts.value.length > 0)
+
+function startPost(targetAccounts?: PostAccount[]) {
   if (!props.post)
+    return
+
+  const accountsToPost = targetAccounts ?? props.post.accounts.filter(a => a.checked)
+  if (accountsToPost.length === 0)
     return
 
   const taskData = {
@@ -35,27 +50,64 @@ async function startPost() {
       thumb: props.post.thumb,
       desc: props.post.desc,
     },
-    accounts: props.post.accounts.filter(a => a.checked),
+    accounts: accountsToPost,
   }
 
+  const isRetry = !!targetAccounts
+
   const onProgress = (newStatus: any) => {
-    taskStatus.value = newStatus
+    if (!isRetry || !taskStatus.value) {
+      taskStatus.value = newStatus
+      return
+    }
+    // 重试时保留旧账号状态，只用新结果覆盖参与本次重试的账号
+    const updatedMap = new Map<string, PostAccount>()
+    for (const a of (newStatus.accounts || [])) {
+      updatedMap.set(accountKey(a), a)
+    }
+    taskStatus.value = {
+      ...taskStatus.value,
+      ...newStatus,
+      accounts: taskStatus.value.accounts.map((a: PostAccount) => {
+        return updatedMap.get(accountKey(a)) ?? a
+      }),
+    }
   }
 
   const onComplete = () => {
     submitting.value = false
   }
 
+  submitting.value = true
   try {
     window.$cose?.addTask(taskData, onProgress, onComplete)
   }
   catch (error) {
     console.error(`发布失败:`, error)
+    submitting.value = false
   }
+}
+
+function retryAccount(account: PostAccount) {
+  account.status = `uploading`
+  account.error = ``
+  startPost([account])
+}
+
+function retryAllFailed() {
+  if (failedAccounts.value.length === 0)
+    return
+  const targets = [...failedAccounts.value]
+  for (const a of targets) {
+    a.status = `uploading`
+    a.error = ``
+  }
+  startPost(targets)
 }
 
 watch(() => props.open, (newVal) => {
   if (newVal) {
+    taskStatus.value = null
     startPost()
   }
 })
@@ -99,7 +151,18 @@ watch(() => props.open, (newVal) => {
               </template>
 
               <template v-if="account.status === 'failed'">
-                同步失败, 错误内容：{{ account.error }}
+                <div class="flex items-start justify-between gap-2">
+                  <span class="flex-1">同步失败, 错误内容：{{ account.error }}</span>
+                  <button
+                    type="button"
+                    class="shrink-0 inline-flex items-center gap-1 rounded border border-red-300 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="submitting"
+                    @click="retryAccount(account)"
+                  >
+                    <RotateCw class="h-3 w-3" />
+                    重试
+                  </button>
+                </div>
               </template>
 
               <template v-if="account.status === 'done' && account.editResp">
@@ -116,6 +179,17 @@ watch(() => props.open, (newVal) => {
           </div>
         </div>
       </div>
+
+      <DialogFooter v-if="hasFailed">
+        <Button
+          variant="outline"
+          :disabled="submitting"
+          @click="retryAllFailed"
+        >
+          <RotateCw class="mr-2 h-4 w-4" />
+          重试全部失败 ({{ failedAccounts.length }})
+        </Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
