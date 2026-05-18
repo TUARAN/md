@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.repository == 'doocs/md'
+    if: github.repository == 'TUARAN/md'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -42,6 +42,9 @@ jobs:
             echo "BUILD_COMMAND=build" >> $GITHUB_ENV
           fi
 
+      - name: Package csync browser extension (zip for users)
+        run: pnpm package:csync
+
       - name: Run build
         run: pnpm web ${{ env.BUILD_COMMAND }}
         env:
@@ -51,7 +54,7 @@ jobs:
       - name: Generate CNAME
         run: |
           mkdir -p apps/web/dist
-          echo "md.doocs.org" > apps/web/dist/CNAME
+          echo "syncblog.cn" > apps/web/dist/CNAME
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
@@ -75,7 +78,7 @@ jobs:
   deploy-cloudflare:
     needs: build
     runs-on: ubuntu-latest
-    if: github.repository == 'doocs/md'
+    if: github.repository == 'TUARAN/md'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -114,4 +117,4 @@ jobs:
       - name: Deployment Summary
         run: |
           echo "🚀 Deployed to Cloudflare Workers!"
-          echo "📍 URL: https://md.doocs.workers.dev"
+          echo "📍 URL: https://syncblog.cn"

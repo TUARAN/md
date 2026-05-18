@@ -27,6 +27,7 @@ jobs:
       - name: Build
         run: |
           pnpm install
+          pnpm package:csync
           pnpm web build:h5-netlify
         env:
           VITE_GNEWS_PROXY_URL: ${{ secrets.VITE_GNEWS_PROXY_URL }}

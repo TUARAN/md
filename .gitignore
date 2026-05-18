@@ -12,6 +12,10 @@ node_modules
 /build
 dist
 
+# vendored 浏览器扩展需保留构建产物（其它项目的 dist 仍按上一行忽略）
+!apps/web/vendor/csync-extension/dist/
+!apps/web/vendor/csync-extension/dist/**
+
 # misc
 .DS_Store
 .env.local
@@ -36,6 +40,10 @@ httpData
 
 public/upload/**
 !public/upload/*.gitkeep
+
+# csync 扩展 zip（pnpm package:csync 生成，随 build 发布；不提交二进制）
+apps/web/public/csync-extension.zip
+apps/web/public/csync-extension-v*.zip
 .history
 
 # Package manager lock file

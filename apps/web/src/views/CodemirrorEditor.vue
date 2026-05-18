@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RefreshCw } from 'lucide-vue-next'
+import { ChevronDown, RefreshCw } from 'lucide-vue-next'
 import { provide } from 'vue'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
@@ -97,6 +97,9 @@ const editorPanelConfig = computed(() => {
   return { min: 15, max: 85 }
 })
 
+/** 与部署站点同源的 csync 扩展包（构建时 pnpm package:csync 写入 public） */
+const csyncExtensionZipUrl = computed(() => `${import.meta.env.BASE_URL}csync-extension.zip`)
+
 const previewPanelConfig = computed(() => {
   const mode = viewMode.value
   if (mode === `edit`) {
@@ -176,8 +179,10 @@ onUnmounted(() => {
       >
         <WorkflowPageShell :scroll-body="false">
           <template #header>
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div class="min-w-0">
+            <div
+              class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6"
+            >
+              <div class="min-w-0 max-w-xl">
                 <WorkflowPageTitle>
                   <template #icon>
                     <RefreshCw />
@@ -185,10 +190,51 @@ onUnmounted(() => {
                   内容同步
                 </WorkflowPageTitle>
                 <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  在此编辑正文、查看预览排版，复制到公众号或继续后续分发步骤。
+                  左栏定稿 Markdown，右栏核对图文；分发时点「发布」写各站草稿。
                 </p>
+                <details
+                  class="group mt-2 w-full overflow-hidden rounded-md border border-border/50 bg-muted/10 dark:bg-muted/5"
+                >
+                  <summary
+                    class="flex cursor-pointer list-none items-center gap-2 px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground [&::-webkit-details-marker]:hidden"
+                  >
+                    <ChevronDown
+                      class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180"
+                      aria-hidden="true"
+                    />
+                    COSE / csync 说明（可选）
+                  </summary>
+                  <div
+                    class="space-y-2 border-t border-border/40 px-2.5 py-2.5 text-xs leading-relaxed text-muted-foreground"
+                  >
+                    <p>
+                      各站编辑页差异大，编辑器用双扩展：多数平台走
+                      <a
+                        href="https://github.com/doocs/cose"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-medium text-foreground underline underline-offset-2"
+                      >COSE</a>
+                      （商店「cose 文章同步助手」）；知乎 / 公众号 / 微博可优先走
+                      <span class="font-medium text-foreground">csync</span>
+                      （页面桥接为 <code class="rounded bg-muted px-1 py-px text-[10px]">$pluginSyncer</code>）。
+                      csync 请
+                      <a
+                        :href="csyncExtensionZipUrl"
+                        download
+                        class="font-medium text-foreground underline underline-offset-2"
+                      >从本站下载 .zip</a>
+                      解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载（与「发布」对话框一致）。
+                    </p>
+                    <p class="text-[11px] leading-relaxed">
+                      「发布」里带 csync 角标的由 csync 写入，其余由 COSE 处理。
+                    </p>
+                  </div>
+                </details>
               </div>
-              <div class="min-w-0 shrink-0 lg:max-w-[70%]">
+              <div
+                class="min-w-0 w-full shrink-0 lg:w-auto lg:max-w-[42rem]"
+              >
                 <EditorWorkflowSyncRail />
               </div>
             </div>

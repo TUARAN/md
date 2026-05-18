@@ -13,7 +13,7 @@ concurrency:
 jobs:
   deploy-preview:
     runs-on: ubuntu-latest
-    if: github.repository == 'doocs/md' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.repository == 'TUARAN/md' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       deployments: write
@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Package csync browser extension (zip for users)
+        run: pnpm package:csync
+
       - name: Build for Cloudflare Workers
         run: pnpm web build:h5-netlify
         env:
@@ -59,7 +62,7 @@ jobs:
       - name: Get deployment URL
         id: deployment-url
         run: |
-          PREVIEW_URL="https://md-pr-${{ github.event.pull_request.number }}.doocs.workers.dev"
+          PREVIEW_URL="https://md-pr-${{ github.event.pull_request.number }}.tuaran666.workers.dev"
           echo "url=$PREVIEW_URL" >> $GITHUB_OUTPUT
           echo "Preview URL: $PREVIEW_URL"
 

@@ -28,7 +28,8 @@
     "type-check": "vue-tsc --build --force",
     "postinstall": "simple-git-hooks",
     "inspector": "pnpx node-modules-inspector",
-    "utools:package": "node ./scripts/package-utools.mjs"
+    "utools:package": "node ./scripts/package-utools.mjs",
+    "package:csync": "node ./scripts/package-csync-extension.mjs"
   },
   "dependencies": {
     "@codemirror/state": "6.6.0",

@@ -5,6 +5,11 @@ import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useUIStore } from '@/stores/ui'
+import {
+  mapPluginSyncerAuthToAccounts,
+  mergeCoseAndPluginSyncerAccounts,
+  PLUGIN_SYNCER_PREFERRED_TYPES,
+} from '@/utils/publishExtensions'
 
 defineOptions({
   inheritAttrs: false,
@@ -21,6 +26,9 @@ const { isMobile } = storeToRefs(uiStore)
 
 const dialogVisible = ref(false)
 const extensionInstalled = ref(false)
+/** 页面已加载 csync 扩展注入的 $pluginSyncer（需 manifest 匹配当前站点且 connected） */
+const pluginSyncerScriptPresent = ref(false)
+const pluginAuthSnapshot = ref<PostAccount[]>([])
 const allAccounts = ref<PostAccount[]>([])
 const postTaskDialogVisible = ref(false)
 const isCheckingLogin = ref(false)
@@ -34,7 +42,19 @@ const form = ref<Post>({
   accounts: [] as PostAccount[],
 })
 
-const allowPost = computed(() => extensionInstalled.value && allAccounts.value.some(a => a.checked && a.loggedIn))
+const allowPost = computed(() => {
+  const hasSelection = allAccounts.value.some(a => a.checked && a.loggedIn)
+  if (!hasSelection)
+    return false
+  const coseOk = extensionInstalled.value
+  const pluginOk = pluginAuthSnapshot.value.some(
+    a => a.loggedIn && PLUGIN_SYNCER_PREFERRED_TYPES.has(a.type),
+  )
+  return coseOk || pluginOk
+})
+
+/** 构建时由 package:csync 写入 public，与当前 Vite base 一致 */
+const csyncExtensionZipUrl = computed(() => `${import.meta.env.BASE_URL}csync-extension.zip`)
 
 // 平台分类配置
 // 注：toutiao / jianshu / qianfan / modelscope 对站外图片审核较严格，统一排到各分类靠后
@@ -96,9 +116,7 @@ function toggleCategorySelectAll(accounts: PostAccount[]) {
 }
 
 async function prePost() {
-  // 如果扩展已安装且还没有账号数据，则开始检测
-  if (extensionInstalled.value && allAccounts.value.length === 0) {
-    // 不 await，让检测在后台进行
+  if ((extensionInstalled.value || pluginSyncerScriptPresent.value) && allAccounts.value.length === 0) {
     startLoginDetection()
   }
 
@@ -134,9 +152,46 @@ async function prePost() {
   }
 }
 
+async function refreshPluginAuth() {
+  if (!window.$pluginSyncer?.getPlatforms) {
+    pluginAuthSnapshot.value = []
+    return
+  }
+  if (!window.$pluginSyncer.connected) {
+    pluginAuthSnapshot.value = []
+    return
+  }
+  try {
+    const raw = await window.$pluginSyncer.getPlatforms()
+    pluginAuthSnapshot.value = mapPluginSyncerAuthToAccounts(raw)
+  }
+  catch {
+    pluginAuthSnapshot.value = []
+  }
+}
+
+function tryMergePluginIntoAccounts() {
+  if (pluginAuthSnapshot.value.length === 0)
+    return
+  if (allAccounts.value.length === 0) {
+    allAccounts.value = pluginAuthSnapshot.value.map(a => ({
+      ...a,
+      checked: false,
+      isChecking: false,
+    }))
+    return
+  }
+  allAccounts.value = mergeCoseAndPluginSyncerAccounts(
+    allAccounts.value,
+    pluginAuthSnapshot.value,
+    !!window.$pluginSyncer?.connected,
+  )
+}
+
 // 监听对话框打开，自动加载数据
 watch(dialogVisible, (newVal) => {
   if (newVal) {
+    void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
     prePost()
   }
 })
@@ -145,6 +200,7 @@ declare global {
   interface Window {
     syncPost: (data: { thumb: string, title: string, desc: string, content: string }) => void
     $cose: any
+    $pluginSyncer?: import('@/utils/publishExtensions').PluginSyncerApi
   }
 }
 
@@ -163,65 +219,68 @@ function getInitialPlatforms(): PostAccount[] {
 
 // 开始登录检测（异步，不阻塞 UI，渐进式更新）
 function startLoginDetection() {
-  if (window.$cose === undefined)
-    return
-
-  // 立即显示平台列表（带检测中状态）
-  const initialPlatforms = getInitialPlatforms()
-  if (initialPlatforms.length > 0) {
-    allAccounts.value = initialPlatforms
-  }
-
-  isCheckingLogin.value = true
-  let hasReceivedAny = false
-
-  // 设置超时机制：如果 15 秒内没有任何响应，则停止检测
-  const timeoutId = setTimeout(() => {
-    if (!hasReceivedAny) {
-      console.log('[COSE] 登录检测超时，停止检测')
-      allAccounts.value = allAccounts.value.map(a => ({ ...a, isChecking: false }))
-      isCheckingLogin.value = false
+  if (window.$cose !== undefined) {
+    const initialPlatforms = getInitialPlatforms()
+    if (initialPlatforms.length > 0) {
+      allAccounts.value = initialPlatforms
     }
-  }, 15000)
 
-  // 检查是否支持渐进式 API
-  if (typeof window.$cose.getAccountsProgressive === 'function') {
-    // 使用渐进式 API：每个平台检测完成后立即更新 UI
-    window.$cose.getAccountsProgressive(
-      // onProgress: 每个平台完成时调用
-      (account: PostAccount, _completed: number, _total: number) => {
-        hasReceivedAny = true
-        // 更新对应平台的状态
-        const idx = allAccounts.value.findIndex(a => a.type === account.type)
-        if (idx !== -1) {
-          allAccounts.value[idx] = { ...account, checked: false, isChecking: false }
-        }
-      },
-      // onComplete: 所有平台完成时调用
-      () => {
-        clearTimeout(timeoutId)
+    isCheckingLogin.value = true
+    let hasReceivedAny = false
+
+    const timeoutId = setTimeout(() => {
+      if (!hasReceivedAny) {
+        console.log('[COSE] 登录检测超时，停止检测')
+        allAccounts.value = allAccounts.value.map(a => ({ ...a, isChecking: false }))
         isCheckingLogin.value = false
-      },
-    )
-  }
-  else {
-    // 回退到原有 API
-    window.$cose.getAccounts((resp: PostAccount[]) => {
-      hasReceivedAny = true
+      }
+      void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
+    }, 15000)
+
+    const finishCose = () => {
       clearTimeout(timeoutId)
-      allAccounts.value = resp.map(a => ({ ...a, checked: false, isChecking: false }))
       isCheckingLogin.value = false
-    })
+      void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
+    }
+
+    if (typeof window.$cose.getAccountsProgressive === 'function') {
+      window.$cose.getAccountsProgressive(
+        (account: PostAccount, _completed: number, _total: number) => {
+          hasReceivedAny = true
+          const idx = allAccounts.value.findIndex(a => a.type === account.type)
+          if (idx !== -1) {
+            allAccounts.value[idx] = { ...account, checked: false, isChecking: false }
+          }
+        },
+        finishCose,
+      )
+    }
+    else {
+      window.$cose.getAccounts((resp: PostAccount[]) => {
+        hasReceivedAny = true
+        clearTimeout(timeoutId)
+        allAccounts.value = resp.map(a => ({ ...a, checked: false, isChecking: false }))
+        isCheckingLogin.value = false
+        void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
+      })
+    }
+    return
   }
+
+  void refreshPluginAuth().then(() => {
+    if (pluginAuthSnapshot.value.length > 0) {
+      allAccounts.value = pluginAuthSnapshot.value.map(a => ({
+        ...a,
+        checked: false,
+        isChecking: false,
+      }))
+    }
+  })
 }
 
 // 兼容旧的 getAccounts 调用（checkExtension 使用）
 async function getAccounts(): Promise<void> {
-  return new Promise((resolve) => {
-    startLoginDetection()
-    // 立即 resolve，不等待检测完成
-    resolve()
-  })
+  startLoginDetection()
 }
 
 function post() {
@@ -282,26 +341,31 @@ function onAvatarError(account: PostAccount, event: Event) {
 }
 
 function checkExtension() {
-  if (window.$cose !== undefined) {
-    extensionInstalled.value = true
-    getAccounts() // 立即开始登录检测
-    return
-  }
-
-  // 如果插件还没加载，5秒内每 500ms 检查一次
-  let count = 0
-  const timer = setInterval(async () => {
+  let coseDetectionStarted = false
+  let pluginAuthFetched = false
+  const probe = () => {
     if (window.$cose !== undefined) {
       extensionInstalled.value = true
-      await getAccounts()
-      clearInterval(timer)
-      return
+      if (!coseDetectionStarted) {
+        coseDetectionStarted = true
+        void getAccounts()
+      }
     }
-
+    if (window.$pluginSyncer !== undefined) {
+      pluginSyncerScriptPresent.value = true
+      if (!pluginAuthFetched) {
+        pluginAuthFetched = true
+        void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
+      }
+    }
+  }
+  probe()
+  let count = 0
+  const timer = setInterval(() => {
+    probe()
     count++
-    if (count > 10) {
+    if (count > 10)
       clearInterval(timer)
-    }
   }, 500)
 }
 
@@ -321,24 +385,54 @@ onBeforeMount(() => {
       </DialogTrigger>
       <DialogContent class="!w-[750px] !max-w-[95vw] max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>发布</DialogTitle>
-          <DialogDescription>
-            将文章发布到多个平台
+          <DialogTitle>发布与多平台同步</DialogTitle>
+          <DialogDescription class="space-y-2">
+            <p>
+              会把当前文章中的标题、描述、封面、预览 HTML 与 Markdown 交给已安装的浏览器扩展，由扩展跳转各平台编辑页并尽量写入草稿；不同站点实现方式不同，失败时可在任务里单独重试。
+            </p>
+            <p>
+              编辑器刻意拆成两条同步链路：知乎、公众号、微博优先用本仓库的 csync，其它平台用 COSE（cose 文章同步助手），从而兼顾「热门三个站」的稳定与其余站点的覆盖面。二者可同时安装，本对话框会自动分流。
+            </p>
           </DialogDescription>
         </DialogHeader>
         <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-4">
-          <Alert>
+          <div class="rounded-lg border border-border/80 bg-muted/25 px-4 py-3 text-sm leading-relaxed text-muted-foreground dark:bg-muted/15">
+            <p class="font-medium text-foreground">
+              你在这页需要知道的两件事
+            </p>
+            <ul class="mt-2 list-disc space-y-1.5 pl-5">
+              <li>
+                <strong class="text-foreground">主推</strong>：点击
+                <a
+                  :href="csyncExtensionZipUrl"
+                  download
+                  class="font-medium text-primary underline underline-offset-2"
+                >下载 csync 扩展（.zip）</a>
+                ——与当前站点配套的包。解压得到 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">csync-extension</code> 文件夹，在 Chrome
+                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>
+                打开开发者模式后，选「加载已解压的扩展程序」并指向该文件夹。（自建部署需在构建前执行 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">pnpm package:csync</code>；维护者也可直接加载仓库内 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">apps/web/vendor/csync-extension</code>。）
+              </li>
+              <li>
+                安装后若当前访问域名已写在扩展 manifest 中，知乎/公众号/微博会显示 csync 角标并由其写入；未配置时这些站会走 COSE 或提示登录。
+              </li>
+              <li>
+                编辑器侧已把 title / content / markdown 拆开传递；若某平台仍填错栏位，多半是后台改版后扩展选框未跟上，可升级 csync / COSE 或向对应项目提 Issue。
+              </li>
+            </ul>
+          </div>
+
+          <Alert v-if="pluginSyncerScriptPresent && !pluginAuthSnapshot.length">
             <Info class="h-4 w-4" />
-            <AlertDescription>
-              此功能由 <a href="https://github.com/doocs/cose" target="_blank" class="underline"> GitHub 开源插件 COSE</a> 支持，完全本地运行，不收集、不存储任何用户信息。<br>如需添加更多平台或改善同步准确度，欢迎提 <a href="https://github.com/doocs/cose/issues" target="_blank" class="underline">Issue</a> 或 PR。
+            <AlertDescription class="text-sm">
+              已检测到 csync 脚本，但未能连接（<code class="text-xs">$pluginSyncer.connected === false</code>）。请确认已通过上方 zip 解压加载扩展，且 manifest 中已包含当前站点域名，然后重新加载扩展。
             </AlertDescription>
           </Alert>
 
-          <Alert v-if="!extensionInstalled">
+          <Alert v-if="!extensionInstalled && !pluginAuthSnapshot.length">
             <Info class="h-4 w-4" />
-            <AlertTitle>未检测到插件</AlertTitle>
+            <AlertTitle>未检测到可用发布扩展</AlertTitle>
             <AlertDescription>
-              请安装 <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="underline text-primary">cose 文章同步助手</a> 浏览器扩展
+              请至少安装 <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="underline text-primary">COSE（cose 文章同步助手）</a>，或按上方说明下载本站提供的 csync（.zip）解压加载，以支持知乎 / 公众号 / 微博。
             </AlertDescription>
           </Alert>
 
@@ -394,7 +488,7 @@ onBeforeMount(() => {
                 <div v-show="!collapsedCategories.has(category.name)" class="grid grid-cols-2 gap-x-8 gap-y-2 pl-5">
                   <div
                     v-for="account in category.accounts"
-                    :key="account.uid"
+                    :key="`${account.syncSource || 'cose'}-${account.type}-${account.uid}`"
                     class="flex items-center gap-2 whitespace-nowrap"
                   >
                     <CheckboxRoot
@@ -412,6 +506,7 @@ onBeforeMount(() => {
                       class="inline-block h-[16px] w-[16px] shrink-0"
                     >
                     <span class="text-sm font-medium">{{ account.title }}</span>
+                    <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">csync</span>
                     <!-- 检测中：显示转圈动画 -->
                     <template v-if="account.isChecking">
                       <Loader2 class="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" />

@@ -7,6 +7,7 @@ import FileDropdown from '@/components/editor/editor-header/FileDropdown.vue'
 import FormatDropdown from '@/components/editor/editor-header/FormatDropdown.vue'
 import HelpDropdown from '@/components/editor/editor-header/HelpDropdown.vue'
 import InsertDropdown from '@/components/editor/editor-header/InsertDropdown.vue'
+import PostInfo from '@/components/editor/editor-header/PostInfo.vue'
 import StyleDropdown from '@/components/editor/editor-header/StyleDropdown.vue'
 import { Button } from '@/components/ui/button'
 import { Menubar } from '@/components/ui/menubar'
@@ -35,59 +36,65 @@ function copyToWeChat() {
 </script>
 
 <template>
-  <div class="editor-workflow-sync-rail flex w-full flex-wrap items-center justify-start gap-x-2 gap-y-2 lg:justify-end">
-    <Button
-      variant="outline"
-      class="h-9 shrink-0"
-      type="button"
-      @click="copyToWeChat"
-    >
-      <Copy class="mr-2 h-4 w-4" />
-      <span>复制</span>
-    </Button>
+  <div
+    class="editor-workflow-sync-rail flex w-full min-w-0 flex-col gap-2.5 lg:max-w-none lg:items-end"
+  >
+    <!-- 主操作：横向排列，禁止再套 max-w-min 之类会把文字压成竖条的样式 -->
+    <div class="flex w-full min-w-0 flex-wrap items-center justify-end gap-2">
+      <Button
+        variant="outline"
+        class="h-9 shrink-0"
+        type="button"
+        @click="copyToWeChat"
+      >
+        <Copy class="mr-2 h-4 w-4" />
+        <span>复制</span>
+      </Button>
 
-    <div class="hidden min-w-0 md:block md:max-w-[min(100%,24rem)]">
-      <PostInfo class="w-full" />
+      <div class="shrink-0">
+        <PostInfo />
+      </div>
+
+      <Button
+        variant="outline"
+        class="h-9 shrink-0"
+        type="button"
+        :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
+        @click="isOpenRightSlider = !isOpenRightSlider"
+      >
+        <Palette class="mr-2 h-4 w-4" />
+        <span>侧栏</span>
+      </Button>
     </div>
 
-    <Button
-      variant="outline"
-      class="h-9 shrink-0"
-      type="button"
-      :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
-      @click="isOpenRightSlider = !isOpenRightSlider"
-    >
-      <Palette class="mr-2 h-4 w-4" />
-      <span>样式</span>
-    </Button>
-
+    <!-- 次级菜单：始终横向，窄屏可横向滚动，避免竖排文字 -->
     <div
-      class="sync-rail-menubar hidden min-w-0 w-full md:block md:w-fit md:max-w-full md:shrink-0"
+      class="sync-rail-menubar w-full min-w-0 lg:flex lg:justify-end"
       aria-label="同步与编辑菜单"
     >
       <div
-        class="w-fit max-w-full rounded-lg border border-border bg-background/80 p-0.5 backdrop-blur-sm"
+        class="min-w-0 max-w-full overflow-x-auto overflow-y-hidden pb-0.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
       >
-        <Menubar
-          class="menubar menubar--secondary flex h-auto max-w-full min-w-0 flex-row flex-wrap items-center gap-1 border-0 bg-transparent p-0 shadow-none"
+        <div
+          class="inline-flex w-max min-w-0 rounded-md border border-border/80 bg-background/95 p-0.5 dark:bg-background/80"
         >
-          <FileDropdown @open-editor-state="handleOpenEditorState" />
-          <EditDropdown @copy="handleCopy" />
-          <FormatDropdown />
-          <InsertDropdown />
-          <StyleDropdown />
-          <HelpDropdown
-            @open-about="handleOpenAbout"
-            @open-fund="handleOpenFund"
-            @open-markdown-help="handleOpenMarkdownHelp"
-          />
-        </Menubar>
+          <Menubar
+            class="menubar menubar--secondary flex h-auto flex-nowrap items-center gap-1 border-0 bg-transparent p-0 shadow-none"
+          >
+            <FileDropdown @open-editor-state="handleOpenEditorState" />
+            <EditDropdown @copy="handleCopy" />
+            <FormatDropdown />
+            <InsertDropdown />
+            <StyleDropdown />
+            <HelpDropdown
+              @open-about="handleOpenAbout"
+              @open-fund="handleOpenFund"
+              @open-markdown-help="handleOpenMarkdownHelp"
+            />
+          </Menubar>
+        </div>
       </div>
     </div>
-
-    <p class="w-full basis-full text-[11px] leading-relaxed text-muted-foreground md:hidden">
-      更多文件 / 编辑 / 格式菜单请使用顶部「菜单」按钮。
-    </p>
   </div>
 </template>
 
