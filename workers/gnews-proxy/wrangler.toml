@@ -4,7 +4,7 @@ compatibility_date = "2024-04-01"
 
 # Plain-text vars (dashboard or --var): comma-separated origins, or "*" for any origin.
 [vars]
-ALLOWED_ORIGINS = "https://md.tuaran666.workers.dev"
+ALLOWED_ORIGINS = "https://syncblog.cn,https://md.tuaran666.workers.dev"
 
 # Optional secrets — used when the client does not provide `apikey`.
 # `wrangler secret put GNEWS_API_KEY`

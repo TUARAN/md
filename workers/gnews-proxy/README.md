@@ -28,9 +28,9 @@ npx wrangler deploy
 
 ### Environment variables
 
-| Name              | Required | Description                                                                                                                                             |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ALLOWED_ORIGINS` | No       | Comma-separated allowed `Origin` values for CORS, or `*` for any origin. This project sets it to `https://md.tuaran666.workers.dev` in `wrangler.toml`. |
+| Name              | Required | Description                                                                                                                                                                 |
+| ----------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOWED_ORIGINS` | No       | Comma-separated allowed `Origin` values for CORS, or `*` for any origin. This project sets it to `https://syncblog.cn,https://md.tuaran666.workers.dev` in `wrangler.toml`. |
 
 Set plain vars in the Cloudflare dashboard (**Workers** → your worker → **Settings** → **Variables**) or via `wrangler.toml` `[vars]` for non-secret values.
 
@@ -73,4 +73,4 @@ Set Vite env (e.g. `.env.production`):
 VITE_GNEWS_PROXY_URL=https://md-gnews-proxy.tuaran666.workers.dev/api
 ```
 
-When unset on `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api` by default. Other hosts can still call GNews and Hacker News directly, but API-key providers require the proxy.
+When unset on `https://syncblog.cn` or `https://md.tuaran666.workers.dev`, the app uses `https://md-gnews-proxy.tuaran666.workers.dev/api` by default. Other hosts can still call GNews and Hacker News directly, but API-key providers require the proxy.

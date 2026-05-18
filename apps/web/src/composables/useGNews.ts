@@ -30,6 +30,11 @@ export interface GNewsFetchResult {
 export const DEFAULT_NEWS_PROXY_URL = `https://md-gnews-proxy.tuaran666.workers.dev/api`
 export const DEFAULT_GNEWS_PROXY_URL = DEFAULT_NEWS_PROXY_URL
 
+const DEFAULT_NEWS_PROXY_HOSTS = new Set([
+  `syncblog.cn`,
+  `md.tuaran666.workers.dev`,
+])
+
 export function resolveGNewsProxyBase(): string {
   const configured = (import.meta.env.VITE_GNEWS_PROXY_URL ?? ``).trim()
   if (configured)
@@ -37,7 +42,7 @@ export function resolveGNewsProxyBase(): string {
 
   if (
     typeof window !== `undefined`
-    && window.location.hostname === `md.tuaran666.workers.dev`
+    && DEFAULT_NEWS_PROXY_HOSTS.has(window.location.hostname)
   ) {
     return DEFAULT_GNEWS_PROXY_URL
   }
