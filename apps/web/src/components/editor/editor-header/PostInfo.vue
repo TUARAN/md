@@ -7,6 +7,7 @@ import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
+import { downloadCsyncExtensionZip } from '@/utils/downloadCsyncExtension'
 import { PLUGIN_SYNCER_PREFERRED_TYPES } from '@/utils/publishExtensions'
 
 defineOptions({
@@ -58,9 +59,6 @@ const allowPost = computed(() => {
   )
   return coseOk || pluginOk
 })
-
-/** 构建时由 package:csync 写入 public，与当前 Vite base 一致 */
-const csyncExtensionZipUrl = computed(() => `${import.meta.env.BASE_URL}csync-extension.zip`)
 
 const platformCategories = [
   {
@@ -204,9 +202,9 @@ function onAvatarError(account: PostAccount, event: Event) {
               <li>
                 <strong class="text-foreground">主推</strong>：点击
                 <a
-                  :href="csyncExtensionZipUrl"
-                  download
+                  href="#"
                   class="font-medium text-primary underline underline-offset-2"
+                  @click.prevent="downloadCsyncExtensionZip()"
                 >下载 CSYNC 扩展（.zip）</a>
                 ——与当前站点配套的包。解压得到 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">csync-extension</code> 文件夹，在 Chrome
                 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>

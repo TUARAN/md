@@ -3,7 +3,7 @@
  * 将 apps/web/vendor/csync-extension 打成 zip，供用户下载后在 Chrome 中「加载已解压的扩展程序」
  * （或解压后选该文件夹）。产物写入 apps/web/public/，随 Vite build 进入站点静态资源。
  *
- * 使用系统 zip 命令，确保 macOS「归档实用工具」可正常解压。
+ * 使用 zip -9 -X 打包，并在打包前规范化目录权限（避免 macOS 归档工具报「格式不支持」）。
  */
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -16,7 +16,14 @@ const rootDir = path.resolve(__dirname, `..`)
 const sourceDir = path.join(rootDir, `apps`, `web`, `vendor`, `csync-extension`)
 const publicDir = path.join(rootDir, `apps`, `web`, `public`)
 
-function createZipWithSystemZip(sourceDirPath, outputPath) {
+function normalizeSourcePermissions(sourceDirPath) {
+  spawnSync(`chmod`, [`-R`, `u+rwX,go+rX`, sourceDirPath], { stdio: `pipe` })
+  for (const name of [`__MACOSX`, `.DS_Store`]) {
+    spawnSync(`find`, [sourceDirPath, `-name`, name, `-exec`, `rm`, `-rf`, `{}`, `+`], { stdio: `pipe` })
+  }
+}
+
+function createZipWithZipCommand(sourceDirPath, outputPath) {
   const parentDir = path.dirname(sourceDirPath)
   const folderName = path.basename(sourceDirPath)
   const outputAbs = path.resolve(outputPath)
@@ -26,14 +33,19 @@ function createZipWithSystemZip(sourceDirPath, outputPath) {
 
   const result = spawnSync(
     `zip`,
-    [`-r`, outputAbs, folderName, `-x`, `*/.DS_Store`, `*__MACOSX*`],
+    [`-r`, `-9`, `-X`, outputAbs, folderName, `-x`, `*/.DS_Store`, `*__MACOSX*`],
     { cwd: parentDir, stdio: `pipe`, encoding: `utf8` },
   )
 
   if (result.status !== 0) {
     console.error(result.stderr || result.stdout)
-    throw new Error(`zip 命令失败 (exit ${result.status})，请确认已安装 zip 工具`)
+    throw new Error(`zip 命令失败 (exit ${result.status})`)
   }
+}
+
+function createZip(sourceDirPath, outputPath) {
+  normalizeSourcePermissions(sourceDirPath)
+  createZipWithZipCommand(sourceDirPath, outputPath)
 }
 
 function verifyZip(outputPath) {
@@ -42,6 +54,11 @@ function verifyZip(outputPath) {
     console.error(result.stderr || result.stdout)
     throw new Error(`打包后的 zip 校验失败`)
   }
+
+  const head = spawnSync(`head`, [`-c`, `4`, outputPath], { encoding: `buffer` })
+  const sig = head.stdout?.toString(`binary`) ?? ``
+  if (!sig.startsWith(`PK`))
+    throw new Error(`产物不是有效的 zip 文件（缺少 PK 头）`)
 }
 
 async function main() {
@@ -60,7 +77,7 @@ async function main() {
   const outPath = path.join(publicDir, outName)
   const outLatest = path.join(publicDir, `csync-extension.zip`)
 
-  createZipWithSystemZip(sourceDir, outPath)
+  createZip(sourceDir, outPath)
   verifyZip(outPath)
   fs.copyFileSync(outPath, outLatest)
 

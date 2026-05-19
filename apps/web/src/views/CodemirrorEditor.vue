@@ -22,6 +22,7 @@ import { useCursorSync } from '@/composables/useCursorSync'
 import { EDITOR_WECHAT_COPY_KEY, useEditorWechatCopy } from '@/composables/useEditorWechatCopy'
 import { useScrollSync } from '@/composables/useScrollSync'
 import { useUIStore, WORKFLOW_PAGE_ANCHORS } from '@/stores/ui'
+import { downloadCsyncExtensionZip } from '@/utils/downloadCsyncExtension'
 
 const uiStore = useUIStore()
 
@@ -96,9 +97,6 @@ const editorPanelConfig = computed(() => {
     return { min: 30, max: 70 }
   return { min: 15, max: 85 }
 })
-
-/** 与部署站点同源的 CSYNC 扩展包（构建时 pnpm package:csync 写入 public） */
-const csyncExtensionZipUrl = computed(() => `${import.meta.env.BASE_URL}csync-extension.zip`)
 
 const previewPanelConfig = computed(() => {
   const mode = viewMode.value
@@ -221,9 +219,9 @@ onUnmounted(() => {
                       （页面桥接为 <code class="rounded bg-muted px-1 py-px text-[10px]">$pluginSyncer</code>）。
                       CSYNC 请
                       <a
-                        :href="csyncExtensionZipUrl"
-                        download
+                        href="#"
                         class="font-medium text-foreground underline underline-offset-2"
+                        @click.prevent="downloadCsyncExtensionZip()"
                       >从本站下载 .zip</a>
                       解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载（与「发布」对话框一致）。
                     </p>

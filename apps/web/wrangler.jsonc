@@ -8,9 +8,9 @@
   "compatibility_date": "2025-09-06",
   "main": "worker/index.ts",
   "assets": {
-    "not_found_handling": "single-page-application",
-    // 须先执行 pnpm package:csync && CF_WORKERS=1 pnpm web build:h5-netlify，产物在 dist/client
-    "directory": "./dist/client"
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
   },
   "routes": [
     {
