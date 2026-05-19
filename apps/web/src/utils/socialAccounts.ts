@@ -57,7 +57,8 @@ export interface PublicCreatorProfile {
 }
 
 /**
- * 名片默认主页：扩展/缓存无法解析出个人主页时使用（优先于 PLATFORM_HOME_URLS）。
+ * 创作者 TUARAN 在各平台的个人主页（写死兜底，非全站通用默认）。
+ * 仅当扩展/缓存无法解析出 TUARAN 的真实主页，或只能落到平台门户时使用。
  * 维护说明见 docs/creator-profile-urls.md
  */
 export const PLATFORM_DEFAULT_PROFILE_URLS: Record<string, string> = {
@@ -80,9 +81,9 @@ export const PLATFORM_DEFAULT_PROFILE_URLS: Record<string, string> = {
 /** 默认主页对应平台在名片上的展示名（用于补全未检测到的账号） */
 const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { title: string, displayName: string }> = {
   csdn: { title: `CSDN`, displayName: `aifs2025` },
-  juejin: { title: `掘金`, displayName: `TUARAN` },
-  zhihu: { title: `知乎`, displayName: `TUARAN` },
-  toutiao: { title: `今日头条`, displayName: `TUARAN` },
+  juejin: { title: `掘金`, displayName: `掘金安东尼` },
+  zhihu: { title: `知乎`, displayName: `三十而立方` },
+  toutiao: { title: `今日头条`, displayName: `掘金安东尼` },
   oschina: { title: `开源中国`, displayName: `TUARAN` },
   cto51: { title: `51CTO`, displayName: `u_13961087` },
   infoq: { title: `InfoQ`, displayName: `TUARAN` },
@@ -93,6 +94,41 @@ const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { title: string, displayNam
   aliyun: { title: `阿里云`, displayName: `TUARAN` },
   huaweicloud: { title: `华为云`, displayName: `TUARAN` },
   segmentfault: { title: `思否`, displayName: `aran_tu` },
+}
+
+/** 未单独校对平台时使用的 TUARAN 预估粉丝/阅读 */
+const TUARAN_ESTIMATED_PROFILE_STATS = { followers: `100`, reads: `2万` } as const
+
+/**
+ * TUARAN 各平台粉丝/阅读快照（仅创作者 TUARAN；扩展未带回数据时使用）。
+ * 已校对：掘金 / 知乎 / 头条 / 小红书；其余平台为预估占位，见 docs/creator-profile-urls.md
+ */
+export const PLATFORM_DEFAULT_PROFILE_STATS: Record<string, { followers: string, reads: string }> = {
+  juejin: { followers: `11,834`, reads: `2,410,254` },
+  zhihu: { followers: `345`, reads: `380,471` },
+  toutiao: { followers: `709`, reads: `129,381` },
+  xiaohongshu: { followers: `1.2万`, reads: `150万` },
+  csdn: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  oschina: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  cto51: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  infoq: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  baijiahao: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  weibo: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  tencentcloud: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  aliyun: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  huaweicloud: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+  segmentfault: { ...TUARAN_ESTIMATED_PROFILE_STATS },
+}
+
+function applyDefaultProfileStats(account: PublicSocialAccount): PublicSocialAccount {
+  const stats = PLATFORM_DEFAULT_PROFILE_STATS[account.type]
+  if (!stats)
+    return account
+  return {
+    ...account,
+    followers: account.followers || stats.followers,
+    reads: account.reads || stats.reads,
+  }
 }
 
 /** 无个人 uid 时的平台门户（非编辑页） */
@@ -460,7 +496,7 @@ export function resolveSocialAccountUrl(account: PostAccount) {
 function createDefaultPublicAccount(type: string): PublicSocialAccount {
   const meta = PLATFORM_DEFAULT_DISPLAY_NAMES[type]
   const url = PLATFORM_DEFAULT_PROFILE_URLS[type]!
-  return {
+  return applyDefaultProfileStats({
     type,
     title: meta?.title ?? type,
     displayName: meta?.displayName ?? `TUARAN`,
@@ -469,7 +505,7 @@ function createDefaultPublicAccount(type: string): PublicSocialAccount {
     url,
     loggedIn: true,
     updatedAt: Date.now(),
-  }
+  })
 }
 
 /**
@@ -496,9 +532,10 @@ export function mergeDefaultProfileAccounts(accounts: PublicSocialAccount[]): Pu
       loggedIn: existing.loggedIn,
     })
 
-    if (resolved !== existing.url) {
-      map.set(type, { ...existing, url: resolved, updatedAt: Date.now() })
-    }
+    const next = resolved !== existing.url
+      ? { ...existing, url: resolved, updatedAt: Date.now() }
+      : existing
+    map.set(type, applyDefaultProfileStats(next))
   }
 
   return [...map.values()]
