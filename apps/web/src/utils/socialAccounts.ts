@@ -100,8 +100,8 @@ const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { title: string, displayNam
 const TUARAN_ESTIMATED_PROFILE_STATS = { followers: `100`, reads: `2万` } as const
 
 /**
- * TUARAN 各平台粉丝/阅读快照（仅创作者 TUARAN；扩展未带回数据时使用）。
- * 已校对：掘金 / 知乎 / 头条 / 小红书；其余平台为预估占位，见 docs/creator-profile-urls.md
+ * TUARAN 各平台粉丝/阅读静态快照（③，见 docs/creator-profile-urls.md「数据来源总览」）。
+ * 优先级：COSE/CSYNC 检测 + localStorage 缓存（①②）> 本表；仅缺字段时用本表补位。
  */
 export const PLATFORM_DEFAULT_PROFILE_STATS: Record<string, { followers: string, reads: string }> = {
   juejin: { followers: `11,834`, reads: `2,410,254` },
