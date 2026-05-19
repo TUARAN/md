@@ -56,6 +56,45 @@ export interface PublicCreatorProfile {
   modules: CreatorProfileModule[]
 }
 
+/**
+ * 名片默认主页：扩展/缓存无法解析出个人主页时使用（优先于 PLATFORM_HOME_URLS）。
+ * 维护说明见 docs/creator-profile-urls.md
+ */
+export const PLATFORM_DEFAULT_PROFILE_URLS: Record<string, string> = {
+  csdn: `https://blog.csdn.net/aifs2025`,
+  juejin: `https://juejin.cn/user/1521379823340792`,
+  zhihu: `https://www.zhihu.com/people/tu-tu-tu-tu-tu-25-1`,
+  toutiao: `https://www.toutiao.com/c/user/token/MS4wLjABAAAAqDPAgOjSsjLeLCA_T2AQUDIZsl29T4P4aymfpldAtA7cjg7FWpDigq4G2uwaHH7H/`,
+  oschina: `https://my.oschina.net/u/9753726`,
+  cto51: `https://blog.51cto.com/u_13961087`,
+  infoq: `https://www.infoq.cn/profile/101F0D86A30093/publish`,
+  baijiahao: `https://mbd.baidu.com/newspage/data/dtlandingwise?sourceFrom=baijiahao&nid=dt_4601215864081255881`,
+  weibo: `https://weibo.com/u/7962821975`,
+  xiaohongshu: `https://xhslink.com/m/7w6ONgVXPX6`,
+  tencentcloud: `https://cloud.tencent.com/developer/user/7738744`,
+  aliyun: `https://developer.aliyun.com/article/1723858`,
+  huaweicloud: `https://bbs.huaweicloud.com/blogs/388492`,
+  segmentfault: `https://segmentfault.com/u/aran_tu/articles`,
+}
+
+/** 默认主页对应平台在名片上的展示名（用于补全未检测到的账号） */
+const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { title: string, displayName: string }> = {
+  csdn: { title: `CSDN`, displayName: `aifs2025` },
+  juejin: { title: `掘金`, displayName: `TUARAN` },
+  zhihu: { title: `知乎`, displayName: `TUARAN` },
+  toutiao: { title: `今日头条`, displayName: `TUARAN` },
+  oschina: { title: `开源中国`, displayName: `TUARAN` },
+  cto51: { title: `51CTO`, displayName: `u_13961087` },
+  infoq: { title: `InfoQ`, displayName: `TUARAN` },
+  baijiahao: { title: `百家号`, displayName: `TUARAN` },
+  weibo: { title: `微博`, displayName: `TUARAN` },
+  xiaohongshu: { title: `小红书`, displayName: `TUARAN` },
+  tencentcloud: { title: `腾讯云`, displayName: `TUARAN` },
+  aliyun: { title: `阿里云`, displayName: `TUARAN` },
+  huaweicloud: { title: `华为云`, displayName: `TUARAN` },
+  segmentfault: { title: `思否`, displayName: `aran_tu` },
+}
+
 /** 无个人 uid 时的平台门户（非编辑页） */
 export const PLATFORM_HOME_URLS: Record<string, string> = {
   csdn: `https://blog.csdn.net`,
@@ -192,6 +231,64 @@ function sanitizeProfileUid(uid: string) {
   return trimmed
 }
 
+function isWeakProfileUid(uid: string, type: string) {
+  const clean = sanitizeProfileUid(uid)
+  if (!clean)
+    return true
+  if (clean === type)
+    return true
+  return false
+}
+
+function getDefaultProfileUrl(type: string) {
+  return PLATFORM_DEFAULT_PROFILE_URLS[type] ?? null
+}
+
+/** 是否为平台门户首页（非个人主页） */
+function isGenericPortalUrl(url: string, type: string) {
+  if (!url || url === `#`)
+    return true
+  const portal = PLATFORM_HOME_URLS[type]
+  if (portal && url.replace(/\/$/, ``) === portal.replace(/\/$/, ``))
+    return true
+  try {
+    const parsed = new URL(url)
+    const portalParsed = portal ? new URL(portal) : null
+    if (portalParsed && parsed.origin === portalParsed.origin) {
+      const path = parsed.pathname.replace(/\/$/, ``) || `/`
+      const portalPath = portalParsed.pathname.replace(/\/$/, ``) || `/`
+      if (path === portalPath || path === `/`)
+        return true
+    }
+  }
+  catch {
+    return true
+  }
+  return false
+}
+
+function shouldUseDefaultProfileUrl(type: string, resolved: string, uid: string) {
+  const defaultUrl = getDefaultProfileUrl(type)
+  if (!defaultUrl)
+    return false
+  if (resolved === defaultUrl)
+    return false
+  if (isGenericPortalUrl(resolved, type) || isEditorOrPublishUrl(resolved) || resolved === `#`)
+    return true
+  if (isWeakProfileUid(uid, type))
+    return true
+  return false
+}
+
+function resolveWithDefaultFallback(type: string, uid: string, resolved: string) {
+  if (shouldUseDefaultProfileUrl(type, resolved, uid)) {
+    const defaultUrl = getDefaultProfileUrl(type)
+    if (defaultUrl)
+      return defaultUrl
+  }
+  return resolved
+}
+
 function buildProfileUrlByType(type: string, uid: string) {
   const cleanUid = sanitizeProfileUid(uid)
   if (!cleanUid)
@@ -311,7 +408,7 @@ function extractUidFromPlatformUrl(type: string, url: string): string | null {
 
 function resolveProfileUid(account: PostAccount, raw: Record<string, unknown>) {
   const fromAccount = sanitizeProfileUid(account.uid || ``)
-  if (fromAccount)
+  if (fromAccount && !isWeakProfileUid(fromAccount, account.type))
     return fromAccount
 
   for (const key of [`profileUrl`, `profile`, `homepage`, `home`, `url`]) {
@@ -326,35 +423,85 @@ function resolveProfileUid(account: PostAccount, raw: Record<string, unknown>) {
 }
 
 /**
- * 名片展示用主页链接。同步扩展里的 home/url 多为编辑页，此处优先拼「我的主页」。
+ * 名片展示用主页链接。同步扩展里的 home/url 多为编辑页，此处优先拼「我的主页」；
+ * 仍无法得到个人主页时，使用 PLATFORM_DEFAULT_PROFILE_URLS，再退回平台门户。
  */
 export function resolveSocialAccountUrl(account: PostAccount) {
   const raw = account as unknown as Record<string, unknown>
+  const uidForFallback = sanitizeProfileUid(account.uid || ``) || account.type
 
   for (const key of [`profileUrl`, `profile`, `homepage`]) {
     const explicit = firstString(raw, [key])
     if (isLikelyProfileUrl(explicit))
-      return explicit
+      return resolveWithDefaultFallback(account.type, uidForFallback, explicit)
   }
 
   const uid = resolveProfileUid(account, raw)
-  const built = buildProfileUrlByType(account.type, uid)
+  const built = uid ? buildProfileUrlByType(account.type, uid) : null
   if (built)
-    return built
+    return resolveWithDefaultFallback(account.type, uidForFallback, built)
 
   for (const key of [`home`, `url`]) {
     const candidate = firstString(raw, [key])
     if (isLikelyProfileUrl(candidate))
-      return candidate
+      return resolveWithDefaultFallback(account.type, uidForFallback, candidate)
     if (/^https?:\/\//i.test(candidate)) {
       const fromEditorPath = extractUidFromPlatformUrl(account.type, candidate)
       const rebuilt = fromEditorPath ? buildProfileUrlByType(account.type, fromEditorPath) : null
       if (rebuilt)
-        return rebuilt
+        return resolveWithDefaultFallback(account.type, uidForFallback, rebuilt)
     }
   }
 
-  return PLATFORM_HOME_URLS[account.type] || `#`
+  const portal = PLATFORM_HOME_URLS[account.type] || `#`
+  return resolveWithDefaultFallback(account.type, uidForFallback, portal)
+}
+
+function createDefaultPublicAccount(type: string): PublicSocialAccount {
+  const meta = PLATFORM_DEFAULT_DISPLAY_NAMES[type]
+  const url = PLATFORM_DEFAULT_PROFILE_URLS[type]!
+  return {
+    type,
+    title: meta?.title ?? type,
+    displayName: meta?.displayName ?? `TUARAN`,
+    uid: type,
+    icon: ``,
+    url,
+    loggedIn: true,
+    updatedAt: Date.now(),
+  }
+}
+
+/**
+ * 合并默认主页配置：补全未检测到的平台，并修正仍为门户首页的链接。
+ */
+export function mergeDefaultProfileAccounts(accounts: PublicSocialAccount[]): PublicSocialAccount[] {
+  const map = new Map(accounts.map(account => [account.type, account]))
+
+  for (const type of Object.keys(PLATFORM_DEFAULT_PROFILE_URLS)) {
+    const existing = map.get(type)
+    if (!existing) {
+      map.set(type, createDefaultPublicAccount(type))
+      continue
+    }
+
+    const resolved = resolveSocialAccountUrl({
+      type: existing.type,
+      uid: existing.uid,
+      displayName: existing.displayName,
+      home: existing.url,
+      icon: existing.icon,
+      title: existing.title,
+      checked: false,
+      loggedIn: existing.loggedIn,
+    })
+
+    if (resolved !== existing.url) {
+      map.set(type, { ...existing, url: resolved, updatedAt: Date.now() })
+    }
+  }
+
+  return [...map.values()]
 }
 
 export function normalizePublicSocialAccounts(accounts: PostAccount[]) {
@@ -385,7 +532,7 @@ export function normalizePublicSocialAccounts(accounts: PostAccount[]) {
   for (const row of publicRows)
     map.set(`${row.type}:${row.uid}:${row.displayName}`, row)
 
-  return applyProfileHomeUrls([...map.values()])
+  return mergeDefaultProfileAccounts(applyProfileHomeUrls([...map.values()]))
 }
 
 /** 将已缓存账号的 url 纠正为个人主页（兼容旧数据里残留的编辑页链接） */
@@ -406,7 +553,7 @@ export function applyProfileHomeUrls(accounts: PublicSocialAccount[]): PublicSoc
 }
 
 export function repairCreatorProfile(profile: PublicCreatorProfile): PublicCreatorProfile {
-  const accounts = applyProfileHomeUrls(getCreatorProfileAccounts(profile))
+  const accounts = mergeDefaultProfileAccounts(applyProfileHomeUrls(getCreatorProfileAccounts(profile)))
   return {
     ...profile,
     modules: profile.modules.map(module =>

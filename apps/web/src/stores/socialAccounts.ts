@@ -6,6 +6,7 @@ import {
   createCreatorProfile,
   decodeCreatorProfile,
   encodeCreatorProfile,
+  mergeDefaultProfileAccounts,
   normalizePublicSocialAccounts,
   repairCreatorProfile,
 } from '@/utils/socialAccounts'
@@ -20,7 +21,9 @@ export const useSocialAccountsStore = defineStore(`socialAccounts`, () => {
   const profile = store.reactive<PublicCreatorProfile | null>(addPrefix(`creator-profile`), null)
 
   const activeAccounts = computed(() =>
-    applyProfileHomeUrls(accounts.value.filter(account => account.loggedIn && account.url)),
+    mergeDefaultProfileAccounts(
+      applyProfileHomeUrls(accounts.value.filter(account => account.loggedIn && account.url)),
+    ),
   )
   const activeProfile = computed(() => {
     const base = profile.value ?? createCreatorProfile(activeAccounts.value)
