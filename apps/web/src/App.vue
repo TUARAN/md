@@ -5,7 +5,9 @@ import { Toaster } from '@/components/ui/sonner'
 import { documentTitle } from '@/constants/branding'
 import { SOCIAL_ACCOUNTS_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
+import { isCreatorOfferPath, parseCreatorOfferId } from '@/utils/creatorRoutes'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
+import CreatorOfferPage from '@/views/CreatorOfferPage.vue'
 import CreatorProfilePage from '@/views/CreatorProfilePage.vue'
 
 const uiStore = useUIStore()
@@ -14,6 +16,8 @@ const { isDark } = storeToRefs(uiStore)
 const isUtools = ref(false)
 const currentPath = ref(window.location.pathname)
 const isCreatorProfilePage = computed(() => currentPath.value === SOCIAL_ACCOUNTS_ROUTE)
+const creatorOfferId = computed(() => parseCreatorOfferId(currentPath.value))
+const isCreatorOfferPage = computed(() => isCreatorOfferPath(currentPath.value))
 
 function updateCurrentPath() {
   currentPath.value = window.location.pathname
@@ -23,7 +27,7 @@ onMounted(() => {
   document.title = documentTitle
   window.addEventListener(`popstate`, updateCurrentPath)
 
-  if (isCreatorProfilePage.value)
+  if (isCreatorProfilePage.value || isCreatorOfferPage.value)
     return
 
   // 检测是否为 Utools 环境
@@ -53,6 +57,7 @@ onBeforeUnmount(() => {
 <template>
   <AppSplash />
   <CreatorProfilePage v-if="isCreatorProfilePage" />
+  <CreatorOfferPage v-else-if="isCreatorOfferPage && creatorOfferId" :creator-id="creatorOfferId" />
   <CodemirrorEditor v-else />
 
   <ConfirmDialog />
