@@ -386,14 +386,6 @@ onBeforeMount(() => {
       <DialogContent class="!w-[750px] !max-w-[95vw] max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>发布与多平台同步</DialogTitle>
-          <DialogDescription class="space-y-2">
-            <p>
-              会把当前文章中的标题、描述、封面、预览 HTML 与 Markdown 交给已安装的浏览器扩展，由扩展跳转各平台编辑页并尽量写入草稿；不同站点实现方式不同，失败时可在任务里单独重试。
-            </p>
-            <p>
-              编辑器刻意拆成两条同步链路：知乎、公众号、微博优先用本仓库的 csync，其它平台用 COSE（cose 文章同步助手），从而兼顾「热门三个站」的稳定与其余站点的覆盖面。二者可同时安装，本对话框会自动分流。
-            </p>
-          </DialogDescription>
         </DialogHeader>
         <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-4">
           <div class="rounded-lg border border-border/80 bg-muted/25 px-4 py-3 text-sm leading-relaxed text-muted-foreground dark:bg-muted/15">

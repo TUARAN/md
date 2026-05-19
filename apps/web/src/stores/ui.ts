@@ -4,6 +4,55 @@ import { store } from '@/utils/storage'
 /** 顶栏工作流对应的整页视图（非弹窗） */
 export type WorkflowAppPage = `data` | `creation` | `sync` | `distribution` | `stats`
 
+export const WORKFLOW_PAGE_ANCHORS: Record<WorkflowAppPage, string> = {
+  data: `data-acquisition`,
+  creation: `style-creation`,
+  sync: `content-sync`,
+  distribution: `distribution-active`,
+  stats: `closed-loop-report`,
+} as const
+
+const WORKFLOW_HASH_PAGE_ALIASES: Record<string, WorkflowAppPage> = {
+  [WORKFLOW_PAGE_ANCHORS.data]: `data`,
+  data: `data`,
+  acquisition: `data`,
+  数据获取: `data`,
+  [WORKFLOW_PAGE_ANCHORS.creation]: `creation`,
+  creation: `creation`,
+  风格二创: `creation`,
+  [WORKFLOW_PAGE_ANCHORS.sync]: `sync`,
+  sync: `sync`,
+  内容同步: `sync`,
+  [WORKFLOW_PAGE_ANCHORS.distribution]: `distribution`,
+  distribution: `distribution`,
+  宣发活跃: `distribution`,
+  [WORKFLOW_PAGE_ANCHORS.stats]: `stats`,
+  stats: `stats`,
+  report: `stats`,
+  闭环汇报: `stats`,
+}
+
+function normalizeWorkflowHash(hash: string) {
+  const raw = hash.replace(/^#/, ``).trim()
+  if (!raw)
+    return ``
+
+  try {
+    return decodeURIComponent(raw).trim()
+  }
+  catch {
+    return raw
+  }
+}
+
+function getWorkflowPageFromHash(hash: string) {
+  const normalized = normalizeWorkflowHash(hash)
+  if (!normalized)
+    return null
+
+  return WORKFLOW_HASH_PAGE_ALIASES[normalized] ?? WORKFLOW_HASH_PAGE_ALIASES[normalized.toLowerCase()] ?? null
+}
+
 /**
  * UI 状态 Store
  * 负责管理全局 UI 状态，包括深色模式、侧边栏、对话框等
@@ -113,8 +162,28 @@ export const useUIStore = defineStore(`ui`, () => {
   /** 主工作区当前页面：数据获取 / 风格二创 / 内容同步 / 宣发活跃 / 闭环汇报 */
   const workflowAppPage = store.reactive<WorkflowAppPage>(`workflow_app_page`, `sync`)
 
-  function setWorkflowAppPage(page: WorkflowAppPage) {
+  function syncWorkflowHash(page: WorkflowAppPage) {
+    if (typeof window === `undefined`)
+      return
+
+    const anchor = WORKFLOW_PAGE_ANCHORS[page]
+    if (!anchor) {
+      if (getWorkflowPageFromHash(window.location.hash))
+        window.history.replaceState({}, ``, `${window.location.pathname}${window.location.search}`)
+      return
+    }
+
+    const hash = `#${anchor}`
+    if (window.location.hash === hash)
+      return
+
+    window.history.replaceState({}, ``, `${window.location.pathname}${window.location.search}${hash}`)
+  }
+
+  function setWorkflowAppPage(page: WorkflowAppPage, options: { syncHash?: boolean } = {}) {
     workflowAppPage.value = page
+    if (options.syncHash !== false)
+      syncWorkflowHash(page)
   }
 
   /** 打开 AI 助手时注入到输入框的 Markdown（由 GNews 等入口写入，打开后消费清空） */
@@ -169,13 +238,30 @@ export const useUIStore = defineStore(`ui`, () => {
     }
   }
 
+  function handleWorkflowHashChange() {
+    if (typeof window === `undefined`)
+      return
+
+    const page = getWorkflowPageFromHash(window.location.hash)
+    if (page)
+      setWorkflowAppPage(page, { syncHash: false })
+  }
+
   onMounted(() => {
     handleResize()
+    const page = getWorkflowPageFromHash(window.location.hash)
+    if (page)
+      setWorkflowAppPage(page)
+    else
+      syncWorkflowHash(workflowAppPage.value)
+
     window.addEventListener(`resize`, handleResize)
+    window.addEventListener(`hashchange`, handleWorkflowHashChange)
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener(`resize`, handleResize)
+    window.removeEventListener(`hashchange`, handleWorkflowHashChange)
   })
 
   return {

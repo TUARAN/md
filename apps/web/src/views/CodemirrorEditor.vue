@@ -21,7 +21,7 @@ import {
 import { useCursorSync } from '@/composables/useCursorSync'
 import { EDITOR_WECHAT_COPY_KEY, useEditorWechatCopy } from '@/composables/useEditorWechatCopy'
 import { useScrollSync } from '@/composables/useScrollSync'
-import { useUIStore } from '@/stores/ui'
+import { useUIStore, WORKFLOW_PAGE_ANCHORS } from '@/stores/ui'
 
 const uiStore = useUIStore()
 
@@ -175,6 +175,7 @@ onUnmounted(() => {
     <main class="container-main bg-muted/40 flex min-h-0 flex-1 flex-col dark:bg-muted/15">
       <div
         v-show="workflowAppPage === 'sync'"
+        :id="WORKFLOW_PAGE_ANCHORS.sync"
         class="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <WorkflowPageShell :scroll-body="false">
@@ -341,10 +342,10 @@ onUnmounted(() => {
         </WorkflowPageShell>
       </div>
 
-      <WorkflowDataPage v-show="workflowAppPage === 'data'" />
-      <WorkflowCreationPage v-show="workflowAppPage === 'creation'" />
-      <WorkflowDistributionPage v-show="workflowAppPage === 'distribution'" />
-      <WorkflowStatsPage v-show="workflowAppPage === 'stats'" />
+      <WorkflowDataPage v-show="workflowAppPage === 'data'" :id="WORKFLOW_PAGE_ANCHORS.data" />
+      <WorkflowCreationPage v-show="workflowAppPage === 'creation'" :id="WORKFLOW_PAGE_ANCHORS.creation" />
+      <WorkflowDistributionPage v-show="workflowAppPage === 'distribution'" :id="WORKFLOW_PAGE_ANCHORS.distribution" />
+      <WorkflowStatsPage v-show="workflowAppPage === 'stats'" :id="WORKFLOW_PAGE_ANCHORS.stats" />
 
       <UploadImgDialog @upload-image="handleUploadImage" />
 
