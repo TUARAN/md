@@ -12,11 +12,9 @@ jobs:
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' && github.repository == 'doocs/md'
     steps:
       - name: Download PR artifact
-        uses: dawidd6/action-download-artifact@v21
-        with:
-          workflow: ${{ github.event.workflow_run.workflow_id }}
-          run_id: ${{ github.event.workflow_run.id }}
-          name: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run download ${{ github.event.workflow_run.id }} --name pr
 
       - name: Save PR id
         id: pr
@@ -29,12 +27,9 @@ jobs:
           echo "id=$pr_id" >> $GITHUB_OUTPUT
 
       - name: Download dist artifact
-        uses: dawidd6/action-download-artifact@v21
-        with:
-          workflow: ${{ github.event.workflow_run.workflow_id }}
-          run_id: ${{ github.event.workflow_run.id }}
-          workflow_conclusion: success
-          name: dist
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run download ${{ github.event.workflow_run.id }} --name dist
 
       - name: Upload surge service
         id: deploy
@@ -43,10 +38,10 @@ jobs:
           npx surge --project ./ --domain $DEPLOY_DOMAIN --token ${{ secrets.SURGE_TOKEN }}
 
       - name: Comment PR with preview link
-        uses: actions-cool/maintain-one-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ steps.pr.outputs.id }} --body "$(cat <<'EOF'
             🚀 Surge Preview has been successfully deployed!
 
             **Preview URL:** https://doocs-md-preview-pr-${{ steps.pr.outputs.id }}.surge.sh
@@ -54,33 +49,31 @@ jobs:
             <sub>Built with commit ${{ github.event.workflow_run.head_sha }}</sub>
 
             <!-- Surge Preview Comment -->
-          body-include: '<!-- Surge Preview Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          EOF
+          )"
 
       - name: Deploy failed
         if: ${{ failure() }}
-        uses: actions-cool/maintain-one-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ steps.pr.outputs.id }} --body "$(cat <<'EOF'
             😭 Surge Preview deployment failed.
 
             Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
             <!-- Surge Preview Comment -->
-          body-include: '<!-- Surge Preview Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          EOF
+          )"
 
   failed:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'failure' && github.repository == 'doocs/md'
     steps:
       - name: Download PR artifact
-        uses: dawidd6/action-download-artifact@v21
-        with:
-          workflow: ${{ github.event.workflow_run.workflow_id }}
-          run_id: ${{ github.event.workflow_run.id }}
-          name: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh run download ${{ github.event.workflow_run.id }} --name pr
 
       - name: Save PR id
         id: pr
@@ -93,14 +86,14 @@ jobs:
           echo "id=$pr_id" >> $GITHUB_OUTPUT
 
       - name: Comment PR with build failure
-        uses: actions-cool/maintain-one-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr comment ${{ steps.pr.outputs.id }} --body "$(cat <<'EOF'
             😭 Surge Preview build failed.
 
             Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}) for details.
 
             <!-- Surge Preview Comment -->
-          body-include: '<!-- Surge Preview Comment -->'
-          number: ${{ steps.pr.outputs.id }}
+          EOF
+          )"
