@@ -2,10 +2,12 @@ import type { PostAccount } from '@md/shared/types'
 import type { PublicCreatorProfile, PublicSocialAccount } from '@/utils/socialAccounts'
 import { addPrefix } from '@/utils'
 import {
+  applyProfileHomeUrls,
   createCreatorProfile,
   decodeCreatorProfile,
   encodeCreatorProfile,
   normalizePublicSocialAccounts,
+  repairCreatorProfile,
 } from '@/utils/socialAccounts'
 import { store } from '@/utils/storage'
 
@@ -17,8 +19,13 @@ export const useSocialAccountsStore = defineStore(`socialAccounts`, () => {
   const accounts = store.reactive<PublicSocialAccount[]>(addPrefix(`creator-social-accounts`), [])
   const profile = store.reactive<PublicCreatorProfile | null>(addPrefix(`creator-profile`), null)
 
-  const activeAccounts = computed(() => accounts.value.filter(account => account.loggedIn && account.url))
-  const activeProfile = computed(() => profile.value ?? createCreatorProfile(activeAccounts.value))
+  const activeAccounts = computed(() =>
+    applyProfileHomeUrls(accounts.value.filter(account => account.loggedIn && account.url)),
+  )
+  const activeProfile = computed(() => {
+    const base = profile.value ?? createCreatorProfile(activeAccounts.value)
+    return repairCreatorProfile(base)
+  })
 
   function cacheFromPostAccounts(postAccounts: PostAccount[]) {
     const next = normalizePublicSocialAccounts(postAccounts)
@@ -37,12 +44,16 @@ export const useSocialAccountsStore = defineStore(`socialAccounts`, () => {
   function readSharedProfile(search = typeof window !== `undefined` ? window.location.search : ``) {
     const params = new URLSearchParams(search)
     const profileData = params.get(`profile`)
-    if (profileData)
-      return decodeCreatorProfile(profileData)
+    if (profileData) {
+      const decoded = decodeCreatorProfile(profileData)
+      return decoded ? repairCreatorProfile(decoded) : null
+    }
 
     const legacyAccountsData = params.get(`data`)
-    if (legacyAccountsData)
-      return decodeCreatorProfile(legacyAccountsData)
+    if (legacyAccountsData) {
+      const decoded = decodeCreatorProfile(legacyAccountsData)
+      return decoded ? repairCreatorProfile(decoded) : null
+    }
 
     return null
   }
