@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import type { Post, PostAccount } from '@md/shared/types'
-import { Check, ChevronDown, ChevronRight, ExternalLink, Info, Loader2, Minus, Send } from 'lucide-vue-next'
+import { Check, ChevronDown, ChevronRight, ExternalLink, Info, Loader2, Minus, RefreshCw, Send } from 'lucide-vue-next'
 import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
+import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
-import { SOCIAL_ACCOUNTS_ROUTE, useSocialAccountsStore } from '@/stores/socialAccounts'
+import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
-import {
-  mapPluginSyncerAuthToAccounts,
-  mergeCoseAndPluginSyncerAccounts,
-  PLUGIN_SYNCER_PREFERRED_TYPES,
-} from '@/utils/publishExtensions'
+import { PLUGIN_SYNCER_PREFERRED_TYPES } from '@/utils/publishExtensions'
 
 defineOptions({
   inheritAttrs: false,
@@ -24,16 +21,23 @@ const { output } = storeToRefs(renderStore)
 
 const uiStore = useUIStore()
 const { isMobile } = storeToRefs(uiStore)
-const socialAccountsStore = useSocialAccountsStore()
+
+const {
+  allAccounts,
+  extensionInstalled,
+  pluginSyncerScriptPresent,
+  pluginAuthSnapshot,
+  isCheckingLogin,
+  getPlatformLoginUrl,
+  refreshPluginAuth,
+  tryMergePluginIntoAccounts,
+  startLoginDetection,
+  redetectAccounts,
+  cacheAccountsToProfile,
+} = usePlatformAccountDetection()
 
 const dialogVisible = ref(false)
-const extensionInstalled = ref(false)
-/** 页面已加载 CSYNC 扩展注入的 $pluginSyncer（需 manifest 匹配当前站点且 connected） */
-const pluginSyncerScriptPresent = ref(false)
-const pluginAuthSnapshot = ref<PostAccount[]>([])
-const allAccounts = ref<PostAccount[]>([])
 const postTaskDialogVisible = ref(false)
-const isCheckingLogin = ref(false)
 
 const form = ref<Post>({
   title: ``,
@@ -58,8 +62,6 @@ const allowPost = computed(() => {
 /** 构建时由 package:csync 写入 public，与当前 Vite base 一致 */
 const csyncExtensionZipUrl = computed(() => `${import.meta.env.BASE_URL}csync-extension.zip`)
 
-// 平台分类配置
-// 注：toutiao / jianshu / qianfan / modelscope 对站外图片审核较严格，统一排到各分类靠后
 const platformCategories = [
   {
     name: `媒体平台`,
@@ -75,7 +77,6 @@ const platformCategories = [
   },
 ]
 
-// 分类折叠状态（默认折叠云平台及开发者社区）
 const collapsedCategories = ref<Set<string>>(new Set([`云平台及开发者社区`]))
 
 function toggleCategory(categoryName: string) {
@@ -87,7 +88,6 @@ function toggleCategory(categoryName: string) {
   }
 }
 
-// 按分类获取账号
 const accountsByCategory = computed(() => {
   return platformCategories.map(category => ({
     name: category.name,
@@ -97,20 +97,17 @@ const accountsByCategory = computed(() => {
   }))
 })
 
-// 判断分类是否全选（只考虑已登录的账号）
 function isCategoryAllSelected(accounts: PostAccount[]) {
   const loggedInAccounts = accounts.filter(a => a.loggedIn)
   return loggedInAccounts.length > 0 && loggedInAccounts.every(a => a.checked)
 }
 
-// 判断分类是否部分选中
 function isCategoryIndeterminate(accounts: PostAccount[]) {
   const loggedInAccounts = accounts.filter(a => a.loggedIn)
   const checkedCount = loggedInAccounts.filter(a => a.checked).length
   return checkedCount > 0 && checkedCount < loggedInAccounts.length
 }
 
-// 切换分类全选
 function toggleCategorySelectAll(accounts: PostAccount[]) {
   const loggedInAccounts = accounts.filter(a => a.loggedIn)
   const allSelected = loggedInAccounts.every(a => a.checked)
@@ -118,9 +115,8 @@ function toggleCategorySelectAll(accounts: PostAccount[]) {
 }
 
 async function prePost() {
-  if ((extensionInstalled.value || pluginSyncerScriptPresent.value) && allAccounts.value.length === 0) {
-    startLoginDetection()
-  }
+  if ((extensionInstalled.value || pluginSyncerScriptPresent.value) && allAccounts.value.length === 0)
+    startLoginDetection({ silent: true })
 
   let auto: Post = {
     thumb: ``,
@@ -154,43 +150,6 @@ async function prePost() {
   }
 }
 
-async function refreshPluginAuth() {
-  if (!window.$pluginSyncer?.getPlatforms) {
-    pluginAuthSnapshot.value = []
-    return
-  }
-  if (!window.$pluginSyncer.connected) {
-    pluginAuthSnapshot.value = []
-    return
-  }
-  try {
-    const raw = await window.$pluginSyncer.getPlatforms()
-    pluginAuthSnapshot.value = mapPluginSyncerAuthToAccounts(raw)
-  }
-  catch {
-    pluginAuthSnapshot.value = []
-  }
-}
-
-function tryMergePluginIntoAccounts() {
-  if (pluginAuthSnapshot.value.length === 0)
-    return
-  if (allAccounts.value.length === 0) {
-    allAccounts.value = pluginAuthSnapshot.value.map(a => ({
-      ...a,
-      checked: false,
-      isChecking: false,
-    }))
-    return
-  }
-  allAccounts.value = mergeCoseAndPluginSyncerAccounts(
-    allAccounts.value,
-    pluginAuthSnapshot.value,
-    !!window.$pluginSyncer?.connected,
-  )
-}
-
-// 监听对话框打开，自动加载数据
 watch(dialogVisible, (newVal) => {
   if (newVal) {
     void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
@@ -198,192 +157,29 @@ watch(dialogVisible, (newVal) => {
   }
 })
 
-watch(allAccounts, (accounts) => {
-  socialAccountsStore.cacheFromPostAccounts(accounts)
-}, { deep: true })
-
-declare global {
-  interface Window {
-    syncPost: (data: { thumb: string, title: string, desc: string, content: string }) => void
-    $cose: any
-    $pluginSyncer?: import('@/utils/publishExtensions').PluginSyncerApi
-  }
-}
-
-// 获取初始平台列表（不带登录状态，用于立即显示）
-function getInitialPlatforms(): PostAccount[] {
-  if (window.$cose !== undefined && typeof window.$cose.getPlatforms === 'function') {
-    return window.$cose.getPlatforms().map((p: any) => ({
-      ...p,
-      checked: false,
-      loggedIn: false,
-      isChecking: true, // 标记正在检测中
-    }))
-  }
-  return []
-}
-
-// 开始登录检测（异步，不阻塞 UI，渐进式更新）
-function startLoginDetection() {
-  if (window.$cose !== undefined) {
-    const initialPlatforms = getInitialPlatforms()
-    if (initialPlatforms.length > 0) {
-      allAccounts.value = initialPlatforms
-    }
-
-    isCheckingLogin.value = true
-    let hasReceivedAny = false
-
-    const timeoutId = setTimeout(() => {
-      if (!hasReceivedAny) {
-        console.log('[COSE] 登录检测超时，停止检测')
-        allAccounts.value = allAccounts.value.map(a => ({ ...a, isChecking: false }))
-        isCheckingLogin.value = false
-      }
-      void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
-    }, 15000)
-
-    const finishCose = () => {
-      clearTimeout(timeoutId)
-      isCheckingLogin.value = false
-      void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
-    }
-
-    if (typeof window.$cose.getAccountsProgressive === 'function') {
-      window.$cose.getAccountsProgressive(
-        (account: PostAccount, _completed: number, _total: number) => {
-          hasReceivedAny = true
-          const idx = allAccounts.value.findIndex(a => a.type === account.type)
-          if (idx !== -1) {
-            allAccounts.value[idx] = { ...account, checked: false, isChecking: false }
-          }
-        },
-        finishCose,
-      )
-    }
-    else {
-      window.$cose.getAccounts((resp: PostAccount[]) => {
-        hasReceivedAny = true
-        clearTimeout(timeoutId)
-        allAccounts.value = resp.map(a => ({ ...a, checked: false, isChecking: false }))
-        isCheckingLogin.value = false
-        void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
-      })
-    }
-    return
-  }
-
-  void refreshPluginAuth().then(() => {
-    if (pluginAuthSnapshot.value.length > 0) {
-      allAccounts.value = pluginAuthSnapshot.value.map(a => ({
-        ...a,
-        checked: false,
-        isChecking: false,
-      }))
-    }
-  })
-}
-
-// 兼容旧的 getAccounts 调用（checkExtension 使用）
-async function getAccounts(): Promise<void> {
-  startLoginDetection()
-}
-
 function post() {
-  // 从 allAccounts 获取用户选择的平台（checkbox 绑定在 allAccounts 上）
   form.value.accounts = allAccounts.value.filter(a => a.checked && a.loggedIn)
-  socialAccountsStore.cacheFromPostAccounts(allAccounts.value)
+  cacheAccountsToProfile()
   postTaskDialogVisible.value = true
   dialogVisible.value = false
 }
 
 function openCreatorProfile() {
-  socialAccountsStore.cacheFromPostAccounts(allAccounts.value)
-  window.open(SOCIAL_ACCOUNTS_ROUTE, `_blank`, `noopener,noreferrer`)
+  cacheAccountsToProfile()
+  window.open(CREATOR_PROFILE_ROUTE, `_blank`, `noopener,noreferrer`)
 }
 
 function onUpdate(val: boolean) {
-  if (!val) {
+  if (!val)
     dialogVisible.value = false
-  }
-}
-
-function getPlatformUrl(type: string): string {
-  const urls: Record<string, string> = {
-    csdn: 'https://blog.csdn.net',
-    juejin: 'https://juejin.cn',
-    wechat: 'https://mp.weixin.qq.com',
-    zhihu: 'https://www.zhihu.com/signin',
-    toutiao: 'https://mp.toutiao.com',
-    segmentfault: 'https://segmentfault.com/user/login',
-    cnblogs: 'https://i.cnblogs.com/articles/edit',
-    oschina: 'https://my.oschina.net/blog/write',
-    cto51: 'https://blog.51cto.com/blogger/publish?&newBloger=2',
-    infoq: 'https://xie.infoq.cn/draft/',
-    jianshu: 'https://www.jianshu.com/sign_in',
-    baijiahao: 'https://baijiahao.baidu.com',
-    wangyihao: 'https://mp.163.com/subscribe_v4/index.html#/article-publish',
-    tencentcloud: 'https://cloud.tencent.com/developer',
-    medium: 'https://medium.com/m/signin',
-    sspai: 'https://sspai.com/write',
-    sohu: 'https://mp.sohu.com/mpfe/v4/login',
-    bilibili: 'https://passport.bilibili.com/login',
-    weibo: 'https://passport.weibo.com/sso/signin',
-    aliyun: 'https://account.aliyun.com/login/login.htm',
-    huaweicloud: 'https://bbs.huaweicloud.com/blogs/article',
-    huaweidev: 'https://developer.huawei.com/consumer/cn/blog/create',
-    twitter: 'https://x.com/compose/articles/edit/',
-    qianfan: 'https://qianfan.cloud.baidu.com/qianfandev/topic/create',
-    alipayopen: 'https://open.alipay.com/portal/forum/post/add#article',
-    modelscope: 'https://modelscope.cn/learn/create',
-    volcengine: 'https://developer.volcengine.com/articles/draft',
-    douyin: 'https://creator.douyin.com/creator-micro/content/post/article?default-tab=5&enter_from=publish_page&media_type=article&type=new',
-    xiaohongshu: 'https://creator.xiaohongshu.com/publish/publish?from=menu&target=article',
-    elecfans: 'https://www.elecfans.com/d/article/md/',
-    douban: 'https://www.douban.com/note/create',
-  }
-  return urls[type] || '#'
 }
 
 function onAvatarError(account: PostAccount, event: Event) {
   const img = event.target as HTMLImageElement
   if (!account)
     return
-  img.style.display = 'none'
+  img.style.display = `none`
 }
-
-function checkExtension() {
-  let coseDetectionStarted = false
-  let pluginAuthFetched = false
-  const probe = () => {
-    if (window.$cose !== undefined) {
-      extensionInstalled.value = true
-      if (!coseDetectionStarted) {
-        coseDetectionStarted = true
-        void getAccounts()
-      }
-    }
-    if (window.$pluginSyncer !== undefined) {
-      pluginSyncerScriptPresent.value = true
-      if (!pluginAuthFetched) {
-        pluginAuthFetched = true
-        void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
-      }
-    }
-  }
-  probe()
-  let count = 0
-  const timer = setInterval(() => {
-    probe()
-    count++
-    if (count > 10)
-      clearInterval(timer)
-  }, 500)
-}
-
-onBeforeMount(() => {
-  checkExtension()
-})
 </script>
 
 <template>
@@ -466,18 +262,31 @@ onBeforeMount(() => {
             <div class="flex-1 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/20 px-3 py-2 text-sm">
                 <span class="text-muted-foreground">
-                  已登录账号会自动缓存到博主展示页，可复制分享链接给品牌方查看。
+                  已登录账号会写入创作名片；登录新平台后可点「重新检测账号」刷新。
                 </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  :disabled="!allAccounts.some(a => a.loggedIn)"
-                  @click="openCreatorProfile"
-                >
-                  <ExternalLink class="mr-2 h-4 w-4" />
-                  创作名片
-                </Button>
+                <div class="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="isCheckingLogin"
+                    @click="redetectAccounts"
+                  >
+                    <Loader2 v-if="isCheckingLogin" class="mr-2 h-4 w-4 animate-spin" />
+                    <RefreshCw v-else class="mr-2 h-4 w-4" />
+                    重新检测账号
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="!allAccounts.some(a => a.loggedIn)"
+                    @click="openCreatorProfile"
+                  >
+                    <ExternalLink class="mr-2 h-4 w-4" />
+                    创作名片
+                  </Button>
+                </div>
               </div>
               <div v-for="category in accountsByCategory" :key="category.name">
                 <div class="flex items-center gap-2 mb-2">
@@ -526,12 +335,10 @@ onBeforeMount(() => {
                     >
                     <span class="text-sm font-medium">{{ account.title }}</span>
                     <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">CSYNC</span>
-                    <!-- 检测中：显示转圈动画 -->
                     <template v-if="account.isChecking">
                       <Loader2 class="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" />
                       <span class="text-xs text-muted-foreground">检测中</span>
                     </template>
-                    <!-- 已登录：显示头像和用户名 -->
                     <template v-else-if="account.loggedIn">
                       <img
                         v-if="account.avatar"
@@ -542,11 +349,10 @@ onBeforeMount(() => {
                       >
                       <span class="text-sm text-muted-foreground">@{{ account.displayName }}</span>
                     </template>
-                    <!-- 未登录：显示登录链接 -->
                     <Primitive
                       v-else
                       as="a"
-                      :href="getPlatformUrl(account.type)"
+                      :href="getPlatformLoginUrl(account.type)"
                       target="_blank"
                       class="ml-1 text-sm text-muted-foreground hover:underline"
                     >

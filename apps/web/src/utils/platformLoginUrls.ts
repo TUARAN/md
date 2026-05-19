@@ -1,0 +1,37 @@
+/** 各平台登录 / 后台入口，用于发布面板「登录」链接 */
+export function getPlatformLoginUrl(type: string): string {
+  const urls: Record<string, string> = {
+    csdn: `https://blog.csdn.net`,
+    juejin: `https://juejin.cn`,
+    wechat: `https://mp.weixin.qq.com`,
+    zhihu: `https://www.zhihu.com/signin`,
+    toutiao: `https://mp.toutiao.com`,
+    segmentfault: `https://segmentfault.com/user/login`,
+    cnblogs: `https://i.cnblogs.com/articles/edit`,
+    oschina: `https://my.oschina.net/blog/write`,
+    cto51: `https://blog.51cto.com/blogger/publish?&newBloger=2`,
+    infoq: `https://xie.infoq.cn/draft/`,
+    jianshu: `https://www.jianshu.com/sign_in`,
+    baijiahao: `https://baijiahao.baidu.com`,
+    wangyihao: `https://mp.163.com/subscribe_v4/index.html#/article-publish`,
+    tencentcloud: `https://cloud.tencent.com/developer`,
+    medium: `https://medium.com/m/signin`,
+    sspai: `https://sspai.com/write`,
+    sohu: `https://mp.sohu.com/mpfe/v4/login`,
+    bilibili: `https://passport.bilibili.com/login`,
+    weibo: `https://passport.weibo.com/sso/signin`,
+    aliyun: `https://account.aliyun.com/login/login.htm`,
+    huaweicloud: `https://bbs.huaweicloud.com/blogs/article`,
+    huaweidev: `https://developer.huawei.com/consumer/cn/blog/create`,
+    twitter: `https://x.com/compose/articles/edit/`,
+    qianfan: `https://qianfan.cloud.baidu.com/qianfandev/topic/create`,
+    alipayopen: `https://open.alipay.com/portal/forum/post/add#article`,
+    modelscope: `https://modelscope.cn/learn/create`,
+    volcengine: `https://developer.volcengine.com/articles/draft`,
+    douyin: `https://creator.douyin.com/creator-micro/content/post/article?default-tab=5&enter_from=publish_page&media_type=article&type=new`,
+    xiaohongshu: `https://creator.xiaohongshu.com/publish/publish?from=menu&target=article`,
+    elecfans: `https://www.elecfans.com/d/article/md/`,
+    douban: `https://www.douban.com/note/create`,
+  }
+  return urls[type] || `#`
+}

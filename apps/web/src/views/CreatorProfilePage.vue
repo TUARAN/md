@@ -3,6 +3,7 @@ import type { PublicCreatorProfile, PublicSocialAccount } from '@/utils/socialAc
 import { ArrowLeft, Copy, ExternalLink, RefreshCw, Search, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
 import { APP_NAME } from '@/constants/branding'
 import { useSocialAccountsStore } from '@/stores/socialAccounts'
 import { copyPlain } from '@/utils/clipboard'
@@ -10,6 +11,7 @@ import { getCreatorProfileAccounts, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/so
 import { toast } from '@/utils/toast'
 
 const socialAccountsStore = useSocialAccountsStore()
+const { isCheckingLogin, redetectAccounts, ensureExtensionProbe } = usePlatformAccountDetection()
 
 const sharedProfile = ref<PublicCreatorProfile | null>(null)
 const copied = ref(false)
@@ -91,8 +93,21 @@ function openAccount(account: PublicSocialAccount) {
   window.open(account.url, `_blank`, `noopener,noreferrer`)
 }
 
+async function handleRedetectAccounts() {
+  if (hasSharedData.value) {
+    sharedProfile.value = null
+    const url = new URL(window.location.href)
+    url.searchParams.delete(`profile`)
+    url.searchParams.delete(`data`)
+    window.history.replaceState({}, ``, url.pathname + url.search)
+  }
+  ensureExtensionProbe()
+  await redetectAccounts()
+}
+
 onMounted(() => {
   sharedProfile.value = socialAccountsStore.readSharedProfile()
+  ensureExtensionProbe()
 })
 </script>
 
@@ -122,6 +137,14 @@ onMounted(() => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            :disabled="isCheckingLogin"
+            @click="handleRedetectAccounts"
+          >
+            <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isCheckingLogin }" />
+            重新检测账号
+          </Button>
           <Button
             variant="outline"
             :disabled="accounts.length === 0 || hasSharedData"
@@ -170,7 +193,7 @@ onMounted(() => {
 
       <section class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 py-3 text-xs text-muted-foreground">
         <span>数据来源：{{ hasSharedData ? '分享链接' : '本机缓存' }}</span>
-        <span>平台主页会按账号检测缓存自动更新</span>
+        <span>{{ isCheckingLogin ? '正在通过 COSE / CSYNC 检测已登录账号…' : '需安装扩展；登录新平台后请点「重新检测账号」' }}</span>
       </section>
 
       <section v-if="accounts.length > 0" class="py-5">
@@ -286,11 +309,20 @@ onMounted(() => {
           暂无账号缓存
         </h2>
         <p class="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          回到编辑器打开「发布」面板，完成扩展账号检测后，本页会自动读取已登录账号。
+          请安装 COSE 或 CSYNC 扩展，并在各平台完成登录后，点击下方按钮重新检测；也可回到编辑器「发布」面板检测。
         </p>
-        <Button class="mt-5" @click="goEditor">
-          返回编辑器
-        </Button>
+        <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
+          <Button
+            :disabled="isCheckingLogin"
+            @click="handleRedetectAccounts"
+          >
+            <RefreshCw class="mr-2 h-4 w-4" :class="{ 'animate-spin': isCheckingLogin }" />
+            重新检测账号
+          </Button>
+          <Button variant="outline" @click="goEditor">
+            返回编辑器
+          </Button>
+        </div>
       </section>
     </div>
   </main>
