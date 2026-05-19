@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { BarChart3, ChevronRight, Database, Megaphone, Menu, PenLine, RefreshCw } from 'lucide-vue-next'
+import { BarChart3, ChevronRight, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
+import { Button } from '@/components/ui/button'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { APP_HEADER_BRAND_LINE, getDataAcquisitionNavUrl } from '@/constants/branding'
+import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
@@ -57,6 +59,10 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
 
 function toggleContentFactory() {
   isContentFactoryExpanded.value = !isContentFactoryExpanded.value
+}
+
+function openCreatorProfile() {
+  window.open(CREATOR_PROFILE_ROUTE, `_blank`, `noopener,noreferrer`)
 }
 </script>
 
@@ -198,13 +204,26 @@ function toggleContentFactory() {
       </div>
     </div>
 
-    <!-- 右上角品牌一行艺术字（非按钮、无衬底；小屏省略） -->
-    <p
-      class="header-brand-slogan pointer-events-none m-0 hidden max-w-[min(100%,48rem)] shrink-0 truncate pl-3 text-right md:block"
-      :title="`“${APP_HEADER_BRAND_LINE}”`"
-    >
-      <span class="header-brand-slogan__line">“{{ APP_HEADER_BRAND_LINE }}”</span>
-    </p>
+    <div class="ml-auto hidden min-w-0 shrink-0 items-center gap-3 md:flex">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        class="h-8 shrink-0"
+        @click="openCreatorProfile"
+      >
+        <IdCard class="mr-2 h-4 w-4" />
+        创作名片
+      </Button>
+
+      <!-- 右上角品牌一行艺术字（非按钮、无衬底；小屏省略） -->
+      <p
+        class="header-brand-slogan pointer-events-none m-0 max-w-[min(100%,36rem)] shrink truncate text-right"
+        :title="`“${APP_HEADER_BRAND_LINE}”`"
+      >
+        <span class="header-brand-slogan__line">“{{ APP_HEADER_BRAND_LINE }}”</span>
+      </p>
+    </div>
   </header>
 
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->

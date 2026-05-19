@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "csync",
-  "short_name": "csync",
+  "name": "CSYNC",
+  "short_name": "CSYNC",
   "version": "1.0.4",
-  "description": "csync：与 Markdown 编辑器联动的多平台同步扩展，侧重知乎、公众号、微博等。其它平台可配合 COSE 扩展使用。",
+  "description": "CSYNC：与 Markdown 编辑器联动的多平台同步扩展，侧重知乎、公众号、微博等。其它平台可配合 COSE 扩展使用。",
   "action": {
     "default_icon": "assets/logo-48.png",
     "default_popup": "dist/popup/index.html"

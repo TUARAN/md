@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-echo "Packaging csync extension zip..."
+echo "Packaging CSYNC extension zip..."
 pnpm package:csync
 
 echo "Building with CF_WORKERS=1 (same as CI)..."

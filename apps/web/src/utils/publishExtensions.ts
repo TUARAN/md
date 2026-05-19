@@ -1,13 +1,13 @@
 import type { Post, PostAccount } from '@md/shared/types'
 
-/** 知乎、公众号、微博优先走 csync（$pluginSyncer），其余走 COSE */
+/** 知乎、公众号、微博优先走 CSYNC（$pluginSyncer），其余走 COSE */
 export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set([`zhihu`, `wechat`, `weibo`])
 
 export type PostAccountSyncSource = `cose` | `plugin-syncer`
 
 declare global {
   interface Window {
-    /** csync 等在页面注入的桥接对象（需扩展在本页加载 content script 才能 connected） */
+    /** CSYNC 等在页面注入的桥接对象（需扩展在本页加载 content script 才能 connected） */
     $pluginSyncer?: PluginSyncerApi
   }
 }

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { Post, PostAccount } from '@md/shared/types'
-import { Check, ChevronDown, ChevronRight, Info, Loader2, Minus, Send } from 'lucide-vue-next'
+import { Check, ChevronDown, ChevronRight, ExternalLink, Info, Loader2, Minus, Send } from 'lucide-vue-next'
 import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
+import { SOCIAL_ACCOUNTS_ROUTE, useSocialAccountsStore } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import {
   mapPluginSyncerAuthToAccounts,
@@ -23,10 +24,11 @@ const { output } = storeToRefs(renderStore)
 
 const uiStore = useUIStore()
 const { isMobile } = storeToRefs(uiStore)
+const socialAccountsStore = useSocialAccountsStore()
 
 const dialogVisible = ref(false)
 const extensionInstalled = ref(false)
-/** 页面已加载 csync 扩展注入的 $pluginSyncer（需 manifest 匹配当前站点且 connected） */
+/** 页面已加载 CSYNC 扩展注入的 $pluginSyncer（需 manifest 匹配当前站点且 connected） */
 const pluginSyncerScriptPresent = ref(false)
 const pluginAuthSnapshot = ref<PostAccount[]>([])
 const allAccounts = ref<PostAccount[]>([])
@@ -196,6 +198,10 @@ watch(dialogVisible, (newVal) => {
   }
 })
 
+watch(allAccounts, (accounts) => {
+  socialAccountsStore.cacheFromPostAccounts(accounts)
+}, { deep: true })
+
 declare global {
   interface Window {
     syncPost: (data: { thumb: string, title: string, desc: string, content: string }) => void
@@ -286,8 +292,14 @@ async function getAccounts(): Promise<void> {
 function post() {
   // 从 allAccounts 获取用户选择的平台（checkbox 绑定在 allAccounts 上）
   form.value.accounts = allAccounts.value.filter(a => a.checked && a.loggedIn)
+  socialAccountsStore.cacheFromPostAccounts(allAccounts.value)
   postTaskDialogVisible.value = true
   dialogVisible.value = false
+}
+
+function openCreatorProfile() {
+  socialAccountsStore.cacheFromPostAccounts(allAccounts.value)
+  window.open(SOCIAL_ACCOUNTS_ROUTE, `_blank`, `noopener,noreferrer`)
 }
 
 function onUpdate(val: boolean) {
@@ -399,16 +411,16 @@ onBeforeMount(() => {
                   :href="csyncExtensionZipUrl"
                   download
                   class="font-medium text-primary underline underline-offset-2"
-                >下载 csync 扩展（.zip）</a>
+                >下载 CSYNC 扩展（.zip）</a>
                 ——与当前站点配套的包。解压得到 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">csync-extension</code> 文件夹，在 Chrome
                 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>
                 打开开发者模式后，选「加载已解压的扩展程序」并指向该文件夹。（自建部署需在构建前执行 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">pnpm package:csync</code>；维护者也可直接加载仓库内 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">apps/web/vendor/csync-extension</code>。）
               </li>
               <li>
-                安装后若当前访问域名已写在扩展 manifest 中，知乎/公众号/微博会显示 csync 角标并由其写入；未配置时这些站会走 COSE 或提示登录。
+                安装后若当前访问域名已写在扩展 manifest 中，知乎/公众号/微博会显示 CSYNC 角标并由其写入；未配置时这些站会走 COSE 或提示登录。
               </li>
               <li>
-                编辑器侧已把 title / content / markdown 拆开传递；若某平台仍填错栏位，多半是后台改版后扩展选框未跟上，可升级 csync / COSE 或向对应项目提 Issue。
+                编辑器侧已把 title / content / markdown 拆开传递；若某平台仍填错栏位，多半是后台改版后扩展选框未跟上，可升级 CSYNC / COSE 或向对应项目提 Issue。
               </li>
             </ul>
           </div>
@@ -416,7 +428,7 @@ onBeforeMount(() => {
           <Alert v-if="pluginSyncerScriptPresent && !pluginAuthSnapshot.length">
             <Info class="h-4 w-4" />
             <AlertDescription class="text-sm">
-              已检测到 csync 脚本，但未能连接（<code class="text-xs">$pluginSyncer.connected === false</code>）。请确认已通过上方 zip 解压加载扩展，且 manifest 中已包含当前站点域名，然后重新加载扩展。
+              已检测到 CSYNC 脚本，但未能连接（<code class="text-xs">$pluginSyncer.connected === false</code>）。请确认已通过上方 zip 解压加载扩展，且 manifest 中已包含当前站点域名，然后重新加载扩展。
             </AlertDescription>
           </Alert>
 
@@ -424,7 +436,7 @@ onBeforeMount(() => {
             <Info class="h-4 w-4" />
             <AlertTitle>未检测到可用发布扩展</AlertTitle>
             <AlertDescription>
-              请至少安装 <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="underline text-primary">COSE（cose 文章同步助手）</a>，或按上方说明下载本站提供的 csync（.zip）解压加载，以支持知乎 / 公众号 / 微博。
+              请至少安装 <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="underline text-primary">COSE（cose 文章同步助手）</a>，或按上方说明下载本站提供的 CSYNC（.zip）解压加载，以支持知乎 / 公众号 / 微博。
             </AlertDescription>
           </Alert>
 
@@ -452,6 +464,21 @@ onBeforeMount(() => {
               平台
             </Label>
             <div class="flex-1 space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/20 px-3 py-2 text-sm">
+                <span class="text-muted-foreground">
+                  已登录账号会自动缓存到博主展示页，可复制分享链接给品牌方查看。
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  :disabled="!allAccounts.some(a => a.loggedIn)"
+                  @click="openCreatorProfile"
+                >
+                  <ExternalLink class="mr-2 h-4 w-4" />
+                  创作名片
+                </Button>
+              </div>
               <div v-for="category in accountsByCategory" :key="category.name">
                 <div class="flex items-center gap-2 mb-2">
                   <div
@@ -498,7 +525,7 @@ onBeforeMount(() => {
                       class="inline-block h-[16px] w-[16px] shrink-0"
                     >
                     <span class="text-sm font-medium">{{ account.title }}</span>
-                    <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">csync</span>
+                    <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">CSYNC</span>
                     <!-- 检测中：显示转圈动画 -->
                     <template v-if="account.isChecking">
                       <Loader2 class="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" />

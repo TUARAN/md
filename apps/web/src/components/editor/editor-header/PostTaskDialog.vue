@@ -89,7 +89,7 @@ function markAccountsFailed(accounts: PostAccount[], message: string) {
 async function runPluginSyncerPublish(accounts: PostAccount[]) {
   const api = window.$pluginSyncer
   if (!api) {
-    markAccountsFailed(accounts, `未检测到 csync 页面桥接（$pluginSyncer）。请从本站下载 csync 扩展（.zip）解压加载，详见「发布」对话框说明。`)
+    markAccountsFailed(accounts, `未检测到 CSYNC 页面桥接（$pluginSyncer）。请从本站下载 CSYNC 扩展（.zip）解压加载，详见「发布」对话框说明。`)
     return
   }
 
@@ -109,7 +109,7 @@ async function runPluginSyncerPublish(accounts: PostAccount[]) {
       )
     }
     catch (e: any) {
-      markAccountsFailed(accounts, e?.message || `csync 发布失败`)
+      markAccountsFailed(accounts, e?.message || `CSYNC 发布失败`)
     }
     return
   }
@@ -117,7 +117,7 @@ async function runPluginSyncerPublish(accounts: PostAccount[]) {
   dispatchPluginSyncerOpenPanel(props.post)
   markAccountsFailed(
     accounts,
-    `当前 csync 未暴露 syncArticle：已尝试打开侧栏；请从本站重新下载 csync（.zip）解压加载扩展后重试。`,
+    `当前 CSYNC 未暴露 syncArticle：已尝试打开侧栏；请从本站重新下载 CSYNC（.zip）解压加载扩展后重试。`,
   )
 }
 
@@ -139,7 +139,7 @@ async function startPost(targetAccounts?: PostAccount[]) {
         status: `uploading`,
         msg:
           a.syncSource === `plugin-syncer`
-            ? `csync…`
+            ? `CSYNC…`
             : `COSE…`,
       }
       return base
@@ -237,7 +237,7 @@ watch(() => props.open, (newVal) => {
       <DialogHeader>
         <DialogTitle>提交发布任务</DialogTitle>
         <DialogDescription>
-          任务会先处理列表中标注 (csync) 的平台（csync 扩展），再处理其余平台（COSE）。进度与草稿链接按平台单独展示；失败可单条重试。
+          任务会先处理列表中标注 (CSYNC) 的平台（CSYNC 扩展），再处理其余平台（COSE）。进度与草稿链接按平台单独展示；失败可单条重试。
         </DialogDescription>
       </DialogHeader>
 
@@ -259,7 +259,7 @@ watch(() => props.open, (newVal) => {
                 alt=""
               >
               <span>{{ account.title }} - {{ account.displayName || account.home }}</span>
-              <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">(csync)</span>
+              <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">(CSYNC)</span>
             </div>
             <div
               class="w-full flex-1 gap-2 overflow-auto pl-7 text-sm" :class="{

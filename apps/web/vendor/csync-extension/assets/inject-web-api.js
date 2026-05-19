@@ -1,5 +1,5 @@
 /**
- * csync 页面桥接（fork 自上游 1.0.3 的 inject-web-api，已启用 syncArticle）。
+ * CSYNC 页面桥接（fork 自上游 1.0.3 的 inject-web-api，已启用 syncArticle）。
  * 全局仍暴露为 window.$pluginSyncer，与 md 发布逻辑中的命名一致。
  */
 
@@ -121,7 +121,7 @@
       teardown()
     }
 
-    console.log('[csync] $pluginSyncer MessageChannel connected')
+    console.log('[CSYNC] $pluginSyncer MessageChannel connected')
 
     if (!window.$pluginSyncer) {
       exposeGlobal()
@@ -217,5 +217,5 @@
 
   exposeGlobal()
 
-  console.log(`[csync] $pluginSyncer API ready (${VERSION}), waiting for channel…`)
+  console.log(`[CSYNC] $pluginSyncer API ready (${VERSION}), waiting for channel…`)
 })()

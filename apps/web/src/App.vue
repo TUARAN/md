@@ -1,18 +1,31 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { documentTitle } from '@/constants/branding'
+import { SOCIAL_ACCOUNTS_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
+import CreatorProfilePage from '@/views/CreatorProfilePage.vue'
 
 const uiStore = useUIStore()
 const { isDark } = storeToRefs(uiStore)
 
 const isUtools = ref(false)
+const currentPath = ref(window.location.pathname)
+const isCreatorProfilePage = computed(() => currentPath.value === SOCIAL_ACCOUNTS_ROUTE)
+
+function updateCurrentPath() {
+  currentPath.value = window.location.pathname
+}
 
 onMounted(() => {
   document.title = documentTitle
+  window.addEventListener(`popstate`, updateCurrentPath)
+
+  if (isCreatorProfilePage.value)
+    return
+
   // 检测是否为 Utools 环境
   isUtools.value = !!(window as any).__MD_UTOOLS__
   if (isUtools.value) {
@@ -31,11 +44,16 @@ onMounted(() => {
     window.history.replaceState({}, ``, newUrl)
   }
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener(`popstate`, updateCurrentPath)
+})
 </script>
 
 <template>
   <AppSplash />
-  <CodemirrorEditor />
+  <CreatorProfilePage v-if="isCreatorProfilePage" />
+  <CodemirrorEditor v-else />
 
   <ConfirmDialog />
 

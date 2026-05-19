@@ -53,7 +53,7 @@ async function main() {
   fs.copyFileSync(outPath, outLatest)
 
   const sizeKb = (fs.statSync(outPath).size / 1024).toFixed(1)
-  console.log(`> csync 扩展已打包: ${path.relative(rootDir, outPath)} (${sizeKb} KB)`)
+  console.log(`> CSYNC 扩展已打包: ${path.relative(rootDir, outPath)} (${sizeKb} KB)`)
   console.log(`> 同时写入: ${path.relative(rootDir, outLatest)}`)
 }
 
