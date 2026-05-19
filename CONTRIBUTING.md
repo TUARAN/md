@@ -1,6 +1,8 @@
 # 贡献指南
 
-感谢你对 **doocs/md** 的兴趣！我们欢迎任何形式的贡献，包括但不限于报告缺陷、改进文档、提交新特性或修复 Bug。本指南旨在帮助你快速地为项目做出贡献。
+感谢你对 **博主联盟同步工具**（[TUARAN/md](https://github.com/TUARAN/md)）的兴趣！我们欢迎任何形式的贡献，包括但不限于报告缺陷、改进文档、提交新特性或修复 Bug。本指南旨在帮助你快速地为项目做出贡献。
+
+> 编辑器内核源自 [doocs/md](https://github.com/doocs/md)。若变更仅涉及通用 Markdown 排版、图床等上游能力，也可向上游提交 PR；与本站工作流、CSYNC、创作名片等相关的改动请在本仓库进行。
 
 ## 目录
 
@@ -20,7 +22,7 @@
 
 ## 前置条件
 
-- **Node.js ≥ 22**
+- **Node.js ≥ 22.19.0**（见仓库根目录 `.nvmrc`）
 - **pnpm ≥ 10**
 
 ## 快速开始
@@ -31,14 +33,16 @@
 
 ```shell
 - apps
-  - web           # 网页及浏览器插件
+  - web           # 网页、工作流与 CSYNC 扩展源码
   - vscode        # VSCode 插件
 - packages
   - config        # 项目级别配置
   - core          # 核心 markdown 渲染器
   - shared        # 共享的配置、常量、类型和工具函数
   - example       # 公众号 openapi 接口代理服务示例
-  - md-cli        # 命令行工具
+  - md-cli        # 命令行工具（上游 @doocs/md-cli）
+- workers
+  - gnews-proxy   # 资讯检索代理（可选）
 ```
 
 以开发 `@md/web` 为例：
@@ -48,14 +52,21 @@
 git clone https://github.com/<你的用户名>/md.git
 cd md
 
-# 2. 配置上游仓库
-git remote add upstream https://github.com/doocs/md.git
+# 2. 配置远程（origin 为你的 fork，upstream 为本仓库）
+git remote add upstream https://github.com/TUARAN/md.git
+
+# 若需同步编辑器内核，可另添 doocs 上游：
+# git remote add doocs https://github.com/doocs/md.git
 
 # 3. 安装依赖
 pnpm install
 
-# 4. 启动本地开发
+# 4. 打包 CSYNC 扩展（本地开发与构建前建议执行）
+pnpm package:csync
+
+# 5. 启动本地开发
 pnpm web dev
+# 访问 http://localhost:5173/md/
 ```
 
 ## 开发流程
@@ -74,12 +85,13 @@ pnpm web dev
    ```
 
 3. 编码 & 编写/更新测试。
-4. 运行检查：
+4. 运行检查（与 CI 一致）：
 
    ```bash
-   pnpm run lint        # ESLint + Prettier
-   pnpm run type-check  # TypeScript 类型检查
-   pnpm run web build       # 产物验证
+   pnpm run lint
+   pnpm package:csync
+   pnpm --filter @md/web type-check
+   pnpm --filter @md/web build
    ```
 
 5. 提交并推送：
@@ -90,7 +102,7 @@ pnpm web dev
    git push origin feat/awesome-feature
    ```
 
-6. 在 GitHub 页面发起 **Pull Request**。
+6. 在 GitHub 页面向 [TUARAN/md](https://github.com/TUARAN/md) 发起 **Pull Request**。
 
 > [!TIP]
 > 开发时可在 `apps/web` 目录下新建 `.env.local` 文件，配置 `VITE_LAUNCH_EDITOR` 为 `code` （默认值）或其他 [支持的编辑器](https://github.com/yyx990803/launch-editor?tab=readme-ov-file#supported-editors)，方便调试。
@@ -100,6 +112,8 @@ pnpm web dev
 > ```
 > VITE_LAUNCH_EDITOR=cursor
 > ```
+>
+> 多平台同步功能需在 Chrome 中安装 [COSE](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk) 或加载 `apps/web/vendor/csync-extension`（详见 [README](./README.md)）。
 
 ## 代码规范
 
@@ -141,17 +155,17 @@ feat(editor): 支持自定义快捷键
 
 1. **描述清晰**：在 PR 模板中说明变更动机、相关 Issue、实现方案及影响范围。
 2. **保持小而聚焦**：一个 PR 只做一件事，方便审阅。
-3. **确保测试**：新增/变更功能需自测，确保没问题。
-4. **更新文档**：公共 API 或行为变更必须同步更新文档。
-5. **CI 通过**：PR 必须通过所有 CI 检查（类型、lint、单测、构建）。
+3. **确保测试**：新增/变更功能需自测，涉及同步时请验证 COSE / CSYNC 场景。
+4. **更新文档**：公共 API 或行为变更必须同步更新 README / 相关 docs。
+5. **CI 通过**：PR 必须通过 CI（`package:csync`、类型检查、构建）。
 6. **等待审核**：维护者会在 1 ～ 3 个工作日内回复。请耐心等待并根据建议进行修订。
 
 ## Issue 报告
 
-- 先 **搜索** 已有 Issue，避免重复。
-- 提供 **可复现仓库 / 代码片段 / 截图 / 终端输出**。
+- 先 **搜索** [已有 Issue](https://github.com/TUARAN/md/issues)，避免重复。
+- 提供 **可复现步骤 / 代码片段 / 截图 / 终端输出**。
 - 说明 **期望行为** 与 **实际行为**。
-- 指明 **运行环境**（操作系统、浏览器、Node 版本等）。
+- 指明 **运行环境**（操作系统、浏览器、Node 版本、是否自建部署等）。
 - Bug 标签由维护者分配，请勿自行指定。
 
 ## 行为准则
@@ -161,10 +175,10 @@ feat(editor): 支持自定义快捷键
 
 ## 沟通渠道
 
-- **GitHub Discussions**：[https://github.com/doocs/md/discussions](https://github.com/doocs/md/discussions)
-- **Issues**：仅限缺陷反馈和功能需求
-- **微信群**：添加项目维护者微信，备注 `md`，拉你进群
+- **Issues**（功能、缺陷）：[https://github.com/TUARAN/md/issues](https://github.com/TUARAN/md/issues)
+- **在线体验**：[https://syncblog.cn](https://syncblog.cn)
+- **上游编辑器**（排版、图床等通用能力）：[doocs/md Issues](https://github.com/doocs/md/issues)
 
 ---
 
-❤️ 感谢每一位贡献者！让我们一起让 **doocs/md** 变得更好。
+❤️ 感谢每一位贡献者！让我们一起把 **博主联盟同步工具** 做得更好。

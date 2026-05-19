@@ -1,6 +1,6 @@
 <div align="center">
 
-[![doocs-md](https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/logo-2.png)](https://github.com/doocs/md)
+[![syncblog-md](https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/logo-2.png)](https://github.com/TUARAN/md)
 
 </div>
 
@@ -8,29 +8,29 @@
 
 <div align="center">
 
-[![status](https://img.shields.io/github/actions/workflow/status/doocs/md/deploy.yml?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/doocs/md/actions) [![node](https://img.shields.io/badge/node-%3E%3D22-42cc23?style=flat-square&labelColor=564341)](https://nodejs.org/en/about/previous-releases) [![pr](https://img.shields.io/badge/prs-welcome-42cc23?style=flat-square&labelColor=564341)](https://github.com/doocs/md/pulls) [![stars](https://img.shields.io/github/stars/doocs/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/doocs/md/stargazers) [![forks](https://img.shields.io/github/forks/doocs/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/doocs/md)<br> [![release](https://img.shields.io/github/v/release/doocs/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/doocs/md/releases) [![npm](https://img.shields.io/npm/v/@doocs/md-cli?style=flat-square&labelColor=564341&color=42cc23)](https://www.npmjs.com/package/@doocs/md-cli) [![docker](https://img.shields.io/badge/docker-latest-42cc23?style=flat-square&labelColor=564341)](https://hub.docker.com/r/doocs/md)
+[![CI](https://img.shields.io/github/actions/workflow/status/TUARAN/md/ci.yml?style=flat-square&label=CI&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/actions/workflows/ci.yml) [![node](https://img.shields.io/badge/node-%3E%3D22.19.0-42cc23?style=flat-square&labelColor=564341)](https://nodejs.org/en/about/previous-releases) [![stars](https://img.shields.io/github/stars/TUARAN/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/stargazers) [![forks](https://img.shields.io/github/forks/TUARAN/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/forks)
 
 </div>
 
 ## 📝 项目介绍
 
-**博主联盟同步工具**面向博主与运营团队，用于搭建**全链路自动化工作流**：覆盖内容爬取、筛选、传输、整理、同步、分发，并延伸到社群分发、内容校验，以及评论、浏览、点赞、账号活跃等运营动作。
+**博主联盟同步工具**面向博主、开发者创作者与内容运营团队，用于搭建从**数据获取 → 风格二创 → 内容同步 → 创作名片**的一站式内容工作台。它保留 Markdown 编辑、主题排版、图床与 AI 辅助能力，并进一步强化多平台账号检测、跨平台草稿写入、创作者主页导航展示等分发场景。
 
-**当前阶段重心**：**内容分发与同步**——依托 Markdown 编辑与渲染、主题样式、图床与多渠道复制/导出能力，先把「写好内容 → 同步出去」这条链路跑顺；其余自动化环节将逐步补齐。
+**当前阶段重心**：**内容分发与同步**。编辑器通过 COSE 与配套的 **CSYNC** 浏览器扩展分流处理不同平台，尽量把同一篇内容写入知乎、公众号、微博、CSDN、掘金等平台草稿；同时提供「创作名片」页面，汇总创作者的平台主页，便于对外展示账号矩阵。
 
 > 本项目编辑器内核源自开源社区项目 [doocs/md](https://github.com/doocs/md)，在此基础上强化了产品与流程叙事。**若对你有帮助，欢迎点个 Star ⭐️。**
 
-## 🌐 在线体验（上游演示站）
+## 🌐 在线体验
 
-[https://md.doocs.org](https://md.doocs.org)
+[https://syncblog.cn](https://syncblog.cn)
 
 > **推荐使用 Chrome 浏览器**，效果最佳。
 
 ## 🤔 产品定位说明
 
-传统排版工具往往只管「单篇文章美化」，难以承接团队在多平台、多账号下的同步与协作。**博主联盟同步工具**以「全链路工作流」为目标设计产品边界：**当前版本先把内容与分发同步做到极致**，再迭代社群分发、校验与账号活跃等运营自动化。
+传统排版工具往往只管「单篇文章美化」，难以承接团队在多平台、多账号下的同步、复用与对外展示。**博主联盟同步工具**以「内容工厂」为产品边界：当前版本先把素材获取、二创、排版、分发、账号主页展示这条链路跑顺，后续再迭代社群分发、内容校验、互动运营与数据回流。
 
-欢迎各位提交 PR、在 [💬 Discussions](https://github.com/doocs/md/discussions) 反馈场景需求。
+欢迎在 [Issues](https://github.com/TUARAN/md/issues) 反馈场景需求。
 
 ## ✨ 功能特性
 
@@ -52,6 +52,35 @@
 - ✅ **多图床支持** - 提供多种图床选择，便捷的图片上传功能
 - ✅ **文件管理** - 便捷的文件导入、导出功能，提升工作效率
 - ✅ **AI 集成** - 集成主流 AI 模型（DeepSeek、OpenAI、通义千问、腾讯混元、火山方舟、302.AI 等），智能辅助内容创作
+- ✅ **数据获取** - 接入资讯检索入口，支持把素材带入二创流程
+- ✅ **风格二创** - 内置长文提示词模板，可将资讯素材转成可继续排版的 Markdown
+- ✅ **内容同步** - 通过 COSE / CSYNC 扩展分流，支持多平台草稿写入
+- ✅ **创作名片** - 自动缓存已登录平台账号，生成面向品牌方的平台主页导航页
+
+## 🔄 工作流导航
+
+顶部导航将能力组织为一条内容生产链路，当前成熟度如下：
+
+| 步骤     | 说明                                                | 状态         |
+| -------- | --------------------------------------------------- | ------------ |
+| 数据获取 | 接入 GNews、NewsAPI 等资讯源，检索结果可带入二创    | 可用         |
+| 风格二创 | 长文提示词模板，将素材整理为可继续排版的 Markdown   | 可用         |
+| 内容同步 | Markdown 编辑、主题排版、富文本复制、多平台草稿写入 | **核心能力** |
+| 宣发活跃 | 多平台节奏、加热与社群活跃等                        | 规划中       |
+| 闭环汇报 | 发布效果与数据回流                                  | 规划中       |
+
+另提供 **创作名片** 独立页面：汇总各平台已检测到的账号主页，便于对外展示创作者矩阵（入口在编辑器顶栏）。
+
+## 🔌 浏览器扩展（内容同步）
+
+多平台草稿写入依赖浏览器扩展，编辑器会按平台分流：
+
+| 扩展                                                                                                   | 适用场景                                        | 获取方式                                                                                                            |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [COSE（cose 文章同步助手）](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk) | CSDN、掘金等 COSE 已支持的平台                  | Chrome 网上应用店安装                                                                                               |
+| **CSYNC**（本站配套）                                                                                  | 知乎、公众号、微博等与 `syncblog.cn` 联动的平台 | 在 [syncblog.cn](https://syncblog.cn) 内容同步页按提示下载 `.zip`，解压后在 `chrome://extensions/` 加载已解压的扩展 |
+
+> 至少安装 **COSE** 或 **CSYNC** 之一，才能在内容同步页检测账号并写入草稿。自建部署需在构建前执行 `pnpm package:csync`，将扩展 zip 打入静态资源；也可直接加载仓库内 `apps/web/vendor/csync-extension` 目录进行调试。
 
 ## 🖼️ 支持的图床服务
 
@@ -94,6 +123,9 @@ nvm i && nvm use
 # 安装依赖
 pnpm i
 
+# 打包 CSYNC 扩展（写入 apps/web/public/，供站点下载与 CI 构建）
+pnpm package:csync
+
 # 启动开发模式
 pnpm web dev
 # 访问 http://localhost:5173/md/
@@ -101,32 +133,39 @@ pnpm web dev
 # 部署在 /md 目录
 pnpm web build
 
-# 部署在根目录
+# 部署在根目录（Cloudflare / Netlify 等）
 pnpm web build:h5-netlify
 
-# Chrome 插件启动及调试
+# 一键：打包 CSYNC + CF 构建 + wrangler deploy
+pnpm deploy:cloudflare
+
+# Chrome 插件（WXT）启动及调试
 pnpm web ext:dev
-# 访问 chrome://extensions/ 打开开发者模式，加载已解压的扩展程序，选择 apps/web/.output/chrome-mv3-dev 目录
+# 访问 chrome://extensions/ 打开开发者模式，加载 apps/web/.output/chrome-mv3-dev
 
 # Chrome 插件打包
 pnpm web ext:zip
 
-# Firefox 扩展打包(how to build Firefox addon)
-pnpm web firefox:zip # output zip file at in apps/web/.output/md-{version}-firefox.zip
+# Firefox 扩展打包
+pnpm web firefox:zip
 
 # uTools 插件打包
-pnpm utools:package # output zip file at apps/utools/release/md-utools-v{version}.zip
+pnpm utools:package
 
-# cloudflare workers
-pnpm web wrangler:dev # cloudflare workers dev 模式
-pnpm web wrangler:deploy # cloudflare workers 部署命令
+# Cloudflare Workers 开发 / 部署（apps/web）
+pnpm web wrangler:dev
+pnpm web wrangler:deploy
 ```
+
+资讯检索（GNews 等）在部分环境下需配置代理 Worker，详见 [`workers/gnews-proxy/README.md`](workers/gnews-proxy/README.md)。
 
 ## 🚀 快速搭建私有服务
 
+以下方式来自上游 [doocs/md](https://github.com/doocs/md)，主要用于部署**编辑器本体**（排版、图床、复制等）。若需完整使用本站的多平台同步与 CSYNC，请按上文自行构建并配置扩展 manifest 中的站点域名。
+
 ### 📦 方式 1. 使用 npm cli
 
-通过我们的 npm cli 你可以轻易搭建属于自己的微信 Markdown 编辑器。
+通过上游 npm cli 可快速搭建私有化 Markdown 编辑器。
 
 ```sh
 # 安装
@@ -165,58 +204,20 @@ docker run -d -p 8080:80 doocs/md:latest
 
 ## 👥 谁在使用
 
-请查看 [📋 USERS.md](USERS.md) 文件，了解使用本项目的公众号。
+[📋 USERS.md](USERS.md) 记录的是上游 [doocs/md](https://github.com/doocs/md) 社区用户案例；本站为在其基础上的产品与流程演进 fork。
 
 ## 🤝 贡献指南
 
 我们欢迎任何形式的贡献！请查看 [📖 CONTRIBUTING.md](./CONTRIBUTING.md) 获取提交 PR、Issue 的流程与规范。
 
-## ☕ 支持我们
+## ☕ 支持项目
 
-如果本项目对你有所帮助，可以通过以下方式支持我们的持续开发。
+若本项目对你有帮助，欢迎给 [TUARAN/md](https://github.com/TUARAN/md) 点个 **Star ⭐️**，或在 [Issues](https://github.com/TUARAN/md/issues) 提交场景与改进建议。
 
-<table style="margin: 0 auto">
-  <tbody>
-    <tr>
-      <td align="center" style="width: 260px">
-        <img
-          src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/support1.jpg"
-          alt="support1"
-          style="width: 200px"
-        /><br />
-      </td>
-      <td align="center" style="width: 260px">
-        <img
-          src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/support2.jpg"
-          alt="support2"
-          style="width: 200px"
-        /><br />
-      </td>
-    </tr>
-  </tbody>
-</table>
+编辑器内核维护者 [doocs/md](https://github.com/doocs/md) 亦接受社区赞助，详见其仓库 README。
 
 ## 💬 反馈与交流
 
-如果你在使用过程中遇到问题，或者有好的建议，欢迎在 [🐛 Issues](https://github.com/doocs/md/issues) 中反馈。你也可以加入我们的交流群，和我们一起讨论，若群二维码失效，请添加好友，备注 `md`，我们会拉你进群。
-
-<table style="margin: 0 auto">
-  <tbody>
-    <tr>
-      <td align="center" style="width: 260px">
-        <img
-          src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/doocs-md-wechat-group.jpg"
-          alt="doocs-md-wechat-group"
-          style="width: 200px"
-        /><br />
-      </td>
-      <td align="center" style="width: 260px">
-        <img
-          src="https://cdn-doocs.oss-cn-shenzhen.aliyuncs.com/gh/doocs/md/images/wechat-ylb.jpg"
-          alt="wechat-ylb"
-          style="width: 200px"
-        /><br />
-      </td>
-    </tr>
-  </tbody>
-</table>
+- **功能与缺陷**：[TUARAN/md Issues](https://github.com/TUARAN/md/issues)
+- **上游编辑器**（排版、图床、通用 Markdown 能力）：[doocs/md Issues](https://github.com/doocs/md/issues)
+- **在线站点**：[syncblog.cn](https://syncblog.cn)

@@ -4,13 +4,13 @@
   "version": "2.1.0",
   "private": false,
   "description": "博主联盟同步工具 — 全链路内容运营工作流，当前阶段聚焦内容分发与同步（Markdown 编辑、渲染与多渠道同步）。",
-  "homepage": "https://github.com/doocs/md",
+  "homepage": "https://syncblog.cn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/doocs/md"
+    "url": "https://github.com/TUARAN/md"
   },
   "bugs": {
-    "url": "https://github.com/doocs/md/issues"
+    "url": "https://github.com/TUARAN/md/issues"
   },
   "engines": {
     "node": ">=22.19.0"
