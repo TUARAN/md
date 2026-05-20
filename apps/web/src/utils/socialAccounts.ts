@@ -96,6 +96,15 @@ const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { title: string, displayNam
   segmentfault: { title: `思否`, displayName: `aran_tu` },
 }
 
+/** 平台 type → 名片展示标题（与 PLATFORM_DEFAULT_DISPLAY_NAMES 一致） */
+export const PLATFORM_PROFILE_TITLES: Record<string, string> = Object.fromEntries(
+  Object.entries(PLATFORM_DEFAULT_DISPLAY_NAMES).map(([type, meta]) => [type, meta.title]),
+)
+
+export function getPlatformProfileTitle(type: string): string {
+  return PLATFORM_PROFILE_TITLES[type] ?? type
+}
+
 /** 未单独校对平台时使用的 TUARAN 预估粉丝/阅读 */
 const TUARAN_ESTIMATED_PROFILE_STATS = { followers: `100`, reads: `2万` } as const
 
@@ -607,8 +616,8 @@ export function createCreatorProfile(accounts: PublicSocialAccount[]): PublicCre
     schemaVersion: 1,
     id: `TUARAN`,
     kind: `blogger`,
-    title: `创作名片`,
-    subtitle: `平台主页导航与品牌合作入口`,
+    title: `平台矩阵`,
+    subtitle: `各平台公开主页与账号检测缓存`,
     updatedAt,
     modules: [
       {

@@ -6,9 +6,8 @@ import { Input } from '@/components/ui/input'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
 import { APP_NAME } from '@/constants/branding'
 import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
-import { useSocialAccountsStore } from '@/stores/socialAccounts'
+import { CREATOR_CARD_ROUTE, useSocialAccountsStore } from '@/stores/socialAccounts'
 import { copyPlain } from '@/utils/clipboard'
-import { creatorOfferRoute } from '@/utils/creatorRoutes'
 import { getCreatorProfileAccounts, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/socialAccounts'
 import { toast } from '@/utils/toast'
 
@@ -63,15 +62,15 @@ const accountsByCategory = computed(() => {
 })
 
 const hasSharedData = computed(() => sharedProfile.value !== null)
-const personalOfferUrl = computed(() => {
-  if (profile.value.id?.toLowerCase() === TUARAN_CREATOR_ID)
-    return creatorOfferRoute(TUARAN_CREATOR_ID)
+const creatorCardUrl = computed(() => {
+  if (profile.value.id?.toLowerCase() === TUARAN_CREATOR_ID.toLowerCase())
+    return CREATOR_CARD_ROUTE
   return null
 })
 
-function goPersonalOffer() {
-  if (personalOfferUrl.value)
-    window.location.href = personalOfferUrl.value
+function goCreatorCard() {
+  if (creatorCardUrl.value)
+    window.location.href = creatorCardUrl.value
 }
 const updatedAt = computed(() => {
   const last = Math.max(profile.value.updatedAt || 0, ...accounts.value.map(account => account.updatedAt || 0))
@@ -144,17 +143,17 @@ onMounted(() => {
             {{ profile.title }}
           </h1>
           <p class="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            {{ profile.subtitle }}。这里集中展示在各平台的公开主页；品牌合作说明见
+            {{ profile.subtitle }}。对外品牌合作与数据概览见
             <button
-              v-if="personalOfferUrl"
+              v-if="creatorCardUrl"
               type="button"
               class="text-primary underline-offset-2 hover:underline"
-              @click="goPersonalOffer"
+              @click="goCreatorCard"
             >
-              个人 IP 内容与引流服务
+              创作名片
             </button>
             <template v-else>
-              个人合作说明页
+              创作名片
             </template>
             。
           </p>
@@ -162,11 +161,11 @@ onMounted(() => {
 
         <div class="flex flex-wrap items-center gap-2">
           <Button
-            v-if="personalOfferUrl"
-            @click="goPersonalOffer"
+            v-if="creatorCardUrl"
+            @click="goCreatorCard"
           >
             <FileText class="mr-2 h-4 w-4" />
-            内容与引流合作
+            创作名片
           </Button>
           <Button
             variant="outline"

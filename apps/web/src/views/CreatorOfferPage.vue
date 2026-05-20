@@ -1,23 +1,35 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Check, ExternalLink, Minus, X } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Check, ExternalLink, Minus, Sparkles, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { getCreatorOffer } from '@/constants/creatorOffer'
-import { SOCIAL_ACCOUNTS_ROUTE } from '@/stores/socialAccounts'
-import { creatorOfferRoute } from '@/utils/creatorRoutes'
+import { PLATFORM_MATRIX_ROUTE } from '@/stores/socialAccounts'
+import { CREATOR_CARD_HASH } from '@/utils/creatorRoutes'
+import { getPlatformProfileTitle } from '@/utils/socialAccounts'
 
 const props = defineProps<{
   creatorId: string
 }>()
+
+const SERVICE_ACCENT: Record<string, string> = {
+  lite: `border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40`,
+  standard: `border-primary/40 bg-primary/[0.06] shadow-md ring-1 ring-primary/25 dark:bg-primary/10`,
+  growth: `border-amber-200/80 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20`,
+}
 
 const offer = computed(() => getCreatorOffer(props.creatorId))
 
 onMounted(() => {
   if (offer.value)
     document.title = offer.value.pageTitle
+  if (window.location.hash.replace(/^#/, ``) === CREATOR_CARD_HASH) {
+    nextTick(() => {
+      document.getElementById(CREATOR_CARD_HASH)?.scrollIntoView({ block: `start` })
+    })
+  }
 })
 
-function goProfile() {
-  window.location.href = SOCIAL_ACCOUNTS_ROUTE
+function goPlatformMatrix() {
+  window.location.href = PLATFORM_MATRIX_ROUTE
 }
 
 function openHomepage() {
@@ -28,259 +40,254 @@ function openHomepage() {
 </script>
 
 <template>
-  <main v-if="offer" class="min-h-screen bg-[#f6f7f8] text-foreground dark:bg-background">
-    <div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 py-6 md:px-6 md:py-10">
-      <header class="border-b border-border/70 pb-6">
-        <div class="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <Button variant="ghost" size="sm" class="-ml-3" @click="goProfile">
-            <ArrowLeft class="mr-2 h-4 w-4" />
-            创作名片
-          </Button>
-          <span class="rounded-md bg-muted px-2 py-0.5 font-mono text-xs">ID: {{ offer.id }}</span>
+  <main
+    v-if="offer"
+    :id="CREATOR_CARD_HASH"
+    class="min-h-[100dvh] overflow-y-auto bg-[#e8eaef] text-foreground dark:bg-[#0c0f14]"
+  >
+    <div class="mx-auto max-w-6xl px-3 py-3 sm:px-5 sm:py-4">
+      <!-- 顶栏 -->
+      <nav class="mb-3 flex shrink-0 items-center justify-between gap-2">
+        <Button variant="ghost" size="sm" class="h-8 text-muted-foreground" @click="goPlatformMatrix">
+          <ArrowLeft class="mr-1.5 h-4 w-4" />
+          平台矩阵
+        </Button>
+        <span class="font-mono text-[11px] text-muted-foreground">tuaran · 创作名片</span>
+      </nav>
+
+      <!-- Hero：视觉重心 -->
+      <header class="creator-offer-hero relative shrink-0 overflow-hidden rounded-2xl px-5 py-6 text-white shadow-lg sm:px-8 sm:py-7">
+        <div class="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+        <div class="pointer-events-none absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
+
+        <div class="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div class="max-w-xl">
+            <p class="text-xs font-medium tracking-widest text-white/70 uppercase">
+              {{ offer.subheadline }}
+            </p>
+            <h1 class="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
+              {{ offer.headline }}
+            </h1>
+            <p class="mt-2 text-sm leading-relaxed text-white/80">
+              {{ offer.tagline }}
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-6 lg:justify-end">
+            <div>
+              <p class="text-[11px] tracking-wide text-white/60 uppercase">
+                粉丝（约）
+              </p>
+              <p class="mt-0.5 text-3xl font-semibold tabular-nums tracking-tight">
+                {{ offer.reachSummary.followers }}
+              </p>
+            </div>
+            <div>
+              <p class="text-[11px] tracking-wide text-white/60 uppercase">
+                阅读（约）
+              </p>
+              <p class="mt-0.5 text-3xl font-semibold tabular-nums tracking-tight">
+                {{ offer.reachSummary.reads }}
+              </p>
+            </div>
+          </div>
         </div>
-        <p class="mt-4 text-sm font-medium text-primary">
-          {{ offer.subheadline }}
-        </p>
-        <h1 class="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
-          {{ offer.headline }}
-        </h1>
-        <p class="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground">
-          {{ offer.tagline }}
-        </p>
-        <div class="mt-6 flex flex-wrap gap-2">
-          <Button @click="openHomepage">
-            预约 / 联系合作
+
+        <div class="relative mt-5 flex flex-wrap gap-2">
+          <Button class="bg-white text-slate-900 hover:bg-white/90" @click="openHomepage">
+            预约合作
             <ExternalLink class="ml-2 h-4 w-4" />
           </Button>
-          <Button variant="outline" @click="goProfile">
-            查看我的平台矩阵
+          <Button variant="secondary" class="border-0 bg-white/15 text-white hover:bg-white/25" @click="goPlatformMatrix">
+            查看平台矩阵
             <ArrowRight class="ml-2 h-4 w-4" />
           </Button>
         </div>
-        <p class="mt-4 text-xs text-muted-foreground">
-          {{ offer.contactHint }}
+        <p class="relative mt-3 text-[11px] text-white/55">
+          个人快照口径 · {{ offer.reachSummary.platformCount }} 个展示平台 · 同步能力 {{ offer.reachSummary.syncCapability }} 平台
         </p>
       </header>
 
-      <section class="border-b border-border/70 py-8">
-        <h2 class="text-lg font-semibold">
-          我的内容触达（约）
-        </h2>
-        <p class="mt-1 text-sm text-muted-foreground">
-          以下为个人账号快照口径，供评估合作量级；非联盟数据，不作效果承诺。
-        </p>
-        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div
-            v-for="item in [
-              { label: '粉丝合计', value: offer.reachSummary.followers },
-              { label: '阅读合计', value: offer.reachSummary.reads },
-              { label: '名片展示平台', value: `${offer.reachSummary.platformCount} 个` },
-              { label: '同步能力（工具）', value: `${offer.reachSummary.syncCapability} 平台` },
-            ]"
-            :key="item.label"
-            class="rounded-lg border border-border bg-background px-4 py-3 dark:bg-card"
-          >
-            <p class="text-xs text-muted-foreground">
-              {{ item.label }}
-            </p>
-            <p class="mt-1 text-xl font-semibold tabular-nums">
-              {{ item.value }}
-            </p>
-          </div>
+      <!-- 服务档位：三卡（主内容区） -->
+      <section class="mt-4 shrink-0">
+        <div class="mb-2 flex items-center gap-2">
+          <Sparkles class="h-4 w-4 text-primary" />
+          <h2 class="text-sm font-semibold">
+            服务档位
+          </h2>
+          <span class="text-xs text-muted-foreground">安东尼本人交付</span>
         </div>
-        <p class="mt-4 text-xs leading-relaxed text-muted-foreground">
-          {{ offer.dataFootnote }}
-        </p>
-      </section>
 
-      <section class="border-b border-border/70 py-8">
-        <h2 class="text-lg font-semibold">
-          我能提供什么
-        </h2>
-        <p class="mt-1 text-sm text-muted-foreground">
-          由安东尼本人交付的内容与引流相关服务（非博主联盟统一接单）。
-        </p>
-        <div class="mt-5 space-y-4">
+        <div class="grid gap-3 md:grid-cols-3">
           <article
             v-for="service in offer.services"
             :key="service.id"
-            class="rounded-xl border border-border bg-background p-5 dark:bg-card"
+            class="flex flex-col rounded-xl border p-4 transition-shadow"
+            :class="SERVICE_ACCENT[service.id]"
           >
-            <h3 class="font-semibold">
+            <div v-if="service.id === 'standard'" class="mb-2 inline-flex w-fit items-center rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
+              推荐
+            </div>
+            <h3 class="text-sm font-semibold leading-snug">
               {{ service.name }}
             </h3>
-            <p class="mt-2 text-sm text-muted-foreground">
+            <p class="mt-1 text-xs text-muted-foreground">
+              {{ service.timeline }}
+            </p>
+            <p class="mt-2 flex-1 text-xs leading-relaxed text-muted-foreground">
               {{ service.summary }}
             </p>
-            <ul class="mt-3 space-y-1.5 text-sm">
-              <li v-for="item in service.deliverables" :key="item" class="flex gap-2">
-                <Check class="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <ul class="mt-3 space-y-1 border-t border-border/60 pt-3 text-xs text-foreground/90">
+              <li v-for="item in service.deliverables" :key="item" class="flex gap-1.5">
+                <Check class="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
                 <span>{{ item }}</span>
               </li>
             </ul>
-            <p class="mt-3 text-xs text-muted-foreground">
-              周期：{{ service.timeline }} · 适合：{{ service.fit }}
+            <p class="mt-3 rounded-md bg-background/60 px-2 py-1.5 text-[11px] leading-snug text-muted-foreground dark:bg-background/30">
+              适合：{{ service.fit }}
             </p>
           </article>
         </div>
       </section>
 
-      <section class="border-b border-border/70 py-8">
-        <h2 class="text-lg font-semibold">
-          流量 → 转化 → ROI（示意）
-        </h2>
-        <p class="mt-1 text-sm text-muted-foreground">
-          在约定假设下粗算合作是否划算；实际结果取决于产品与落地页。
-        </p>
-        <div class="mt-4 rounded-xl border border-border bg-background p-5 font-mono text-sm leading-relaxed dark:bg-card">
-          <p>{{ offer.funnel.exposureLabel }}：{{ offer.funnel.exposureValue }}</p>
-          <p class="mt-2 text-muted-foreground">
-            ↓ CTR 假设 {{ offer.funnel.ctrRange }}
-          </p>
-          <p class="text-muted-foreground">
-            ↓ 留资率假设 {{ offer.funnel.leadRateRange }}
-          </p>
-          <p class="text-muted-foreground">
-            ↓ 成交率假设 {{ offer.funnel.closeRateRange }}
-          </p>
-          <p class="mt-2">
-            ROI = (线索 × 成交率 × 客单价 − 合作费) / 合作费
-          </p>
-        </div>
-        <p class="mt-3 text-xs leading-relaxed text-muted-foreground">
-          {{ offer.funnel.disclaimer }}
-        </p>
-      </section>
-
-      <section class="border-b border-border/70 py-8">
-        <h2 class="text-lg font-semibold">
-          合作模式与流程
-        </h2>
-        <div class="mt-4 grid gap-4 md:grid-cols-2">
-          <div
-            v-for="mode in offer.modes"
-            :key="mode.name"
-            class="rounded-lg border border-border bg-background px-4 py-3 dark:bg-card"
-          >
-            <p class="font-medium">
-              {{ mode.name }}
-            </p>
-            <p class="mt-1 text-sm text-muted-foreground">
-              {{ mode.desc }}
-            </p>
-          </div>
-        </div>
-        <ol class="mt-5 list-decimal space-y-2 pl-5 text-sm">
-          <li v-for="step in offer.workflow" :key="step">
-            {{ step }}
-          </li>
-        </ol>
-      </section>
-
-      <section class="border-b border-border/70 py-8">
-        <h2 class="text-lg font-semibold">
-          适合哪些品牌推文
-        </h2>
-        <div class="mt-4 space-y-4">
-          <div>
-            <p class="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-              <Check class="h-4 w-4" /> 更适合
-            </p>
-            <ul class="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li v-for="item in offer.brandFit.good" :key="item">
-                · {{ item }}
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p class="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
-              <Minus class="h-4 w-4" /> 需谨慎
-            </p>
-            <ul class="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li v-for="item in offer.brandFit.caution" :key="item">
-                · {{ item }}
-              </li>
-            </ul>
-          </div>
-          <div>
-            <p class="flex items-center gap-2 text-sm font-medium text-red-700 dark:text-red-400">
-              <X class="h-4 w-4" /> 不适合
-            </p>
-            <ul class="mt-2 space-y-1 text-sm text-muted-foreground">
-              <li v-for="item in offer.brandFit.bad" :key="item">
-                · {{ item }}
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section class="py-8">
-        <h2 class="text-lg font-semibold">
-          平台矩阵（个人主页）
-        </h2>
-        <p class="mt-1 text-sm text-muted-foreground">
-          快照中的粉丝 / 阅读；扩展检测或缓存有值时，名片页优先展示实时数据。
-        </p>
-        <div class="mt-4 overflow-x-auto rounded-lg border border-border">
-          <table class="w-full min-w-[520px] text-left text-sm">
-            <thead class="border-b border-border bg-muted/50 text-xs text-muted-foreground">
-              <tr>
-                <th class="px-3 py-2 font-medium">
-                  平台
-                </th>
-                <th class="px-3 py-2 font-medium">
-                  粉丝
-                </th>
-                <th class="px-3 py-2 font-medium">
-                  阅读
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in offer.platformMatrix"
-                :key="row.type"
-                class="border-b border-border/60 last:border-0"
+      <!-- 次级信息：两列 -->
+      <div class="mt-4 grid min-h-0 flex-1 gap-3 lg:grid-cols-5">
+        <!-- 平台链接 -->
+        <section class="rounded-xl border border-border/80 bg-background p-4 shadow-sm dark:bg-card lg:col-span-2">
+          <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            内容平台
+          </h2>
+          <ul class="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-2">
+            <li
+              v-for="row in offer.platformMatrix"
+              :key="row.type"
+              class="flex items-center justify-between gap-2 text-sm"
+            >
+              <a
+                :href="row.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex min-w-0 items-center gap-1 font-medium text-primary hover:underline"
               >
-                <td class="px-3 py-2 font-mono text-xs">
-                  {{ row.type }}
-                </td>
-                <td class="px-3 py-2 tabular-nums">
-                  {{ row.followers }}
-                </td>
-                <td class="px-3 py-2 tabular-nums">
-                  {{ row.reads }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+                {{ getPlatformProfileTitle(row.type) }}
+                <ExternalLink class="h-3 w-3 shrink-0 opacity-60" />
+              </a>
+              <span class="shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
+                {{ row.followers }} · {{ row.reads }}
+              </span>
+            </li>
+          </ul>
+        </section>
 
-      <footer class="border-t border-border/70 pt-6 text-center text-sm text-muted-foreground">
-        <p>
-          个人 IP 合作说明 ·
-          <span class="font-mono">{{ creatorOfferRoute(offer.id) }}</span>
-        </p>
-        <Button class="mt-4" variant="outline" @click="openHomepage">
-          前往 tuaran.me
-        </Button>
+        <!-- ROI + 合作 -->
+        <section class="rounded-xl border border-border/80 bg-background p-4 shadow-sm dark:bg-card lg:col-span-3">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                转化示意
+              </h2>
+              <div class="mt-2 space-y-1.5 text-xs">
+                <div class="flex justify-between rounded-lg bg-muted/50 px-2.5 py-1.5">
+                  <span class="text-muted-foreground">曝光基数</span>
+                  <span class="font-medium tabular-nums">{{ offer.funnel.exposureValue }}</span>
+                </div>
+                <div class="flex items-center justify-center text-[10px] text-muted-foreground">
+                  ↓ CTR {{ offer.funnel.ctrRange }}
+                </div>
+                <div class="flex items-center justify-center text-[10px] text-muted-foreground">
+                  ↓ 留资 {{ offer.funnel.leadRateRange }} · 成交 {{ offer.funnel.closeRateRange }}
+                </div>
+                <p class="rounded-md bg-muted/30 px-2 py-1.5 font-mono text-[10px] leading-snug text-muted-foreground">
+                  ROI = (线索×成交率×客单价−合作费) / 合作费
+                </p>
+              </div>
+            </div>
+            <div>
+              <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                合作模式
+              </h2>
+              <ul class="mt-2 space-y-2 text-xs">
+                <li v-for="mode in offer.modes" :key="mode.name">
+                  <span class="font-medium">{{ mode.name }}</span>
+                  <span class="text-muted-foreground"> — {{ mode.desc }}</span>
+                </li>
+              </ul>
+              <p class="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                {{ offer.workflow.join(' → ') }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-4 border-t border-border/60 pt-3">
+            <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              品牌适配
+            </h2>
+            <div class="mt-2 grid gap-2 sm:grid-cols-3">
+              <div class="rounded-lg bg-emerald-500/10 px-2.5 py-2">
+                <p class="flex items-center gap-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                  <Check class="h-3 w-3" /> 更适合
+                </p>
+                <ul class="mt-1 space-y-0.5 text-[11px] leading-snug text-muted-foreground">
+                  <li v-for="item in offer.brandFit.good" :key="item">
+                    {{ item }}
+                  </li>
+                </ul>
+              </div>
+              <div class="rounded-lg bg-amber-500/10 px-2.5 py-2">
+                <p class="flex items-center gap-1 text-[11px] font-medium text-amber-800 dark:text-amber-400">
+                  <Minus class="h-3 w-3" /> 需谨慎
+                </p>
+                <ul class="mt-1 space-y-0.5 text-[11px] leading-snug text-muted-foreground">
+                  <li v-for="item in offer.brandFit.caution" :key="item">
+                    {{ item }}
+                  </li>
+                </ul>
+              </div>
+              <div class="rounded-lg bg-red-500/10 px-2.5 py-2">
+                <p class="flex items-center gap-1 text-[11px] font-medium text-red-700 dark:text-red-400">
+                  <X class="h-3 w-3" /> 不适合
+                </p>
+                <ul class="mt-1 space-y-0.5 text-[11px] leading-snug text-muted-foreground">
+                  <li v-for="item in offer.brandFit.bad" :key="item">
+                    {{ item }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="mt-3 shrink-0 text-center text-[10px] text-muted-foreground">
+        {{ offer.contactHint }} ·
+        <button type="button" class="text-primary hover:underline" @click="openHomepage">
+          tuaran.me
+        </button>
       </footer>
     </div>
   </main>
 
-  <main v-else class="flex min-h-screen items-center justify-center bg-background px-4">
+  <main v-else class="flex min-h-[100dvh] items-center justify-center bg-background px-4">
     <div class="max-w-md text-center">
       <h1 class="text-xl font-semibold">
         未找到该创作者
       </h1>
       <p class="mt-2 text-sm text-muted-foreground">
-        当前仅开放 <span class="font-mono">tuaran</span> 的个人合作说明页。
+        当前仅开放 <span class="font-mono">tuaran</span> 的创作名片。
       </p>
-      <Button class="mt-4" variant="outline" @click="goProfile">
-        返回创作名片
+      <Button class="mt-4" variant="outline" @click="goPlatformMatrix">
+        返回平台矩阵
       </Button>
     </div>
   </main>
 </template>
+
+<style scoped>
+.creator-offer-hero {
+  background: linear-gradient(135deg, #1a2332 0%, #243044 45%, #1e3a2f 100%);
+}
+
+.dark .creator-offer-hero {
+  background: linear-gradient(135deg, #0f1419 0%, #1a2433 50%, #142820 100%);
+}
+</style>

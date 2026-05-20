@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { APP_HEADER_BRAND_LINE, getDataAcquisitionNavUrl } from '@/constants/branding'
-import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
+import { CREATOR_CARD_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
@@ -61,8 +61,8 @@ function toggleContentFactory() {
   isContentFactoryExpanded.value = !isContentFactoryExpanded.value
 }
 
-function openCreatorProfile() {
-  window.open(CREATOR_PROFILE_ROUTE, `_blank`, `noopener,noreferrer`)
+function openCreatorCard() {
+  window.open(CREATOR_CARD_ROUTE, `_blank`, `noopener,noreferrer`)
 }
 </script>
 
@@ -210,7 +210,7 @@ function openCreatorProfile() {
         variant="outline"
         size="sm"
         class="h-8 shrink-0"
-        @click="openCreatorProfile"
+        @click="openCreatorCard"
       >
         <IdCard class="mr-2 h-4 w-4" />
         创作名片

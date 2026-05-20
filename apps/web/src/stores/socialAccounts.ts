@@ -1,6 +1,8 @@
 import type { PostAccount } from '@md/shared/types'
 import type { PublicCreatorProfile, PublicSocialAccount } from '@/utils/socialAccounts'
+import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
 import { addPrefix } from '@/utils'
+import { creatorCardRoute } from '@/utils/creatorRoutes'
 import {
   applyProfileHomeUrls,
   createCreatorProfile,
@@ -13,8 +15,13 @@ import {
 import { store } from '@/utils/storage'
 
 const appBasePath = import.meta.env.BASE_URL.startsWith(`.`) ? `/` : import.meta.env.BASE_URL
-export const SOCIAL_ACCOUNTS_ROUTE = `${appBasePath.replace(/\/$/, ``)}/creator-profile`
-export const CREATOR_PROFILE_ROUTE = SOCIAL_ACCOUNTS_ROUTE
+/** 平台矩阵页（账号检测与主页链接） */
+export const PLATFORM_MATRIX_ROUTE = `${appBasePath.replace(/\/$/, ``)}/creator-profile`
+export const SOCIAL_ACCOUNTS_ROUTE = PLATFORM_MATRIX_ROUTE
+/** 创作名片（安东尼个人 IP 对外页） */
+export const CREATOR_CARD_ROUTE = creatorCardRoute(TUARAN_CREATOR_ID)
+/** 编辑器「创作名片」入口 */
+export const CREATOR_PROFILE_ROUTE = CREATOR_CARD_ROUTE
 
 export const useSocialAccountsStore = defineStore(`socialAccounts`, () => {
   const accounts = store.reactive<PublicSocialAccount[]>(addPrefix(`creator-social-accounts`), [])
@@ -41,7 +48,7 @@ export const useSocialAccountsStore = defineStore(`socialAccounts`, () => {
   function getShareUrl() {
     const origin = typeof window !== `undefined` ? window.location.origin : ``
     const data = encodeCreatorProfile(activeProfile.value)
-    return `${origin}${CREATOR_PROFILE_ROUTE}?profile=${encodeURIComponent(data)}`
+    return `${origin}${PLATFORM_MATRIX_ROUTE}?profile=${encodeURIComponent(data)}`
   }
 
   function readSharedProfile(search = typeof window !== `undefined` ? window.location.search : ``) {

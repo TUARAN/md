@@ -5,7 +5,7 @@ export const TUARAN_CREATOR_ID = `tuaran`
 export const TUARAN_OFFER = {
   id: TUARAN_CREATOR_ID,
   displayName: `安东尼`,
-  pageTitle: `安东尼 · 个人 IP 内容与引流服务`,
+  pageTitle: `安东尼 · 创作名片`,
   headline: `安东尼`,
   subheadline: `个人 IP 的内容与引流服务说明`,
   tagline: `技术向内容创作 · 多平台分发 · 品牌推文与引流合作`,
@@ -38,9 +38,9 @@ export const TUARAN_OFFER = {
     },
     {
       id: `growth`,
-      name: `Growth · 引流战役`,
+      name: `Growth · 引流专项`,
       summary: `在推文包基础上，对齐落地页与转化假设，输出节奏与复盘。`,
-      deliverables: [`Standard 全部交付物`, `落地页/活动文案协作`, `发布节奏表`, `战役结束数据小结（人工汇总）`],
+      deliverables: [`Standard 全部交付物`, `落地页/活动文案协作`, `发布节奏表`, `周期结束数据小结（人工汇总）`],
       timeline: `约 2–4 周`,
       fit: `需要曝光同时关注线索与转化`,
     },
@@ -56,7 +56,7 @@ export const TUARAN_OFFER = {
   },
 
   modes: [
-    { name: `项目制`, desc: `按篇或按战役报价，范围与交付清单书面确认。` },
+    { name: `项目制`, desc: `按篇或按项目报价，范围与交付清单书面确认。` },
     { name: `月度合作`, desc: `固定篇数 + 分发节奏，适合持续发声的技术品牌。` },
     { name: `效果分成（可选）`, desc: `低预付 + 线索/分成，需约定追踪方式与结算规则。` },
   ],
