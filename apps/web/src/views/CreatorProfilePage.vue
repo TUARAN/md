@@ -6,12 +6,16 @@ import { Input } from '@/components/ui/input'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
 import { APP_NAME } from '@/constants/branding'
 import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
+import { isKnownWorkflowCreator } from '@/constants/creators'
 import { CREATOR_CARD_ROUTE, useSocialAccountsStore } from '@/stores/socialAccounts'
+import { useUIStore, WORKFLOW_PAGE_ANCHORS } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
+import { parseCreatorIdFromSearch } from '@/utils/creatorRoutes'
 import { getCreatorProfileAccounts, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/socialAccounts'
 import { toast } from '@/utils/toast'
 
 const socialAccountsStore = useSocialAccountsStore()
+const uiStore = useUIStore()
 const { isCheckingLogin, redetectAccounts, ensureExtensionProbe } = usePlatformAccountDetection()
 
 const sharedProfile = ref<PublicCreatorProfile | null>(null)
@@ -62,6 +66,15 @@ const accountsByCategory = computed(() => {
 })
 
 const hasSharedData = computed(() => sharedProfile.value !== null)
+
+const workflowCreatorId = computed(() => {
+  const fromQuery = parseCreatorIdFromSearch()
+  if (fromQuery && isKnownWorkflowCreator(fromQuery))
+    return fromQuery
+  if (profile.value.id && isKnownWorkflowCreator(profile.value.id))
+    return profile.value.id.toLowerCase()
+  return TUARAN_CREATOR_ID
+})
 const creatorCardUrl = computed(() => {
   if (profile.value.id?.toLowerCase() === TUARAN_CREATOR_ID.toLowerCase())
     return CREATOR_CARD_ROUTE
@@ -116,8 +129,17 @@ async function handleRedetectAccounts() {
   await redetectAccounts()
 }
 
+function goWorkflowMatrix() {
+  uiStore.setWorkflowCreatorId(workflowCreatorId.value)
+  const base = import.meta.env.BASE_URL.replace(/\/$/, ``) || ``
+  window.location.href = `${base}/#${WORKFLOW_PAGE_ANCHORS.matrix}`
+}
+
 onMounted(() => {
   sharedProfile.value = socialAccountsStore.readSharedProfile()
+  const creatorFromQuery = parseCreatorIdFromSearch()
+  if (creatorFromQuery && isKnownWorkflowCreator(creatorFromQuery))
+    uiStore.setWorkflowCreatorId(creatorFromQuery)
   ensureExtensionProbe()
 })
 </script>
@@ -160,6 +182,9 @@ onMounted(() => {
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+          <Button variant="outline" @click="goWorkflowMatrix">
+            工作流 · 平台矩阵
+          </Button>
           <Button
             v-if="creatorCardUrl"
             @click="goCreatorCard"

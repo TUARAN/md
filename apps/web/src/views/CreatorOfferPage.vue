@@ -157,26 +157,24 @@ function openHomepage() {
           <h2 class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
             内容平台
           </h2>
-          <ul class="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-2">
-            <li
-              v-for="row in offer.platformMatrix"
-              :key="row.type"
-              class="flex items-center justify-between gap-2 text-sm"
-            >
+          <div class="mt-3 grid grid-cols-[minmax(0,1fr)_4.5rem_4.5rem] gap-x-2 gap-y-1.5">
+            <span />
+            <span class="text-right text-[10px] font-medium text-muted-foreground">粉丝</span>
+            <span class="text-right text-[10px] font-medium text-muted-foreground">阅读</span>
+            <template v-for="row in offer.platformMatrix" :key="row.type">
               <a
                 :href="row.url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex min-w-0 items-center gap-1 font-medium text-primary hover:underline"
+                class="inline-flex min-w-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
                 {{ getPlatformProfileTitle(row.type) }}
                 <ExternalLink class="h-3 w-3 shrink-0 opacity-60" />
               </a>
-              <span class="shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-                {{ row.followers }} · {{ row.reads }}
-              </span>
-            </li>
-          </ul>
+              <span class="text-right text-[11px] tabular-nums text-muted-foreground">{{ row.followers }}</span>
+              <span class="text-right text-[11px] tabular-nums text-muted-foreground">{{ row.reads }}</span>
+            </template>
+          </div>
         </section>
 
         <!-- ROI + 合作 -->
@@ -187,9 +185,21 @@ function openHomepage() {
                 转化示意
               </h2>
               <div class="mt-2 space-y-1.5 text-xs">
-                <div class="flex justify-between rounded-lg bg-muted/50 px-2.5 py-1.5">
-                  <span class="text-muted-foreground">曝光基数</span>
-                  <span class="font-medium tabular-nums">{{ offer.funnel.exposureValue }}</span>
+                <p class="text-[10px] leading-snug text-muted-foreground">
+                  曝光示意基数（单篇合作粗算）
+                </p>
+                <div
+                  v-for="item in offer.funnel.exposureBasis"
+                  :key="item.label"
+                  class="rounded-lg bg-muted/50 px-2.5 py-1.5"
+                >
+                  <div class="flex items-baseline justify-between gap-2">
+                    <span class="text-muted-foreground">{{ item.label }}</span>
+                    <span class="shrink-0 font-medium tabular-nums">{{ item.value }}</span>
+                  </div>
+                  <p v-if="item.note" class="mt-0.5 text-[10px] leading-snug text-muted-foreground/80">
+                    {{ item.note }}
+                  </p>
                 </div>
                 <div class="flex items-center justify-center text-[10px] text-muted-foreground">
                   ↓ CTR {{ offer.funnel.ctrRange }}

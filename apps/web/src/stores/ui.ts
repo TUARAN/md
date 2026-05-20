@@ -1,13 +1,17 @@
+import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
+import { getCreatorPlatformMatrix } from '@/constants/creators'
+import { listDistributionPlatformTypes } from '@/constants/distributionStrategies'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
 /** 顶栏工作流对应的整页视图（非弹窗） */
-export type WorkflowAppPage = `data` | `creation` | `sync` | `distribution` | `stats`
+export type WorkflowAppPage = `data` | `creation` | `sync` | `matrix` | `distribution` | `stats`
 
 export const WORKFLOW_PAGE_ANCHORS: Record<WorkflowAppPage, string> = {
   data: `data-acquisition`,
   creation: `style-creation`,
   sync: `content-sync`,
+  matrix: `platform-matrix`,
   distribution: `distribution-active`,
   stats: `closed-loop-report`,
 } as const
@@ -23,6 +27,9 @@ const WORKFLOW_HASH_PAGE_ALIASES: Record<string, WorkflowAppPage> = {
   [WORKFLOW_PAGE_ANCHORS.sync]: `sync`,
   sync: `sync`,
   内容同步: `sync`,
+  [WORKFLOW_PAGE_ANCHORS.matrix]: `matrix`,
+  matrix: `matrix`,
+  平台矩阵: `matrix`,
   [WORKFLOW_PAGE_ANCHORS.distribution]: `distribution`,
   distribution: `distribution`,
   宣发活跃: `distribution`,
@@ -159,8 +166,33 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
-  /** 主工作区当前页面：数据获取 / 风格二创 / 内容同步 / 宣发活跃 / 闭环汇报 */
+  /** 主工作区当前页面：数据获取 / 风格二创 / 内容同步 / 平台矩阵 / 宣发活跃 / 闭环汇报 */
   const workflowAppPage = store.reactive<WorkflowAppPage>(`workflow_app_page`, `sync`)
+
+  /** 工作流当前创作者（平台矩阵、宣发活跃共用） */
+  const workflowCreatorId = store.reactive(`workflow_creator_id`, TUARAN_CREATOR_ID)
+
+  /** 宣发活跃当前选中的平台 type（含虚拟渠道 x） */
+  const workflowDistributionPlatform = store.reactive(`workflow_distribution_platform`, `csdn`)
+
+  /** 平台矩阵「数据从哪来？」：首次默认展开，折叠后写入 localStorage 保持收起 */
+  const workflowMatrixDataSourceExpanded = store.reactive(`workflow_matrix_data_source_expanded`, true)
+
+  function defaultDistributionPlatformForCreator(creatorId: string) {
+    const matrix = getCreatorPlatformMatrix(creatorId).map(r => r.type)
+    const ordered = listDistributionPlatformTypes(creatorId, matrix)
+    return ordered[0] ?? `csdn`
+  }
+
+  function setWorkflowCreatorId(creatorId: string) {
+    const id = creatorId.trim().toLowerCase()
+    workflowCreatorId.value = id
+    workflowDistributionPlatform.value = defaultDistributionPlatformForCreator(id)
+  }
+
+  function setWorkflowDistributionPlatform(platformType: string) {
+    workflowDistributionPlatform.value = platformType.trim().toLowerCase() || `csdn`
+  }
 
   function syncWorkflowHash(page: WorkflowAppPage) {
     if (typeof window === `undefined`)
@@ -301,6 +333,11 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleAIImageDialog,
     workflowAppPage,
     setWorkflowAppPage,
+    workflowCreatorId,
+    workflowDistributionPlatform,
+    workflowMatrixDataSourceExpanded,
+    setWorkflowCreatorId,
+    setWorkflowDistributionPlatform,
     creationDraftMarkdown,
     setCreationDraftMarkdown,
     queueAiAssistantDraftMarkdown,

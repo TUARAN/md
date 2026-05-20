@@ -35,3 +35,17 @@ export function parseCreatorOfferId(pathname: string) {
 export function isCreatorOfferPath(pathname: string) {
   return parseCreatorOfferId(pathname) !== null
 }
+
+const appBasePathForProfile = import.meta.env.BASE_URL.startsWith(`.`) ? `/` : import.meta.env.BASE_URL
+
+/** 平台矩阵（独立页，可带 creator 查询参数） */
+export function creatorPlatformMatrixRoute(creatorId: string) {
+  const id = creatorId.trim().toLowerCase()
+  const base = appBasePathForProfile.replace(/\/$/, ``) || ``
+  return `${base}/creator-profile?creator=${encodeURIComponent(id)}`
+}
+
+export function parseCreatorIdFromSearch(search = typeof window !== `undefined` ? window.location.search : ``) {
+  const raw = new URLSearchParams(search).get(`creator`)?.trim().toLowerCase()
+  return raw || null
+}

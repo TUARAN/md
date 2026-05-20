@@ -13,8 +13,8 @@ export const TUARAN_OFFER = {
   contactHint: `合作咨询请通过 tuaran.me 或微信联系（备注：品牌合作）`,
 
   reachSummary: {
-    followers: `约 2.6 万`,
-    reads: `约 462 万`,
+    followers: `约 3.1 万`,
+    reads: `约 504 万`,
     platformCount: 14,
     syncCapability: `30+`,
   },
@@ -47,12 +47,15 @@ export const TUARAN_OFFER = {
   ],
 
   funnel: {
-    exposureLabel: `内容曝光（个人账号快照加总，约）`,
-    exposureValue: `462 万`,
+    exposureBasis: [
+      { label: `粉丝群体`, value: `约 3.1 万`, note: `多平台粉丝快照合计（约）` },
+      { label: `分发平台`, value: `14 个`, note: `可协助同步的发声渠道数` },
+      { label: `单篇基础曝光`, value: `约 3–15 万`, note: `示意：粉丝触达 + 各渠道自然基数，非历史阅读加总` },
+    ],
     ctrRange: `0.05% – 0.3%`,
     leadRateRange: `1% – 5%`,
     closeRateRange: `10% – 30%`,
-    disclaimer: `以上为示意模型：曝光来自个人名片快照加总（含部分平台预估占位），非第三方监测；转化依赖你方落地页、产品与追踪配置。`,
+    disclaimer: `以上为示意模型：曝光基数由粉丝池、分发渠道与单篇基础曝光构成，不等于各平台历史阅读加总；转化依赖你方落地页、产品与追踪配置。`,
   },
 
   modes: [
@@ -81,7 +84,7 @@ export const TUARAN_OFFER = {
     ],
   },
 
-  dataFootnote: `页面中的「约 2.6 万粉丝 / 约 462 万阅读」来自创作者个人账号在代码中维护的快照加总（含 10 个平台「粉丝 100、阅读 2 万」预估占位），用于合作沟通参考，不是联盟统计，也不代表未来单篇 guaranteed 曝光。`,
+  dataFootnote: `页面中的「约 3.1 万粉丝 / 约 504 万阅读」来自各平台个人账号快照加总（含 7 个平台「粉丝 100、阅读 2 万」预估占位）；转化漏斗中的曝光示意不等于该阅读合计。`,
 
   platformMatrix: Object.entries(PLATFORM_DEFAULT_PROFILE_URLS).map(([type, url]) => {
     const stats = PLATFORM_DEFAULT_PROFILE_STATS[type]
