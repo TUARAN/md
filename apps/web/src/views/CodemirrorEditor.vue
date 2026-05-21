@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ArrowRight, ChevronDown, RefreshCw, Users } from 'lucide-vue-next'
+import { ChevronDown, RefreshCw } from 'lucide-vue-next'
 import { provide } from 'vue'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
-import { Button } from '@/components/ui/button'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -27,7 +26,6 @@ import { useUIStore, WORKFLOW_PAGE_ANCHORS } from '@/stores/ui'
 import { downloadCsyncExtensionZip } from '@/utils/downloadCsyncExtension'
 
 const uiStore = useUIStore()
-const { setWorkflowAppPage } = uiStore
 
 const {
   isMobile,
@@ -194,17 +192,6 @@ onUnmounted(() => {
                 <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
                   左栏定稿 Markdown，右栏核对图文；分发时点「发布」写各站草稿。
                 </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="mt-3 h-8"
-                  type="button"
-                  @click="setWorkflowAppPage('matrix')"
-                >
-                  <Users class="mr-1.5 h-3.5 w-3.5" />
-                  下一步：平台矩阵
-                  <ArrowRight class="ml-1.5 h-3.5 w-3.5" />
-                </Button>
                 <details
                   class="group mt-2 w-full overflow-hidden rounded-md border border-border/50 bg-muted/10 dark:bg-muted/5"
                 >
