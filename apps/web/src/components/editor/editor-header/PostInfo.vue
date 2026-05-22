@@ -3,6 +3,7 @@ import type { Post, PostAccount } from '@md/shared/types'
 import { Check, ChevronDown, ChevronRight, ExternalLink, Info, Loader2, Minus, RefreshCw, Send } from 'lucide-vue-next'
 import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
+import { PLATFORM_CATEGORIES } from '@/constants/platforms'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
@@ -60,21 +61,6 @@ const allowPost = computed(() => {
   return coseOk || pluginOk
 })
 
-const platformCategories = [
-  {
-    name: `媒体平台`,
-    platforms: [`wechat`, `zhihu`, `baijiahao`, `wangyihao`, `sohu`, `weibo`, `bilibili`, `sspai`, `twitter`, `douyin`, `xiaohongshu`, `douban`, `toutiao`],
-  },
-  {
-    name: `博客平台`,
-    platforms: [`csdn`, `cnblogs`, `juejin`, `medium`, `cto51`, `segmentfault`, `oschina`, `infoq`, `jianshu`],
-  },
-  {
-    name: `云平台及开发者社区`,
-    platforms: [`tencentcloud`, `aliyun`, `huaweicloud`, `huaweidev`, `alipayopen`, `volcengine`, `elecfans`, `qianfan`, `modelscope`],
-  },
-]
-
 const collapsedCategories = ref<Set<string>>(new Set([`云平台及开发者社区`]))
 
 function toggleCategory(categoryName: string) {
@@ -87,7 +73,7 @@ function toggleCategory(categoryName: string) {
 }
 
 const accountsByCategory = computed(() => {
-  return platformCategories.map(category => ({
+  return PLATFORM_CATEGORIES.map(category => ({
     name: category.name,
     accounts: category.platforms
       .map(type => allAccounts.value.find(a => a.type === type))

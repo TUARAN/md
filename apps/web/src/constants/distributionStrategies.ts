@@ -5,6 +5,7 @@ import {
   parseFollowerCount,
   resolveFanGrowthMilestoneId,
 } from '@/constants/distributionFocus'
+import { normalizePlatformType } from '@/constants/platforms'
 
 export interface DistributionStrategy {
   platformType: string
@@ -157,16 +158,16 @@ export function listDistributionPlatformTypes(creatorId: string, matrixTypes: st
 
 export function getDistributionStrategy(creatorId: string, platformType: string): DistributionStrategy {
   const id = creatorId.trim().toLowerCase()
-  const key = platformType === `x` ? `x` : platformType
+  const type = normalizePlatformType(platformType)
   const table = STRATEGIES_BY_CREATOR[id] ?? STRATEGIES_BY_CREATOR[TUARAN_CREATOR_ID]
-  const row = table[key] ?? table.default
-  const platformRow = platformType === `x`
+  const row = table[type] ?? table.default
+  const platformRow = type === `x`
     ? null
-    : getDistributionPlatformRow(platformType)
+    : getDistributionPlatformRow(type)
 
   return {
-    platformType: key,
-    title: row.title ?? (platformRow?.title ?? platformType),
+    platformType: type,
+    title: row.title ?? (platformRow?.title ?? type),
     badge: row.badge,
     summary: row.summary,
     cadence: row.cadence,
@@ -176,7 +177,7 @@ export function getDistributionStrategy(creatorId: string, platformType: string)
 }
 
 export function getPlatformGrowthSnapshot(_creatorId: string, platformType: string) {
-  if (platformType === `x`) {
+  if (normalizePlatformType(platformType) === `x`) {
     const milestone = FAN_GROWTH_MILESTONES.find(m => m.id === `0-1`)!
     return {
       row: null,
@@ -185,7 +186,7 @@ export function getPlatformGrowthSnapshot(_creatorId: string, platformType: stri
       milestone,
     }
   }
-  const row = getDistributionPlatformRow(platformType)
+  const row = getDistributionPlatformRow(normalizePlatformType(platformType))
   const followers = parseFollowerCount(row.followers)
   const milestoneId = resolveFanGrowthMilestoneId(followers)
   const milestone = FAN_GROWTH_MILESTONES.find(m => m.id === milestoneId)!

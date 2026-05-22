@@ -1,4 +1,6 @@
 import type { PostAccount } from '@md/shared/types'
+import type { PlatformCategory } from '@/constants/platforms'
+import { getPlatformTitle, PLATFORM_CATEGORIES, PLATFORM_REGISTRY } from '@/constants/platforms'
 
 export interface PublicSocialAccount {
   type: string
@@ -15,25 +17,10 @@ export interface PublicSocialAccount {
   updatedAt: number
 }
 
-export interface SocialAccountCategory {
-  name: string
-  platforms: string[]
-}
+export type SocialAccountCategory = PlatformCategory
 
-export const SOCIAL_ACCOUNT_CATEGORIES: SocialAccountCategory[] = [
-  {
-    name: `媒体平台`,
-    platforms: [`wechat`, `zhihu`, `baijiahao`, `wangyihao`, `sohu`, `weibo`, `bilibili`, `sspai`, `twitter`, `douyin`, `xiaohongshu`, `douban`, `toutiao`],
-  },
-  {
-    name: `博客平台`,
-    platforms: [`csdn`, `cnblogs`, `juejin`, `medium`, `cto51`, `segmentfault`, `oschina`, `infoq`, `jianshu`],
-  },
-  {
-    name: `云平台及开发者社区`,
-    platforms: [`tencentcloud`, `aliyun`, `huaweicloud`, `huaweidev`, `alipayopen`, `volcengine`, `elecfans`, `qianfan`, `modelscope`],
-  },
-]
+/** 名片分类清单，派生自平台注册表 */
+export const SOCIAL_ACCOUNT_CATEGORIES: SocialAccountCategory[] = PLATFORM_CATEGORIES
 
 export type CreatorKind = `blogger` | `developer` | `media` | `brand` | `custom`
 
@@ -78,32 +65,30 @@ export const PLATFORM_DEFAULT_PROFILE_URLS: Record<string, string> = {
   segmentfault: `https://segmentfault.com/u/aran_tu/articles`,
 }
 
-/** 默认主页对应平台在名片上的展示名（用于补全未检测到的账号） */
-const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { title: string, displayName: string }> = {
-  csdn: { title: `CSDN`, displayName: `aifs2025` },
-  juejin: { title: `掘金`, displayName: `掘金安东尼` },
-  zhihu: { title: `知乎`, displayName: `三十而立方` },
-  toutiao: { title: `今日头条`, displayName: `掘金安东尼` },
-  oschina: { title: `开源中国`, displayName: `TUARAN` },
-  cto51: { title: `51CTO`, displayName: `u_13961087` },
-  infoq: { title: `InfoQ`, displayName: `TUARAN` },
-  baijiahao: { title: `百家号`, displayName: `TUARAN` },
-  weibo: { title: `微博`, displayName: `TUARAN` },
-  xiaohongshu: { title: `小红书`, displayName: `TUARAN` },
-  tencentcloud: { title: `腾讯云`, displayName: `TUARAN` },
-  aliyun: { title: `阿里云`, displayName: `TUARAN` },
-  huaweicloud: { title: `华为云`, displayName: `TUARAN` },
-  segmentfault: { title: `思否`, displayName: `aran_tu` },
+/** 默认主页对应平台的 TUARAN 账号展示名（用于补全未检测到的账号） */
+const PLATFORM_DEFAULT_DISPLAY_NAMES: Record<string, { displayName: string }> = {
+  csdn: { displayName: `aifs2025` },
+  juejin: { displayName: `掘金安东尼` },
+  zhihu: { displayName: `三十而立方` },
+  toutiao: { displayName: `掘金安东尼` },
+  oschina: { displayName: `TUARAN` },
+  cto51: { displayName: `u_13961087` },
+  infoq: { displayName: `TUARAN` },
+  baijiahao: { displayName: `TUARAN` },
+  weibo: { displayName: `TUARAN` },
+  xiaohongshu: { displayName: `TUARAN` },
+  tencentcloud: { displayName: `TUARAN` },
+  aliyun: { displayName: `TUARAN` },
+  huaweicloud: { displayName: `TUARAN` },
+  segmentfault: { displayName: `aran_tu` },
 }
 
-/** 平台 type → 名片展示标题（与 PLATFORM_DEFAULT_DISPLAY_NAMES 一致） */
+/** 平台 type → 展示标题，派生自平台注册表 */
 export const PLATFORM_PROFILE_TITLES: Record<string, string> = Object.fromEntries(
-  Object.entries(PLATFORM_DEFAULT_DISPLAY_NAMES).map(([type, meta]) => [type, meta.title]),
+  PLATFORM_REGISTRY.map(p => [p.type, p.title]),
 )
 
-export function getPlatformProfileTitle(type: string): string {
-  return PLATFORM_PROFILE_TITLES[type] ?? type
-}
+export const getPlatformProfileTitle = getPlatformTitle
 
 /** 未单独校对平台时使用的 TUARAN 预估粉丝/阅读 */
 const TUARAN_ESTIMATED_PROFILE_STATS = { followers: `100`, reads: `2万` } as const
@@ -140,40 +125,10 @@ function applyDefaultProfileStats(account: PublicSocialAccount): PublicSocialAcc
   }
 }
 
-/** 无个人 uid 时的平台门户（非编辑页） */
-export const PLATFORM_HOME_URLS: Record<string, string> = {
-  csdn: `https://blog.csdn.net`,
-  juejin: `https://juejin.cn`,
-  wechat: `https://mp.weixin.qq.com`,
-  zhihu: `https://www.zhihu.com`,
-  toutiao: `https://www.toutiao.com`,
-  segmentfault: `https://segmentfault.com`,
-  cnblogs: `https://www.cnblogs.com`,
-  oschina: `https://my.oschina.net`,
-  cto51: `https://blog.51cto.com`,
-  infoq: `https://xie.infoq.cn`,
-  jianshu: `https://www.jianshu.com`,
-  baijiahao: `https://baijiahao.baidu.com`,
-  wangyihao: `https://mp.163.com`,
-  tencentcloud: `https://cloud.tencent.com/developer`,
-  medium: `https://medium.com`,
-  sspai: `https://sspai.com`,
-  sohu: `https://mp.sohu.com`,
-  bilibili: `https://www.bilibili.com`,
-  weibo: `https://weibo.com`,
-  aliyun: `https://developer.aliyun.com`,
-  huaweicloud: `https://bbs.huaweicloud.com`,
-  huaweidev: `https://developer.huawei.com/consumer/cn`,
-  twitter: `https://x.com`,
-  qianfan: `https://qianfan.cloud.baidu.com`,
-  alipayopen: `https://open.alipay.com`,
-  modelscope: `https://modelscope.cn`,
-  volcengine: `https://developer.volcengine.com`,
-  douyin: `https://www.douyin.com`,
-  xiaohongshu: `https://www.xiaohongshu.com`,
-  elecfans: `https://www.elecfans.com`,
-  douban: `https://www.douban.com`,
-}
+/** 无个人 uid 时的平台门户（非编辑页），派生自平台注册表 */
+export const PLATFORM_HOME_URLS: Record<string, string> = Object.fromEntries(
+  PLATFORM_REGISTRY.map(p => [p.type, p.homeUrl]),
+)
 
 /** 用平台 uid / 用户名拼个人主页（名片展示用，勿与同步用的编辑页混用） */
 const PLATFORM_PROFILE_URL_BUILDERS: Record<string, (uid: string) => string> = {
@@ -184,7 +139,7 @@ const PLATFORM_PROFILE_URL_BUILDERS: Record<string, (uid: string) => string> = {
   weibo: uid => `https://weibo.com/u/${uid}`,
   xiaohongshu: uid => `https://www.xiaohongshu.com/user/profile/${uid}`,
   douban: uid => `https://www.douban.com/people/${uid}/`,
-  twitter: uid => `https://x.com/${uid}`,
+  x: uid => `https://x.com/${uid}`,
   cnblogs: uid => `https://www.cnblogs.com/${uid}`,
   segmentfault: uid => `https://segmentfault.com/u/${uid}`,
   oschina: uid => `https://my.oschina.net/u/${uid}`,
@@ -429,7 +384,7 @@ function extractUidFromPlatformUrl(type: string, url: string): string | null {
           return m[1]
         break
       }
-      case `twitter`: {
+      case `x`: {
         const seg = path.split(`/`).filter(Boolean)[0]
         if (seg && ![`compose`, `home`, `i`].includes(seg))
           return seg
@@ -507,7 +462,7 @@ function createDefaultPublicAccount(type: string): PublicSocialAccount {
   const url = PLATFORM_DEFAULT_PROFILE_URLS[type]!
   return applyDefaultProfileStats({
     type,
-    title: meta?.title ?? type,
+    title: getPlatformProfileTitle(type),
     displayName: meta?.displayName ?? `TUARAN`,
     uid: type,
     icon: ``,

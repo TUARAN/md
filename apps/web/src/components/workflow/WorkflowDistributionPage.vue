@@ -30,11 +30,7 @@ const growth = computed(() =>
   getPlatformGrowthSnapshot(workflowCreatorId.value, workflowDistributionPlatform.value),
 )
 
-const platformLabel = computed(() => {
-  if (workflowDistributionPlatform.value === `x`)
-    return `X`
-  return getPlatformProfileTitle(workflowDistributionPlatform.value)
-})
+const platformLabel = computed(() => getPlatformProfileTitle(workflowDistributionPlatform.value))
 
 function goPlatformMatrix() {
   setWorkflowAppPage(`matrix`)

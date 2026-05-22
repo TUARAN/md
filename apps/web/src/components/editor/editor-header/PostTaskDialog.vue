@@ -6,15 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import {
   dispatchPluginSyncerOpenPanel,
   partitionAccountsBySyncSource,
-
 } from '@/utils/publishExtensions'
-
-declare global {
-  interface Window {
-    $cose: any
-    $pluginSyncer?: import('@/utils/publishExtensions').PluginSyncerApi
-  }
-}
 
 const props = defineProps<{
   post: Post
@@ -131,7 +123,6 @@ async function startPost(targetAccounts?: PostAccount[]) {
 
   const { pluginSyncer, cose } = partitionAccountsBySyncSource(accountsToPost)
 
-  const isRetry = !!targetAccounts
   taskStatus.value = {
     accounts: accountsToPost.map((a) => {
       const base = {
@@ -153,10 +144,13 @@ async function startPost(targetAccounts?: PostAccount[]) {
       await runPluginSyncerPublish(pluginSyncer)
 
     if (cose.length > 0) {
-      if (typeof window.$cose?.addTask !== `function`) {
+      const coseApi = window.$cose
+      if (typeof coseApi?.addTask !== `function`) {
         markAccountsFailed(cose, `未安装 COSE 扩展，无法同步所选平台。`)
       }
       else {
+        // 在窄化仍生效处先取出已绑定的方法，供下方 Promise 闭包调用
+        const addTask = coseApi.addTask.bind(coseApi)
         const taskData = {
           post: {
             title: props.post.title,
@@ -187,7 +181,7 @@ async function startPost(targetAccounts?: PostAccount[]) {
 
         await new Promise<void>((resolve, reject) => {
           try {
-            window.$cose.addTask(taskData, onProgress, () => resolve())
+            addTask(taskData, onProgress, () => resolve())
           }
           catch (e) {
             reject(e)
@@ -199,10 +193,7 @@ async function startPost(targetAccounts?: PostAccount[]) {
     }
   }
   finally {
-    if (!isRetry)
-      submitting.value = false
-    else
-      submitting.value = false
+    submitting.value = false
   }
 }
 

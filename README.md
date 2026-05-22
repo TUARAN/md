@@ -8,7 +8,7 @@
 
 <div align="center">
 
-[![CI](https://img.shields.io/github/actions/workflow/status/TUARAN/md/ci.yml?style=flat-square&label=CI&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/actions/workflows/ci.yml) [![node](https://img.shields.io/badge/node-%3E%3D22.19.0-42cc23?style=flat-square&labelColor=564341)](https://nodejs.org/en/about/previous-releases) [![stars](https://img.shields.io/github/stars/TUARAN/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/stargazers) [![forks](https://img.shields.io/github/forks/TUARAN/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/forks)
+[![CI](https://img.shields.io/github/actions/workflow/status/TUARAN/md/ci.yml?style=flat-square&label=CI&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/actions/workflows/ci.yml) [![version](https://img.shields.io/badge/version-2.2.0-42cc23?style=flat-square&labelColor=564341)](https://github.com/TUARAN/md/blob/main/CHANGELOG.md) [![node](https://img.shields.io/badge/node-%3E%3D22.19.0-42cc23?style=flat-square&labelColor=564341)](https://nodejs.org/en/about/previous-releases) [![stars](https://img.shields.io/github/stars/TUARAN/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/stargazers) [![forks](https://img.shields.io/github/forks/TUARAN/md?style=flat-square&labelColor=564341&color=42cc23)](https://github.com/TUARAN/md/forks)
 
 </div>
 
@@ -61,14 +61,14 @@
 
 顶部导航将能力组织为一条内容生产链路，当前成熟度如下：
 
-| 步骤     | 说明                                                | 状态         |
-| -------- | --------------------------------------------------- | ------------ |
-| 数据获取 | 接入 GNews、NewsAPI 等资讯源，检索结果可带入二创    | 可用         |
-| 风格二创 | 长文提示词模板，将素材整理为可继续排版的 Markdown   | 可用         |
-| 内容同步 | Markdown 编辑、主题排版、富文本复制、多平台草稿写入 | **核心能力** |
-| 平台矩阵 | 按创作者 ID 梳理各平台粉丝/阅读快照                 | 主链路       |
-| 宣发活跃 | 按创作者 + 平台切换宣发策略（CSDN / X / 云社区等）  | 建设中       |
-| 闭环汇报 | 发布效果与数据回流                                  | 规划中       |
+| 步骤     | 说明                                                              | 状态         |
+| -------- | ----------------------------------------------------------------- | ------------ |
+| 数据获取 | 接入 GNews、NewsAPI 等资讯源，检索结果可带入二创                  | 可用         |
+| 风格二创 | 长文提示词模板，将素材整理为可继续排版的 Markdown                 | 可用         |
+| 内容同步 | Markdown 编辑、主题排版、富文本复制、多平台草稿写入               | **核心能力** |
+| 平台矩阵 | 按创作者梳理各平台账号；粉丝/阅读优先取检测缓存，缺省回落仓库快照 | 主链路       |
+| 宣发活跃 | 按创作者 + 平台切换宣发策略（CSDN / X / 云社区等）                | 建设中       |
+| 闭环汇报 | 发布效果与数据回流                                                | 规划中       |
 
 另提供 **创作名片** 独立页面：汇总各平台已检测到的账号主页，便于对外展示创作者矩阵（入口在编辑器顶栏）。
 

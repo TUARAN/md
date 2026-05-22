@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ArrowRight, ExternalLink, Megaphone, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
 import { getCreatorPlatformMatrix, getWorkflowCreator } from '@/constants/creators'
+import { useSocialAccountsStore } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import { creatorPlatformMatrixRoute } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
@@ -13,8 +15,27 @@ const uiStore = useUIStore()
 const { workflowCreatorId, workflowDistributionPlatform, workflowMatrixDataSourceExpanded } = storeToRefs(uiStore)
 const { setWorkflowAppPage, setWorkflowDistributionPlatform } = uiStore
 
+const socialAccountsStore = useSocialAccountsStore()
+
 const creator = computed(() => getWorkflowCreator(workflowCreatorId.value))
-const matrixRows = computed(() => getCreatorPlatformMatrix(workflowCreatorId.value))
+
+const matrixRows = computed(() => {
+  const base = getCreatorPlatformMatrix(workflowCreatorId.value)
+  // 检测缓存只对应当前登录的创作者（TUARAN）；其它创作者沿用仓库快照
+  if (workflowCreatorId.value !== TUARAN_CREATOR_ID)
+    return base
+  const detected = new Map(
+    socialAccountsStore.accounts
+      .filter(a => a.followers || a.reads)
+      .map(a => [a.type, a]),
+  )
+  return base.map((row) => {
+    const hit = detected.get(row.type)
+    return hit
+      ? { ...row, followers: hit.followers || row.followers, reads: hit.reads || row.reads }
+      : row
+  })
+})
 
 function openFullMatrix() {
   window.open(creatorPlatformMatrixRoute(workflowCreatorId.value), `_blank`, `noopener,noreferrer`)

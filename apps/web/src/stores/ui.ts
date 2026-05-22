@@ -1,6 +1,7 @@
 import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
 import { getCreatorPlatformMatrix } from '@/constants/creators'
 import { listDistributionPlatformTypes } from '@/constants/distributionStrategies'
+import { normalizePlatformType } from '@/constants/platforms'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
@@ -172,8 +173,10 @@ export const useUIStore = defineStore(`ui`, () => {
   /** 工作流当前创作者（平台矩阵、宣发活跃共用） */
   const workflowCreatorId = store.reactive(`workflow_creator_id`, TUARAN_CREATOR_ID)
 
-  /** 宣发活跃当前选中的平台 type（含虚拟渠道 x） */
+  /** 宣发活跃当前选中的平台 type（canonical key，详见 constants/platforms.ts） */
   const workflowDistributionPlatform = store.reactive(`workflow_distribution_platform`, `csdn`)
+  // 收敛历史持久化值（如旧的 `twitter` → `x`）
+  workflowDistributionPlatform.value = normalizePlatformType(workflowDistributionPlatform.value)
 
   /** 平台矩阵「数据从哪来？」：首次默认展开，折叠后写入 localStorage 保持收起 */
   const workflowMatrixDataSourceExpanded = store.reactive(`workflow_matrix_data_source_expanded`, true)
@@ -191,7 +194,7 @@ export const useUIStore = defineStore(`ui`, () => {
   }
 
   function setWorkflowDistributionPlatform(platformType: string) {
-    workflowDistributionPlatform.value = platformType.trim().toLowerCase() || `csdn`
+    workflowDistributionPlatform.value = normalizePlatformType(platformType) || `csdn`
   }
 
   function syncWorkflowHash(page: WorkflowAppPage) {

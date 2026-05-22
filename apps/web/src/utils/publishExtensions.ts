@@ -5,11 +5,49 @@ export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set([`zhihu`, `wechat`, `weibo`
 
 export type PostAccountSyncSource = `cose` | `plugin-syncer`
 
+/**
+ * 账号是否由 CSYNC（plugin-syncer）发布。
+ * 这是 CSYNC / COSE 路由的唯一判定——merge 标注与 partition 分桶必须共用它，
+ * 否则会出现「标成 plugin-syncer 却被分到 COSE 桶」的错配（角标、进度文案、发布通道都会对不上）。
+ */
+export function isPluginSyncerAccount(account: Pick<PostAccount, `type` | `syncSource`>): boolean {
+  return account.syncSource === `plugin-syncer` && PLUGIN_SYNCER_PREFERRED_TYPES.has(account.type)
+}
+
 declare global {
   interface Window {
+    /** COSE「文章同步助手」扩展在页面注入的桥接对象 */
+    $cose?: CoseApi
     /** CSYNC 等在页面注入的桥接对象（需扩展在本页加载 content script 才能 connected） */
     $pluginSyncer?: PluginSyncerApi
   }
+}
+
+/** COSE 同步任务载荷 */
+export interface CoseTask {
+  post: {
+    title: string
+    content: string
+    markdown: string
+    thumb: string
+    desc: string
+  }
+  accounts: PostAccount[]
+}
+
+/** COSE「文章同步助手」在页面注入的桥接 API；方法均为可选——按扩展版本而定 */
+export interface CoseApi {
+  getPlatforms?: () => PostAccount[]
+  getAccounts?: (callback: (accounts: PostAccount[]) => void) => void
+  getAccountsProgressive?: (
+    onAccount: (account: PostAccount) => void,
+    onDone: () => void,
+  ) => void
+  addTask?: (
+    task: CoseTask,
+    onProgress: (status: { accounts?: PostAccount[] }) => void,
+    onDone: () => void,
+  ) => void
 }
 
 export interface PluginSyncerApi {
@@ -118,9 +156,14 @@ export function mergeCoseAndPluginSyncerAccounts(
   }
 
   for (const plug of pluginRows) {
-    if (!usedPlugin.has(plug.type) && plug.loggedIn && !result.some(r => r.type === plug.type)) {
-      result.push({ ...plug, syncSource: `plugin-syncer` })
-    }
+    if (usedPlugin.has(plug.type) || !plug.loggedIn || result.some(r => r.type === plug.type))
+      continue
+    // 非首选类型即使只有 CSYNC 检测到，也按 PLUGIN_SYNCER_PREFERRED_TYPES 策略归 COSE 发布，
+    // 保持 syncSource 与实际发布通道一致（否则角标/进度文案会误标 CSYNC）。
+    result.push({
+      ...plug,
+      syncSource: PLUGIN_SYNCER_PREFERRED_TYPES.has(plug.type) ? `plugin-syncer` : `cose`,
+    })
   }
 
   return result
@@ -142,11 +185,7 @@ export function partitionAccountsBySyncSource(accounts: PostAccount[]): {
   pluginSyncer: PostAccount[]
   cose: PostAccount[]
 } {
-  const pluginSyncer = accounts.filter(
-    a => a.syncSource === `plugin-syncer` && PLUGIN_SYNCER_PREFERRED_TYPES.has(a.type),
-  )
-  const cose = accounts.filter(
-    a => !(a.syncSource === `plugin-syncer` && PLUGIN_SYNCER_PREFERRED_TYPES.has(a.type)),
-  )
+  const pluginSyncer = accounts.filter(isPluginSyncerAccount)
+  const cose = accounts.filter(a => !isPluginSyncerAccount(a))
   return { pluginSyncer, cose }
 }

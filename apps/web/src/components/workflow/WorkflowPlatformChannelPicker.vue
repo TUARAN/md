@@ -22,12 +22,6 @@ const platformTypes = computed(() => {
   const matrix = getCreatorPlatformMatrix(activeCreatorId.value).map(r => r.type)
   return listDistributionPlatformTypes(activeCreatorId.value, matrix)
 })
-
-function labelFor(type: string) {
-  if (type === `x`)
-    return `X`
-  return getPlatformProfileTitle(type)
-}
 </script>
 
 <template>
@@ -49,7 +43,7 @@ function labelFor(type: string) {
           : 'border-border/80 bg-background/80 text-muted-foreground hover:text-foreground'"
         @click="setWorkflowDistributionPlatform(type)"
       >
-        {{ labelFor(type) }}
+        {{ getPlatformProfileTitle(type) }}
       </button>
     </div>
   </div>
