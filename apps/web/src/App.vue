@@ -3,14 +3,18 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { documentTitle } from '@/constants/branding'
+import { useEditorStore } from '@/stores/editor'
+import { usePostStore } from '@/stores/post'
 import { SOCIAL_ACCOUNTS_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
-import { isCreatorOfferPath, parseCreatorOfferId } from '@/utils/creatorRoutes'
+import { getAppBasePath, isCreatorOfferPath, parseCreatorOfferId } from '@/utils/creatorRoutes'
 import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
 import CreatorOfferPage from '@/views/CreatorOfferPage.vue'
 import CreatorProfilePage from '@/views/CreatorProfilePage.vue'
 
 const uiStore = useUIStore()
+const postStore = usePostStore()
+const editorStore = useEditorStore()
 const { isDark } = storeToRefs(uiStore)
 
 const isUtools = ref(false)
@@ -18,14 +22,90 @@ const currentPath = ref(window.location.pathname)
 const isCreatorProfilePage = computed(() => currentPath.value === SOCIAL_ACCOUNTS_ROUTE)
 const creatorOfferId = computed(() => parseCreatorOfferId(currentPath.value))
 const isCreatorOfferPage = computed(() => isCreatorOfferPath(currentPath.value))
+const importReadyTimer = ref<ReturnType<typeof setInterval> | null>(null)
+
+interface SyncblogImportArticleMessage {
+  type: `SYNCBLOG_IMPORT_ARTICLE`
+  title?: unknown
+  markdown?: unknown
+  canonicalUrl?: unknown
+  tags?: unknown
+}
+
+const TRUSTED_IMPORT_ORIGINS = new Set([
+  `https://2aran.com`,
+  `https://tuaran.me`,
+])
 
 function updateCurrentPath() {
   currentPath.value = window.location.pathname
 }
 
+function isTrustedImportOrigin(origin: string) {
+  if (TRUSTED_IMPORT_ORIGINS.has(origin))
+    return true
+
+  try {
+    const url = new URL(origin)
+    return url.hostname === `localhost` || url.hostname === `127.0.0.1`
+  }
+  catch {
+    return false
+  }
+}
+
+function normalizeSyncblogImportPayload(data: unknown) {
+  if (!data || typeof data !== `object`)
+    return null
+
+  const payload = data as SyncblogImportArticleMessage
+  if (payload.type !== `SYNCBLOG_IMPORT_ARTICLE` || typeof payload.markdown !== `string`)
+    return null
+
+  return {
+    title: typeof payload.title === `string` ? payload.title.trim() : ``,
+    markdown: payload.markdown,
+    canonicalUrl: typeof payload.canonicalUrl === `string` ? payload.canonicalUrl.trim() : ``,
+    tags: Array.isArray(payload.tags) ? payload.tags.filter((tag): tag is string => typeof tag === `string`) : [],
+  }
+}
+
+function importSyncblogArticle(event: MessageEvent) {
+  if (!isTrustedImportOrigin(event.origin))
+    return
+
+  const payload = normalizeSyncblogImportPayload(event.data)
+  if (!payload)
+    return
+
+  const appPath = `${getAppBasePath() || `/`}`
+  if (window.location.pathname !== appPath) {
+    window.history.replaceState({}, ``, `${appPath}#content-sync`)
+    updateCurrentPath()
+  }
+  uiStore.setWorkflowAppPage(`sync`)
+
+  const currentPost = postStore.currentPost
+  if (!currentPost)
+    return
+
+  if (payload.title)
+    postStore.renamePost(currentPost.id, payload.title)
+
+  postStore.updatePostContent(currentPost.id, payload.markdown)
+  editorStore.importContent(payload.markdown)
+}
+
+function postImportReady() {
+  window.opener?.postMessage({ type: `SYNCBLOG_IMPORT_READY`, app: `syncblog.cn` }, `*`)
+}
+
 onMounted(() => {
   document.title = documentTitle
   window.addEventListener(`popstate`, updateCurrentPath)
+  window.addEventListener(`message`, importSyncblogArticle)
+  postImportReady()
+  importReadyTimer.value = setInterval(postImportReady, 1000)
 
   if (isCreatorProfilePage.value || isCreatorOfferPage.value)
     return
@@ -51,6 +131,11 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener(`popstate`, updateCurrentPath)
+  window.removeEventListener(`message`, importSyncblogArticle)
+  if (importReadyTimer.value) {
+    clearInterval(importReadyTimer.value)
+    importReadyTimer.value = null
+  }
 })
 </script>
 
