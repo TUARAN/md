@@ -61,7 +61,7 @@ export const PLATFORM_REGISTRY: PlatformDef[] = [
   { type: `juejin`, title: `掘金`, category: `blog`, loginUrl: `https://juejin.cn`, homeUrl: `https://juejin.cn` },
   { type: `medium`, title: `Medium`, category: `blog`, loginUrl: `https://medium.com/m/signin`, homeUrl: `https://medium.com` },
   { type: `cto51`, title: `51CTO`, category: `blog`, loginUrl: `https://blog.51cto.com/blogger/publish?&newBloger=2`, homeUrl: `https://blog.51cto.com` },
-  { type: `segmentfault`, title: `思否`, category: `blog`, loginUrl: `https://segmentfault.com/user/login`, homeUrl: `https://segmentfault.com` },
+  { type: `segmentfault`, title: `思否`, category: `blog`, loginUrl: `https://segmentfault.com/write?freshman=1`, homeUrl: `https://segmentfault.com` },
   { type: `oschina`, title: `开源中国`, category: `blog`, loginUrl: `https://my.oschina.net/blog/write`, homeUrl: `https://my.oschina.net` },
   { type: `infoq`, title: `InfoQ`, category: `blog`, loginUrl: `https://xie.infoq.cn/draft/`, homeUrl: `https://xie.infoq.cn` },
   { type: `jianshu`, title: `简书`, category: `blog`, loginUrl: `https://www.jianshu.com/sign_in`, homeUrl: `https://www.jianshu.com` },

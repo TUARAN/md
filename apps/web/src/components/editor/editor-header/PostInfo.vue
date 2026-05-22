@@ -182,27 +182,36 @@ function onAvatarError(account: PostAccount, event: Event) {
         <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-4">
           <div class="rounded-lg border border-border/80 bg-muted/25 px-4 py-3 text-sm leading-relaxed text-muted-foreground dark:bg-muted/15">
             <p class="font-medium text-foreground">
-              你在这页需要知道的两件事
+              发布前请安装浏览器扩展
             </p>
-            <ul class="mt-2 list-disc space-y-1.5 pl-5">
+            <ol class="mt-2 list-decimal space-y-2 pl-5">
               <li>
-                <strong class="text-foreground">主推</strong>：点击
+                <strong class="text-foreground">安装 CSYNC（推荐）</strong>：点击
                 <a
                   href="#"
                   class="font-medium text-primary underline underline-offset-2"
                   @click.prevent="downloadCsyncExtensionZip()"
-                >下载 CSYNC 扩展（.zip）</a>
-                ——与当前站点配套的包。解压得到 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">csync-extension</code> 文件夹，在 Chrome
-                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>
-                打开开发者模式后，选「加载已解压的扩展程序」并指向该文件夹。（自建部署需在构建前执行 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">pnpm package:csync</code>；维护者也可直接加载仓库内 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">apps/web/vendor/csync-extension</code>。）
+                >下载 CSYNC 扩展（.zip）</a>，解压后在 Chrome 打开
+                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>，开启「开发者模式」→「加载已解压的扩展程序」，选择解压得到的
+                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">csync-extension</code> 文件夹。
               </li>
               <li>
-                安装后若当前访问域名已写在扩展 manifest 中，知乎/公众号/微博会显示 CSYNC 角标并由其写入；未配置时这些站会走 COSE 或提示登录。
+                <strong class="text-foreground">扩展如何分工</strong>：CSYNC 已匹配当前站点时，知乎 / 公众号 / 微博由其写入；其余平台或未匹配时，请安装
+                <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="font-medium text-primary underline underline-offset-2">COSE</a>，或在目标站登录后再检测账号。
               </li>
-              <li>
-                编辑器侧已把 title / content / markdown 拆开传递；若某平台仍填错栏位，多半是后台改版后扩展选框未跟上，可升级 CSYNC / COSE 或向对应项目提 Issue。
-              </li>
-            </ul>
+            </ol>
+            <p class="mt-2 text-xs">
+              标题或正文填错？多为平台后台改版导致，请先升级 CSYNC / COSE；仍异常请向对应扩展项目反馈。
+            </p>
+            <details class="mt-2 text-xs">
+              <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+                自建部署 / 本地开发
+              </summary>
+              <p class="mt-1 pl-0">
+                构建前执行 <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">pnpm package:csync</code>；调试时也可直接加载仓库内
+                <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">apps/web/vendor/csync-extension</code>。
+              </p>
+            </details>
           </div>
 
           <Alert v-if="pluginSyncerScriptPresent && !pluginAuthSnapshot.length">

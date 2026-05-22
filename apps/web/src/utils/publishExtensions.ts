@@ -1,7 +1,7 @@
 import type { Post, PostAccount } from '@md/shared/types'
 
-/** 知乎、公众号、微博优先走 CSYNC（$pluginSyncer），其余走 COSE */
-export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set([`zhihu`, `wechat`, `weibo`])
+/** 知乎、公众号、微博、思否优先走 CSYNC（$pluginSyncer），其余走 COSE */
+export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set([`zhihu`, `wechat`, `weibo`, `segmentfault`])
 
 export type PostAccountSyncSource = `cose` | `plugin-syncer`
 
