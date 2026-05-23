@@ -5,6 +5,7 @@ import { Field, Form } from 'vee-validate'
 import * as yup from 'yup'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
+import { isImgHostConfigured } from '@/utils/file'
 import { store } from '@/utils/storage'
 
 const emit = defineEmits([`uploadImage`])
@@ -291,10 +292,6 @@ async function cloudinarySubmit(formValues: any) {
 
 const options = [
   {
-    value: `default`,
-    label: `默认`,
-  },
-  {
     value: `github`,
     label: `GitHub`,
   },
@@ -342,7 +339,7 @@ const options = [
   },
 ]
 
-const imgHost = store.reactive(`imgHost`, `default`)
+const imgHost = store.reactive(`imgHost`, `github`)
 const useCompression = store.reactive(`useCompression`, false)
 const activeName = ref(`upload`)
 
@@ -362,11 +359,13 @@ async function beforeImageUpload(file: File) {
     return false
   }
   // check image host
-  const imgHostValue = imgHost.value || `default`
+  let imgHostValue = imgHost.value || `github`
+  if (imgHostValue === `default`) {
+    imgHostValue = `github`
+    imgHost.value = `github`
+  }
 
-  const config = await store.get(`${imgHostValue}Config`)
-  const isValidHost = imgHostValue === `default` || config
-  if (!isValidHost) {
+  if (!(await isImgHostConfigured(imgHostValue))) {
     toast.error(`请先配置 ${imgHostValue} 图床参数`)
     return false
   }
@@ -480,6 +479,9 @@ function onTabScroll(e: WheelEvent) {
               </SelectItem>
             </SelectContent>
           </Select>
+          <p class="text-xs text-muted-foreground">
+            首次使用请先选择图床并完成对应配置，不再提供内置公共图床。
+          </p>
 
           <div class="space-y-3 my-4">
             <div class="flex items-center justify-between gap-4">

@@ -1,6 +1,5 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import { giteeConfig, githubConfig } from '@md/shared/configs'
 
 import fetch from '@md/shared/utils/fetch'
 import * as tokenTools from '@md/shared/utils/tokenTools'
@@ -11,37 +10,36 @@ import * as qiniu from 'qiniu-js'
 import { v4 as uuidv4 } from 'uuid'
 import { store } from './storage'
 
-async function getConfig(useDefault: boolean, platform: string) {
-  if (useDefault) {
-    // load default config file
-    const config = platform === `github` ? githubConfig : giteeConfig
-    const { username, repoList, branch, accessTokenList } = config
+const IMG_HOST_CONFIG_HINT = `请先在「图片上传」对话框中选择图床并完成配置`
 
-    // choose random token from access_token list
-    const tokenIndex = Math.floor(Math.random() * accessTokenList.length)
-    const accessToken = accessTokenList[tokenIndex].replace(`doocsmd`, ``)
+export async function isImgHostConfigured(imgHost?: string | null) {
+  const host = imgHost?.trim()
+  if (!host || host === `default`)
+    return false
+  const config = await store.get(`${host}Config`)
+  return !!config
+}
 
-    // choose random repo from repo list
-    const repoIndex = Math.floor(Math.random() * repoList.length)
-    const repo = repoList[repoIndex]
-
-    return { username, repo, branch, accessToken }
-  }
-
-  // load configuration from storage
+async function getRepoConfig(platform: `github` | `gitee`) {
   const customConfig = await store.getJSON<any>(`${platform}Config`, {}) || {}
-
-  // split username/repo
   const repoUrl = customConfig.repo
-    .replace(`https://${platform}.com/`, ``)
-    .replace(`http://${platform}.com/`, ``)
-    .replace(`${platform}.com/`, ``)
-    .split(`/`)
+    ?.replace(`https://${platform}.com/`, ``)
+    ?.replace(`http://${platform}.com/`, ``)
+    ?.replace(`${platform}.com/`, ``)
+    ?.split(`/`) ?? []
+
+  const username = repoUrl[0]
+  const repo = repoUrl[1]
+  const accessToken = customConfig.accessToken
+
+  if (!username || !repo || !accessToken)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+
   return {
-    username: repoUrl[0],
-    repo: repoUrl[1],
+    username,
+    repo,
     branch: customConfig.branch || `master`,
-    accessToken: customConfig.accessToken,
+    accessToken,
     useCDN: customConfig.useCDN ?? false,
   }
 }
@@ -75,11 +73,7 @@ function getDateFilename(filename: string) {
 // -----------------------------------------------------------------------
 
 async function ghFileUpload(content: string, filename: string) {
-  const useDefault = await store.get(`imgHost`) === `default`
-  const { username, repo, branch, accessToken, useCDN } = await getConfig(
-    useDefault,
-    `github`,
-  )
+  const { username, repo, branch, accessToken, useCDN } = await getRepoConfig(`github`)
   const dir = getDir()
   const url = `https://api.github.com/repos/${username}/${repo}/contents/${dir}/`
   const dateFilename = getDateFilename(filename)
@@ -109,7 +103,7 @@ async function ghFileUpload(content: string, filename: string) {
   const githubResourceUrl = `raw.githubusercontent.com/${username}/${repo}/${branch}/`
   const cdnResourceUrl = `fastly.jsdelivr.net/gh/${username}/${repo}@${branch}/`
   res.content = res.data?.content || res.content
-  const shouldUseCDN = useDefault || useCDN
+  const shouldUseCDN = useCDN
   return shouldUseCDN
     ? res.content.download_url.replace(githubResourceUrl, cdnResourceUrl)
     : res.content.download_url
@@ -120,8 +114,7 @@ async function ghFileUpload(content: string, filename: string) {
 // -----------------------------------------------------------------------
 
 async function giteeUpload(content: any, filename: string) {
-  const useDefault = await store.get(`imgHost`) === `default`
-  const { username, repo, branch, accessToken } = await getConfig(useDefault, `gitee`)
+  const { username, repo, branch, accessToken } = await getRepoConfig(`gitee`)
   const dir = getDir()
   const dateFilename = getDateFilename(filename)
   const url = `https://gitee.com/api/v5/repos/${username}/${repo}/contents/${dir}/${dateFilename}`
@@ -752,10 +745,16 @@ async function formCustomUpload(content: string, file: File) {
 }
 
 export async function fileUpload(content: string, file: File) {
-  const imgHost = await store.get(`imgHost`)
-  if (!imgHost) {
-    await store.set(`imgHost`, `default`)
+  let imgHost = await store.get(`imgHost`)
+  if (imgHost === `default`) {
+    await store.set(`imgHost`, `github`)
+    imgHost = `github`
   }
+  if (!imgHost)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  if (!(await isImgHostConfigured(imgHost)))
+    throw new Error(IMG_HOST_CONFIG_HINT)
+
   switch (imgHost) {
     case `aliOSS`:
       return aliOSSFileUpload(file)
@@ -784,9 +783,6 @@ export async function fileUpload(content: string, file: File) {
     case `formCustom`:
       return formCustomUpload(content, file)
     default:
-      // return file.size / 1024 < 1024
-      //     ? giteeUpload(content, file.name)
-      //     : ghFileUpload(content, file.name);
-      return ghFileUpload(content, file.name)
+      throw new Error(IMG_HOST_CONFIG_HINT)
   }
 }

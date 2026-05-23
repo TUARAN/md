@@ -14,7 +14,7 @@ import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 import { checkImage, toBase64 } from '@/utils'
-import { fileUpload } from '@/utils/file'
+import { fileUpload, isImgHostConfigured } from '@/utils/file'
 import { store } from '@/utils/storage'
 
 const props = defineProps<{
@@ -141,13 +141,14 @@ async function beforeImageUpload(file: File) {
     return false
   }
 
-  const imgHost = (await store.get(`imgHost`)) || `default`
-  await store.set(`imgHost`, imgHost)
+  let imgHost = (await store.get(`imgHost`)) || `github`
+  if (imgHost === `default`) {
+    imgHost = `github`
+    await store.set(`imgHost`, `github`)
+  }
 
-  const config = await store.get(`${imgHost}Config`)
-  const isValidHost = imgHost === `default` || config
-  if (!isValidHost) {
-    toast.error(`请先配置 ${imgHost} 图床参数`)
+  if (!(await isImgHostConfigured(imgHost))) {
+    toast.error(`请先在图片上传对话框中配置图床参数`)
     return false
   }
 
