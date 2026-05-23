@@ -96,6 +96,7 @@ function onMatrixDataSourceToggle(event: Event) {
       <CreatorProfileBody
         :enable-workflow-actions="true"
         :show-stats="false"
+        :show-all-platforms="true"
         @select-distribution="goDistribution"
       />
 

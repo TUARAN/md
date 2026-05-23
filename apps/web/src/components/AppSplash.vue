@@ -4,9 +4,10 @@ import { APP_SPLASH_SLOGAN, APP_SPLASH_TITLE } from '@/constants/branding'
 const loading = ref(true)
 
 onMounted(() => {
+  // 让首屏品牌信息看得清(原 100ms 太短,几乎无感)
   setTimeout(() => {
     loading.value = false
-  }, 100)
+  }, 600)
 })
 </script>
 
@@ -36,31 +37,47 @@ onMounted(() => {
   align-items: center;
   width: 100vw;
   height: 100vh;
-  font-size: 18px;
   background-color: hsl(var(--background));
 
   &::before {
     content: url('../assets/images/favicon.png');
-    width: 100px;
-    height: 100px;
-    margin-bottom: 1rem;
+    width: 160px;
+    height: 160px;
+    margin-bottom: 1.5rem;
   }
 }
 
 .splash-title {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: hsl(var(--foreground));
 }
 
 .splash-slogan {
   margin: 0;
-  max-width: 22rem;
+  max-width: 26rem;
   padding: 0 1rem;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 500;
-  line-height: 1.45;
+  line-height: 1.5;
   color: hsl(var(--muted-foreground));
+}
+
+@media (max-width: 640px) {
+  .loading::before {
+    width: 112px;
+    height: 112px;
+  }
+  .splash-title {
+    font-size: 1.5rem;
+  }
+  .splash-slogan {
+    font-size: 0.95rem;
+  }
 }
 
 .fade-enter,
