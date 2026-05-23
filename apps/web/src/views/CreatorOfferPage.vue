@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { ArrowLeft, ArrowRight, Check, ExternalLink, Minus, Sparkles, X } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { getCreatorOffer } from '@/constants/creatorOffer'
-import { CREATOR_CARD_HASH, creatorPlatformMatrixRoute } from '@/utils/creatorRoutes'
+import { useUIStore } from '@/stores/ui'
+import { CREATOR_CARD_HASH } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
 
 const props = defineProps<{
   creatorId: string
 }>()
+
+const router = useRouter()
+const uiStore = useUIStore()
 
 const SERVICE_ACCENT: Record<string, string> = {
   lite: `border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40`,
@@ -35,7 +40,9 @@ watch(offer, (value) => {
 }, { immediate: true })
 
 function goPlatformMatrix() {
-  window.location.href = creatorPlatformMatrixRoute(props.creatorId)
+  // 让 /matrix 用 creator-offer 页的 creatorId 加载,而不是上次缓存的
+  uiStore.setWorkflowCreatorId(props.creatorId)
+  router.push({ name: `matrix` })
 }
 
 function openHomepage() {

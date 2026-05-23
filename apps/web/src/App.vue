@@ -68,7 +68,7 @@ function importSyncblogArticle(event: MessageEvent) {
   if (!payload)
     return
 
-  // 跨页面导入:确保切到 sync 路由再写入,避免在 creator-profile/offer 页面静默改稿
+  // 跨页面导入:确保切到 sync 路由再写入,避免在 creator-offer 公开页静默改稿
   if (route.name !== `sync`)
     router.replace({ name: `sync` })
 
@@ -88,14 +88,14 @@ function postImportReady() {
 }
 
 onMounted(() => {
-  if (route.name !== `creator-profile` && route.name !== `creator-offer`)
+  if (route.name !== `creator-offer`)
     document.title = documentTitle
 
   window.addEventListener(`message`, importSyncblogArticle)
   postImportReady()
   importReadyTimer.value = setInterval(postImportReady, 1000)
 
-  if (route.name === `creator-profile` || route.name === `creator-offer`)
+  if (route.name === `creator-offer`)
     return
 
   // 检测是否为 Utools 环境

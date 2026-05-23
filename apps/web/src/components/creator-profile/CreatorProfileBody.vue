@@ -2,18 +2,17 @@
 /**
  * CreatorProfileBody —— 创作者账号矩阵主体
  *
- * 两个路由共用同一份 UI:
- *  - `/creator-profile`  外部分享/创作者主页(外壳:CreatorProfilePage)
- *  - `/matrix`           工作流第 4 步「平台矩阵」(外壳:WorkflowMatrixPage)
- *
- * 父级只负责自己的头部和导航,这里负责:
+ * 由 workflow `/matrix` 路由的 WorkflowMatrixPage 使用。负责:
  *  - 统计卡(创作者 ID / 类型 / 账号数 / 最近更新)
  *  - 数据来源/检测状态条
- *  - 账号搜索 + 按分类的账号卡片网格
+ *  - 账号搜索 + 按分类的账号卡片网格(含「待登录」占位)
  *  - 空状态(无检测缓存时引导用户重新检测)
  *
- * 当父级是 workflow 步骤时,通过 `enableWorkflowActions` 给每张卡片追加
- * 「宣发」按钮,父级捕获 `selectDistribution` 事件后跳转 `/distribution`。
+ * 当父级开启 `enableWorkflowActions` 时,每张卡片追加「宣发」按钮,
+ * 父级捕获 `selectDistribution` 事件后跳转 `/distribution`。
+ *
+ * 2026-05 历史:曾同时服务于已废弃的 `/creator-profile` 公开分享页,故
+ * 命名为「Body」。现在 `/matrix` 是唯一消费方。
  */
 import type { PublicSocialAccount } from '@/utils/socialAccounts'
 import { ExternalLink, LogIn, Megaphone, RefreshCw, Search, Users } from 'lucide-vue-next'
@@ -24,7 +23,7 @@ import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDet
 import { getCreatorPlatformMatrix } from '@/constants/creators'
 import { useSocialAccountsStore } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
-import { getCreatorProfileAccounts, getPlatformProfileTitle, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/socialAccounts'
+import { getPlatformProfileTitle, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/socialAccounts'
 
 /**
  * 显示用账号类型 —— 扩展 PublicSocialAccount,加上 `pending` 标记。
@@ -34,22 +33,18 @@ import { getCreatorProfileAccounts, getPlatformProfileTitle, SOCIAL_ACCOUNT_CATE
 type AccountDisplay = PublicSocialAccount & { pending?: boolean }
 
 interface Props {
-  /** 由父级注入的「已分享出去」配置(/creator-profile 用 sharedProfile);默认 null */
-  sharedProfile?: unknown | null
   /** workflow 模式:卡片追加「宣发」按钮 */
   enableWorkflowActions?: boolean
   /** 是否显示顶部统计卡 */
   showStats?: boolean
   /**
    * 是否展示工具支持的全部平台(未检测到账号的会以「待登录」占位卡呈现)。
-   * workflow `/matrix` 用 true,公开页 `/creator-profile` 用 false 只展示
-   * 已检测的账号(避免分享出去给对方看到一堆灰态占位)。
+   * /matrix 一直 true。
    */
   showAllPlatforms?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  sharedProfile: null,
   enableWorkflowActions: false,
   showStats: true,
   showAllPlatforms: false,
@@ -57,7 +52,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'selectDistribution', platformType: string): void
-  (e: 'redetectStart'): void
 }>()
 
 const socialAccountsStore = useSocialAccountsStore()
@@ -66,22 +60,16 @@ const { isCheckingLogin, redetectAccounts, ensureExtensionProbe } = usePlatformA
 
 const accountSearch = ref(``)
 
-const profile = computed(() => (props.sharedProfile as any) ?? socialAccountsStore.activeProfile)
+const profile = computed(() => socialAccountsStore.activeProfile)
 
 /**
- * 真实检测到的账号(不走 `mergeDefaultProfileAccounts`,后者会把所有支持平台合成
- * 成「已登录」的默认占位,导致拿不到"已检测/未检测"边界)。
- *
- *  - sharedProfile 模式:用 share URL 里实际带过来的 modules
- *    (注意:对方通过 `getShareUrl()` 分享时已经包含 default 合并的数据,这是历史
- *    设计,这里保留兼容)
- *  - 本机模式:直接读 store 内的原始 `accounts` 数组(只含真正检测到的)
+ * 真实检测到的账号:直接读 store 内的原始 `accounts` 数组(只含 COSE/CSYNC
+ * 检测出的)。注意不走 `mergeDefaultProfileAccounts`,后者会把所有支持平台
+ * 合成成「已登录」默认占位,导致拿不到"已检测/未检测"边界。
  */
-const detectedAccounts = computed<PublicSocialAccount[]>(() => {
-  if (props.sharedProfile)
-    return getCreatorProfileAccounts(props.sharedProfile as any)
-  return socialAccountsStore.accounts.filter(a => a.loggedIn && a.url)
-})
+const detectedAccounts = computed<PublicSocialAccount[]>(() =>
+  socialAccountsStore.accounts.filter(a => a.loggedIn && a.url),
+)
 
 /**
  * 展示用账号列表:
@@ -153,8 +141,6 @@ const accountsByCategory = computed(() => {
   return groups.filter(group => group.accounts.length > 0)
 })
 
-const hasSharedData = computed(() => props.sharedProfile !== null)
-
 const updatedAt = computed(() => {
   const last = Math.max(profile.value.updatedAt || 0, ...detectedAccounts.value.map((a: PublicSocialAccount) => a.updatedAt || 0))
   return last ? new Date(last).toLocaleString() : ``
@@ -178,7 +164,6 @@ function openAccount(account: PublicSocialAccount) {
 }
 
 async function handleRedetectAccounts() {
-  emit(`redetectStart`)
   ensureExtensionProbe()
   await redetectAccounts()
 }
@@ -234,13 +219,13 @@ function onDistribute(account: PublicSocialAccount) {
     </section>
 
     <section class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 py-3 text-xs text-muted-foreground">
-      <span>数据来源：{{ hasSharedData ? '分享链接' : '本机缓存' }}</span>
+      <span>数据来源：本机缓存</span>
       <span>{{ isCheckingLogin ? '正在通过 COSE / CSYNC 检测已登录账号…' : '需安装扩展；登录新平台后请点「重新检测账号」' }}</span>
     </section>
 
     <!-- workflow 模式下 0 已检测的引导:补一个顶层「重新检测」CTA(空状态卡片此时不显示) -->
     <section
-      v-if="showAllPlatforms && detectedCount === 0 && !hasSharedData"
+      v-if="showAllPlatforms && detectedCount === 0"
       class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-300/60 bg-amber-50/60 px-4 py-3 text-xs dark:border-amber-700/40 dark:bg-amber-900/15"
     >
       <p class="text-amber-800 dark:text-amber-200">

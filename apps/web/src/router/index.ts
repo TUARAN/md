@@ -26,7 +26,6 @@ const WorkflowMatrixPage = () => import('@/components/workflow/WorkflowMatrixPag
 const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDistributionPage.vue')
 const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.vue')
 
-const CreatorProfilePage = () => import('@/views/CreatorProfilePage.vue')
 const CreatorOfferPage = () => import('@/views/CreatorOfferPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
@@ -57,11 +56,8 @@ const routes: RouteRecordRaw[] = [
       { path: `stats`, name: `stats`, component: WorkflowStatsPage },
     ],
   },
-  {
-    path: `/creator-profile`,
-    name: `creator-profile`,
-    component: CreatorProfilePage,
-  },
+  // /creator-profile 已合并入 /matrix(2026-05);保留 redirect 兜住旧书签和外部链接
+  { path: `/creator-profile`, redirect: `/matrix` },
   {
     path: `/creator-offer/:creatorId`,
     name: `creator-offer`,

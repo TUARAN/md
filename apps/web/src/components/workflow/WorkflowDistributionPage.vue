@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ExternalLink, Megaphone, Target } from 'lucide-vue-next'
+import { Megaphone, Target } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { getWorkflowCreator } from '@/constants/creators'
@@ -9,7 +9,6 @@ import {
   getPlatformGrowthSnapshot,
 } from '@/constants/distributionStrategies'
 import { useUIStore } from '@/stores/ui'
-import { creatorPlatformMatrixRoute } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
 import WorkflowCreatorPicker from './WorkflowCreatorPicker.vue'
 import WorkflowPageShell from './WorkflowPageShell.vue'
@@ -35,10 +34,6 @@ const platformLabel = computed(() => getPlatformProfileTitle(workflowDistributio
 
 function goPlatformMatrix() {
   router.push({ name: `matrix` })
-}
-
-function openFullMatrix() {
-  window.open(creatorPlatformMatrixRoute(workflowCreatorId.value), `_blank`, `noopener,noreferrer`)
 }
 
 function goContentSync() {
@@ -181,10 +176,6 @@ function goContentSync() {
         </Button>
         <Button variant="ghost" size="sm" class="text-muted-foreground" @click="goContentSync">
           内容同步
-        </Button>
-        <Button variant="outline" size="sm" @click="openFullMatrix">
-          完整矩阵
-          <ExternalLink class="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </section>
     </div>
