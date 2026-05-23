@@ -1,27 +1,21 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { documentTitle } from '@/constants/branding'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
-import { SOCIAL_ACCOUNTS_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
-import { getAppBasePath, isCreatorOfferPath, parseCreatorOfferId } from '@/utils/creatorRoutes'
-import CodemirrorEditor from '@/views/CodemirrorEditor.vue'
-import CreatorOfferPage from '@/views/CreatorOfferPage.vue'
-import CreatorProfilePage from '@/views/CreatorProfilePage.vue'
 
 const uiStore = useUIStore()
 const postStore = usePostStore()
 const editorStore = useEditorStore()
+const router = useRouter()
+const route = useRoute()
 const { isDark } = storeToRefs(uiStore)
 
 const isUtools = ref(false)
-const currentPath = ref(window.location.pathname)
-const isCreatorProfilePage = computed(() => currentPath.value === SOCIAL_ACCOUNTS_ROUTE)
-const creatorOfferId = computed(() => parseCreatorOfferId(currentPath.value))
-const isCreatorOfferPage = computed(() => isCreatorOfferPath(currentPath.value))
 const importReadyTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
 interface SyncblogImportArticleMessage {
@@ -36,10 +30,6 @@ const TRUSTED_IMPORT_ORIGINS = new Set([
   `https://2aran.com`,
   `https://tuaran.me`,
 ])
-
-function updateCurrentPath() {
-  currentPath.value = window.location.pathname
-}
 
 function isTrustedImportOrigin(origin: string) {
   if (TRUSTED_IMPORT_ORIGINS.has(origin))
@@ -78,12 +68,9 @@ function importSyncblogArticle(event: MessageEvent) {
   if (!payload)
     return
 
-  const appPath = `${getAppBasePath() || `/`}`
-  if (window.location.pathname !== appPath) {
-    window.history.replaceState({}, ``, `${appPath}#content-sync`)
-    updateCurrentPath()
-  }
-  uiStore.setWorkflowAppPage(`sync`)
+  // 跨页面导入:确保切到 sync 路由再写入,避免在 creator-profile/offer 页面静默改稿
+  if (route.name !== `sync`)
+    router.replace({ name: `sync` })
 
   const currentPost = postStore.currentPost
   if (!currentPost)
@@ -101,14 +88,14 @@ function postImportReady() {
 }
 
 onMounted(() => {
-  if (!isCreatorProfilePage.value && !isCreatorOfferPage.value)
+  if (route.name !== `creator-profile` && route.name !== `creator-offer`)
     document.title = documentTitle
-  window.addEventListener(`popstate`, updateCurrentPath)
+
   window.addEventListener(`message`, importSyncblogArticle)
   postImportReady()
   importReadyTimer.value = setInterval(postImportReady, 1000)
 
-  if (isCreatorProfilePage.value || isCreatorOfferPage.value)
+  if (route.name === `creator-profile` || route.name === `creator-offer`)
     return
 
   // 检测是否为 Utools 环境
@@ -131,7 +118,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener(`popstate`, updateCurrentPath)
   window.removeEventListener(`message`, importSyncblogArticle)
   if (importReadyTimer.value) {
     clearInterval(importReadyTimer.value)
@@ -142,9 +128,7 @@ onBeforeUnmount(() => {
 
 <template>
   <AppSplash />
-  <CreatorProfilePage v-if="isCreatorProfilePage" />
-  <CreatorOfferPage v-else-if="isCreatorOfferPage && creatorOfferId" :creator-id="creatorOfferId" />
-  <CodemirrorEditor v-else />
+  <RouterView />
 
   <ConfirmDialog />
 

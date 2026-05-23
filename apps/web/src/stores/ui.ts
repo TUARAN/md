@@ -5,61 +5,14 @@ import { normalizePlatformType } from '@/constants/platforms'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
-/** 顶栏工作流对应的整页视图（非弹窗） */
+/**
+ * 顶栏工作流对应的整页视图（非弹窗）。
+ *
+ * 2026-05 路由重构后,workflow 步骤由 vue-router 管理,这里保留类型供消费方
+ * 描述「目标步骤」。新代码应使用 `router.push({ name })` 进行导航,不再依赖
+ * 任何 ui store 内部的 workflowAppPage 状态(已移除)。
+ */
 export type WorkflowAppPage = `data` | `creation` | `sync` | `matrix` | `distribution` | `stats`
-
-export const WORKFLOW_PAGE_ANCHORS: Record<WorkflowAppPage, string> = {
-  data: `data-acquisition`,
-  creation: `style-creation`,
-  sync: `content-sync`,
-  matrix: `platform-matrix`,
-  distribution: `distribution-active`,
-  stats: `closed-loop-report`,
-} as const
-
-const WORKFLOW_HASH_PAGE_ALIASES: Record<string, WorkflowAppPage> = {
-  [WORKFLOW_PAGE_ANCHORS.data]: `data`,
-  data: `data`,
-  acquisition: `data`,
-  数据获取: `data`,
-  [WORKFLOW_PAGE_ANCHORS.creation]: `creation`,
-  creation: `creation`,
-  风格二创: `creation`,
-  [WORKFLOW_PAGE_ANCHORS.sync]: `sync`,
-  sync: `sync`,
-  内容同步: `sync`,
-  [WORKFLOW_PAGE_ANCHORS.matrix]: `matrix`,
-  matrix: `matrix`,
-  平台矩阵: `matrix`,
-  [WORKFLOW_PAGE_ANCHORS.distribution]: `distribution`,
-  distribution: `distribution`,
-  宣发活跃: `distribution`,
-  [WORKFLOW_PAGE_ANCHORS.stats]: `stats`,
-  stats: `stats`,
-  report: `stats`,
-  闭环汇报: `stats`,
-}
-
-function normalizeWorkflowHash(hash: string) {
-  const raw = hash.replace(/^#/, ``).trim()
-  if (!raw)
-    return ``
-
-  try {
-    return decodeURIComponent(raw).trim()
-  }
-  catch {
-    return raw
-  }
-}
-
-function getWorkflowPageFromHash(hash: string) {
-  const normalized = normalizeWorkflowHash(hash)
-  if (!normalized)
-    return null
-
-  return WORKFLOW_HASH_PAGE_ALIASES[normalized] ?? WORKFLOW_HASH_PAGE_ALIASES[normalized.toLowerCase()] ?? null
-}
 
 /**
  * UI 状态 Store
@@ -159,9 +112,6 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
-  /** 主工作区当前页面：数据获取 / 风格二创 / 内容同步 / 平台矩阵 / 宣发活跃 / 闭环汇报 */
-  const workflowAppPage = store.reactive<WorkflowAppPage>(`workflow_app_page`, `sync`)
-
   /** 工作流当前创作者（平台矩阵、宣发活跃共用） */
   const workflowCreatorId = store.reactive(`workflow_creator_id`, TUARAN_CREATOR_ID)
 
@@ -187,30 +137,6 @@ export const useUIStore = defineStore(`ui`, () => {
 
   function setWorkflowDistributionPlatform(platformType: string) {
     workflowDistributionPlatform.value = normalizePlatformType(platformType) || `csdn`
-  }
-
-  function syncWorkflowHash(page: WorkflowAppPage) {
-    if (typeof window === `undefined`)
-      return
-
-    const anchor = WORKFLOW_PAGE_ANCHORS[page]
-    if (!anchor) {
-      if (getWorkflowPageFromHash(window.location.hash))
-        window.history.replaceState({}, ``, `${window.location.pathname}${window.location.search}`)
-      return
-    }
-
-    const hash = `#${anchor}`
-    if (window.location.hash === hash)
-      return
-
-    window.history.replaceState({}, ``, `${window.location.pathname}${window.location.search}${hash}`)
-  }
-
-  function setWorkflowAppPage(page: WorkflowAppPage, options: { syncHash?: boolean } = {}) {
-    workflowAppPage.value = page
-    if (options.syncHash !== false)
-      syncWorkflowHash(page)
   }
 
   /** 打开 AI 助手时注入到输入框的 Markdown（由 GNews 等入口写入，打开后消费清空） */
@@ -265,30 +191,13 @@ export const useUIStore = defineStore(`ui`, () => {
     }
   }
 
-  function handleWorkflowHashChange() {
-    if (typeof window === `undefined`)
-      return
-
-    const page = getWorkflowPageFromHash(window.location.hash)
-    if (page)
-      setWorkflowAppPage(page, { syncHash: false })
-  }
-
   onMounted(() => {
     handleResize()
-    const page = getWorkflowPageFromHash(window.location.hash)
-    if (page)
-      setWorkflowAppPage(page)
-    else
-      syncWorkflowHash(workflowAppPage.value)
-
     window.addEventListener(`resize`, handleResize)
-    window.addEventListener(`hashchange`, handleWorkflowHashChange)
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener(`resize`, handleResize)
-    window.removeEventListener(`hashchange`, handleWorkflowHashChange)
   })
 
   return {
@@ -324,8 +233,6 @@ export const useUIStore = defineStore(`ui`, () => {
     toggleAIDialog,
     aiImageDialogVisible,
     toggleAIImageDialog,
-    workflowAppPage,
-    setWorkflowAppPage,
     workflowCreatorId,
     workflowDistributionPlatform,
     workflowMatrixDataSourceExpanded,

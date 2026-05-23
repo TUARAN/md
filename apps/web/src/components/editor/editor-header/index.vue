@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BarChart3, ChevronRight, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw, Users } from 'lucide-vue-next'
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
@@ -19,8 +20,11 @@ const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 
 const uiStore = useUIStore()
 
-const { workflowAppPage } = storeToRefs(uiStore)
-const { setWorkflowAppPage } = uiStore
+const router = useRouter()
+const route = useRoute()
+
+/** 当前 workflow 步骤 id,由路由名派生(代替老的 ui.workflowAppPage 状态) */
+const workflowAppPage = computed(() => String(route.name ?? `sync`))
 const isContentFactoryExpanded = ref(true)
 
 const {
@@ -55,7 +59,7 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
       return
     }
   }
-  setWorkflowAppPage(stepId)
+  router.push({ name: stepId })
 }
 
 function toggleContentFactory() {

@@ -3,6 +3,7 @@ import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import App from './App.vue'
 
+import { router } from './router'
 import { setupComponents } from './utils/setup-components'
 
 import 'vue-sonner/style.css'
@@ -19,5 +20,9 @@ setupComponents()
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(router)
 
-app.mount(`#app`)
+// router 异步初始化完成后再挂载，避免首屏渲染前 RouterView 没就绪
+router.isReady().then(() => {
+  app.mount(`#app`)
+})

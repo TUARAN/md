@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PublicCreatorProfile, PublicSocialAccount } from '@/utils/socialAccounts'
 import { ArrowLeft, Copy, ExternalLink, FileText, RefreshCw, Search, Users } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
@@ -8,7 +9,7 @@ import { APP_NAME } from '@/constants/branding'
 import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
 import { isKnownWorkflowCreator } from '@/constants/creators'
 import { CREATOR_CARD_ROUTE, useSocialAccountsStore } from '@/stores/socialAccounts'
-import { useUIStore, WORKFLOW_PAGE_ANCHORS } from '@/stores/ui'
+import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
 import { parseCreatorIdFromSearch } from '@/utils/creatorRoutes'
 import { getCreatorProfileAccounts, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/socialAccounts'
@@ -16,6 +17,7 @@ import { toast } from '@/utils/toast'
 
 const socialAccountsStore = useSocialAccountsStore()
 const uiStore = useUIStore()
+const router = useRouter()
 const { isCheckingLogin, redetectAccounts, ensureExtensionProbe } = usePlatformAccountDetection()
 
 const sharedProfile = ref<PublicCreatorProfile | null>(null)
@@ -131,8 +133,7 @@ async function handleRedetectAccounts() {
 
 function goWorkflowMatrix() {
   uiStore.setWorkflowCreatorId(workflowCreatorId.value)
-  const base = import.meta.env.BASE_URL.replace(/\/$/, ``) || ``
-  window.location.href = `${base}/#${WORKFLOW_PAGE_ANCHORS.matrix}`
+  router.push({ name: `matrix` })
 }
 
 onMounted(() => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Bot, Image as ImageIcon, Newspaper, Settings2, Wand2 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { useEditorStore } from '@/stores/editor'
 import { useUIStore } from '@/stores/ui'
 import AIAssistantPanel from './chat-box/AIAssistantPanel.vue'
@@ -13,7 +14,8 @@ defineProps<{
 
 const uiStore = useUIStore()
 const { aiDialogVisible, aiImageDialogVisible } = storeToRefs(uiStore)
-const { toggleAIDialog, toggleAIImageDialog, setWorkflowAppPage } = uiStore
+const { toggleAIDialog, toggleAIImageDialog } = uiStore
+const router = useRouter()
 
 const editorStore = useEditorStore()
 const { editor } = storeToRefs(editorStore)
@@ -120,7 +122,7 @@ function openAIImageGenerator() {
 
 // 打开 GNews 资讯
 function openGNewsPanel() {
-  setWorkflowAppPage(`data`)
+  router.push({ name: `data` })
 }
 
 // 打开AI工具箱

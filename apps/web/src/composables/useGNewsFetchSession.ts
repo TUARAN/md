@@ -3,6 +3,7 @@ import { highlightPendingBlocks, hljs, initRenderer } from '@md/core'
 import { NEWS_SOURCE_OPTIONS } from '@md/shared/utils/gnews'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { resolveGNewsProxyBase, useGNews } from '@/composables/useGNews'
 import useGNewsConfigStore from '@/stores/gnewsConfig'
 import { useThemeStore } from '@/stores/theme'
@@ -30,7 +31,8 @@ function createGNewsFetchSession() {
 
   const themeStore = useThemeStore()
   const uiStore = useUIStore()
-  const { setCreationDraftMarkdown, setWorkflowAppPage } = uiStore
+  const { setCreationDraftMarkdown } = uiStore
+  const router = useRouter()
   const { isCiteStatus, legend, isCountStatus, isMacCodeBlock, isShowLineNumber } = storeToRefs(themeStore)
   const { isDark } = storeToRefs(uiStore)
 
@@ -235,7 +237,7 @@ function createGNewsFetchSession() {
       return
     }
     setCreationDraftMarkdown(formatted.value)
-    setWorkflowAppPage(`creation`)
+    router.push({ name: `creation` })
     toast.success(`已送入风格二创工作台`)
   }
 

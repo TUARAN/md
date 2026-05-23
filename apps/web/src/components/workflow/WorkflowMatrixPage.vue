@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowRight, ExternalLink, Megaphone, Users } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
 import { getCreatorPlatformMatrix, getWorkflowCreator } from '@/constants/creators'
@@ -13,7 +14,8 @@ import WorkflowPageTitle from './WorkflowPageTitle.vue'
 
 const uiStore = useUIStore()
 const { workflowCreatorId, workflowDistributionPlatform, workflowMatrixDataSourceExpanded } = storeToRefs(uiStore)
-const { setWorkflowAppPage, setWorkflowDistributionPlatform } = uiStore
+const { setWorkflowDistributionPlatform } = uiStore
+const router = useRouter()
 
 const socialAccountsStore = useSocialAccountsStore()
 
@@ -44,11 +46,11 @@ function openFullMatrix() {
 function goDistribution(platformType?: string) {
   if (platformType)
     setWorkflowDistributionPlatform(platformType)
-  setWorkflowAppPage(`distribution`)
+  router.push({ name: `distribution` })
 }
 
 function goContentSync() {
-  setWorkflowAppPage(`sync`)
+  router.push({ name: `sync` })
 }
 
 function selectRow(type: string) {

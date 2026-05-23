@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ExternalLink, Megaphone, Target } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { getWorkflowCreator } from '@/constants/creators'
 import { FAN_GROWTH_MILESTONES } from '@/constants/distributionFocus'
@@ -18,7 +19,7 @@ import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
 
 const uiStore = useUIStore()
 const { workflowCreatorId, workflowDistributionPlatform } = storeToRefs(uiStore)
-const { setWorkflowAppPage } = uiStore
+const router = useRouter()
 
 const creator = computed(() => getWorkflowCreator(workflowCreatorId.value))
 
@@ -33,7 +34,7 @@ const growth = computed(() =>
 const platformLabel = computed(() => getPlatformProfileTitle(workflowDistributionPlatform.value))
 
 function goPlatformMatrix() {
-  setWorkflowAppPage(`matrix`)
+  router.push({ name: `matrix` })
 }
 
 function openFullMatrix() {
@@ -41,7 +42,7 @@ function openFullMatrix() {
 }
 
 function goContentSync() {
-  setWorkflowAppPage(`sync`)
+  router.push({ name: `sync` })
 }
 </script>
 
