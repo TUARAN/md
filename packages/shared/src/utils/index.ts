@@ -1,4 +1,5 @@
 export * from './basicHelpers'
+export * from './defaultImgbed'
 export * from './fetch'
 export * from './fileHelpers'
 export * from './gnews'

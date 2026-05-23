@@ -21,6 +21,12 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "IMGBED_GITHUB_USERNAME": "bucketio",
+    "IMGBED_GITHUB_BRANCH": "main",
+    "IMGBED_GITHUB_REPO_COUNT": "20",
+    "IMGBED_USE_CDN": "1"
+  },
   "compatibility_flags": [
     "nodejs_compat",
     "nodejs_compat_populate_process_env"

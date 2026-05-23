@@ -1,6 +1,6 @@
-# doocs-md VS Code Extension
+# Syncblog / doocs-md VS Code Extension
 
-为 doocs-md 提供的 VS Code 扩展，支持在编辑器内实时预览 Markdown 渲染效果。
+为 [TUARAN/md](https://github.com/TUARAN/md)（[syncblog.cn](https://syncblog.cn)）提供的 VS Code 扩展，编辑器内核 fork 自 [doocs/md](https://github.com/doocs/md)，侧边栏实时预览 Markdown 渲染效果。
 
 ## 功能特性
 
@@ -28,7 +28,7 @@
 
 ## 与主项目的关系
 
-本扩展是[doocs-md](https://github.com/doocs/md)的配套工具，使用相同的渲染方式，确保预览效果与最终微信图文完全一致。
+本扩展与主仓库 [TUARAN/md](https://github.com/TUARAN/md) 使用相同渲染方式；上游通用能力仍可向 [doocs/md](https://github.com/doocs/md) 反馈。
 
 ## 开发
 

@@ -292,6 +292,10 @@ async function cloudinarySubmit(formValues: any) {
 
 const options = [
   {
+    value: `default`,
+    label: `默认`,
+  },
+  {
     value: `github`,
     label: `GitHub`,
   },
@@ -339,7 +343,7 @@ const options = [
   },
 ]
 
-const imgHost = store.reactive(`imgHost`, `github`)
+const imgHost = store.reactive(`imgHost`, `default`)
 const useCompression = store.reactive(`useCompression`, false)
 const activeName = ref(`upload`)
 
@@ -359,12 +363,7 @@ async function beforeImageUpload(file: File) {
     return false
   }
   // check image host
-  let imgHostValue = imgHost.value || `github`
-  if (imgHostValue === `default`) {
-    imgHostValue = `github`
-    imgHost.value = `github`
-  }
-
+  const imgHostValue = imgHost.value || `default`
   if (!(await isImgHostConfigured(imgHostValue))) {
     toast.error(`请先配置 ${imgHostValue} 图床参数`)
     return false
@@ -480,7 +479,7 @@ function onTabScroll(e: WheelEvent) {
             </SelectContent>
           </Select>
           <p class="text-xs text-muted-foreground">
-            首次使用请先选择图床并完成对应配置，不再提供内置公共图床。
+            「默认」由服务端代传 GitHub 图床，Token 不会暴露在前端；自建部署请配置 <code class="rounded bg-muted px-1">IMGBED_GITHUB_TOKENS</code>。
           </p>
 
           <div class="space-y-3 my-4">

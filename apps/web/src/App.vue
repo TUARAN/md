@@ -101,7 +101,8 @@ function postImportReady() {
 }
 
 onMounted(() => {
-  document.title = documentTitle
+  if (!isCreatorProfilePage.value && !isCreatorOfferPage.value)
+    document.title = documentTitle
   window.addEventListener(`popstate`, updateCurrentPath)
   window.addEventListener(`message`, importSyncblogArticle)
   postImportReady()

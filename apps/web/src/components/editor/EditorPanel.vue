@@ -141,12 +141,7 @@ async function beforeImageUpload(file: File) {
     return false
   }
 
-  let imgHost = (await store.get(`imgHost`)) || `github`
-  if (imgHost === `default`) {
-    imgHost = `github`
-    await store.set(`imgHost`, `github`)
-  }
-
+  const imgHost = (await store.get(`imgHost`)) || `default`
   if (!(await isImgHostConfigured(imgHost))) {
     toast.error(`请先在图片上传对话框中配置图床参数`)
     return false

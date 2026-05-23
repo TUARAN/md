@@ -1,12 +1,14 @@
 {
   "publisher": "doocs",
   "name": "doocs-md",
-  "displayName": "doocs-md",
+  "displayName": "Syncblog Markdown Preview",
   "version": "0.0.1",
-  "description": "",
+  "description": "VS Code 侧边栏 Markdown 预览，渲染管线与 syncblog.cn / TUARAN/md 同源（fork 自 doocs/md）。",
+  "homepage": "https://syncblog.cn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/doocs/md"
+    "url": "https://github.com/TUARAN/md",
+    "directory": "apps/vscode"
   },
   "categories": [
     "Other"

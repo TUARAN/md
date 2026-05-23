@@ -11,13 +11,36 @@ import { v4 as uuidv4 } from 'uuid'
 import { store } from './storage'
 
 const IMG_HOST_CONFIG_HINT = `请先在「图片上传」对话框中选择图床并完成配置`
+const DEFAULT_IMGBED_ERROR_HINT = `默认图床不可用，请确认服务端已配置 IMGBED_GITHUB_TOKENS`
 
 export async function isImgHostConfigured(imgHost?: string | null) {
   const host = imgHost?.trim()
   if (!host || host === `default`)
-    return false
+    return true
   const config = await store.get(`${host}Config`)
   return !!config
+}
+
+function defaultImgbedApiUrl() {
+  return new URL(`api/imgbed/default`, `${window.location.origin}${import.meta.env.BASE_URL}`).toString()
+}
+
+async function defaultImgbedUpload(content: string, filename: string) {
+  const response = await globalThis.fetch(defaultImgbedApiUrl(), {
+    method: `POST`,
+    headers: { 'Content-Type': `application/json` },
+    body: JSON.stringify({
+      content,
+      filename,
+      referer: window.location.href,
+    }),
+  })
+  const payload = await response.json().catch(() => ({})) as { url?: string, error?: string }
+  if (!response.ok)
+    throw new Error(payload.error || DEFAULT_IMGBED_ERROR_HINT)
+  if (!payload.url)
+    throw new Error(DEFAULT_IMGBED_ERROR_HINT)
+  return payload.url
 }
 
 async function getRepoConfig(platform: `github` | `gitee`) {
@@ -746,12 +769,13 @@ async function formCustomUpload(content: string, file: File) {
 
 export async function fileUpload(content: string, file: File) {
   let imgHost = await store.get(`imgHost`)
-  if (imgHost === `default`) {
-    await store.set(`imgHost`, `github`)
-    imgHost = `github`
+  if (!imgHost) {
+    await store.set(`imgHost`, `default`)
+    imgHost = `default`
   }
-  if (!imgHost)
-    throw new Error(IMG_HOST_CONFIG_HINT)
+  if (imgHost === `default`)
+    return defaultImgbedUpload(content, file.name)
+
   if (!(await isImgHostConfigured(imgHost)))
     throw new Error(IMG_HOST_CONFIG_HINT)
 

@@ -11,6 +11,7 @@ import { defineConfig, loadEnv } from 'vite'
 import { VitePluginRadar } from 'vite-plugin-radar'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+import { defaultImgbedDevPlugin } from './plugins/vite-plugin-default-imgbed'
 import { utoolsLocalAssetsPlugin } from './plugins/vite-plugin-utools-local-assets'
 
 const isNetlify = process.env.SERVER_ENV === `NETLIFY`
@@ -40,6 +41,7 @@ export default defineConfig(({ mode }) => {
         analytics: { id: `G-7NZL3PZ0NK` },
       }),
       ...(process.env.ANALYZE === `true` ? [visualizer({ emitFile: true, filename: `stats.html` }) as any] : []),
+      !isCfWorkers && defaultImgbedDevPlugin(),
       AutoImport({
         imports: [`vue`, `pinia`, `@vueuse/core`],
         dirs: [`./src/stores`, `./src/utils/toast`, `./src/composables`],

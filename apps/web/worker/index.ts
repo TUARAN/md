@@ -1,14 +1,26 @@
+import {
+  handleDefaultImgbedRequest,
+  resolveDefaultImgbedPathname,
+} from '@md/shared/utils/defaultImgbed'
 import { WorkerEntrypoint } from 'cloudflare:workers'
 
 const MP_HOST = `https://api.weixin.qq.com`
 
 interface Env {
   ASSETS: { fetch: (request: Request) => Promise<Response> }
+  IMGBED_GITHUB_TOKENS?: string
+  IMGBED_GITHUB_USERNAME?: string
+  IMGBED_GITHUB_BRANCH?: string
+  IMGBED_GITHUB_REPO_COUNT?: string
+  IMGBED_USE_CDN?: string
 }
 
 export default class extends WorkerEntrypoint<Env> {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
+
+    if (resolveDefaultImgbedPathname(url.pathname))
+      return handleDefaultImgbedRequest(request, this.env)
 
     // 仅代理微信公众号 API；其余请求（含 csync-extension.zip、前端静态资源）走 ASSETS
     if (url.pathname.startsWith(`/cgi-bin/`))
@@ -51,10 +63,7 @@ export default class extends WorkerEntrypoint<Env> {
     }
     catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err)
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: { 'Content-Type': `application/json` },
-      })
+      return Response.json({ error: message }, { status: 500 })
     }
   }
 }

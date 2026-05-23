@@ -155,50 +155,6 @@ function cancelGoToLine() {
   editor.value?.focus()
 }
 
-// 监听编辑器变化，更新光标位置
-const attachedViews = new WeakSet()
-
-watch(editor, (view) => {
-  if (!view || attachedViews.has(view))
-    return
-
-  attachedViews.add(view)
-
-  // 初始化一次
-  updateCursorInfo(view)
-
-  const extension = EditorView.updateListener.of((update) => {
-    // 只在光标或文档变化时更新
-    if (update.selectionSet || update.docChanged) {
-      updateCursorInfo(update.view)
-    }
-  })
-
-  view.dispatch({
-    effects: StateEffect.appendConfig.of(extension),
-  })
-}, { immediate: true })
-
-// 切换文章时立即刷新光标及统计信息
-watch(currentPost, () => {
-  nextTick(() => {
-    if (editor.value) {
-      updateCursorInfo(editor.value)
-    }
-  })
-})
-
-function updateCursorInfo(view: any) {
-  const state = view.state
-  const main = state.selection.main
-  const line = state.doc.lineAt(main.head)
-  cursorLine.value = line.number
-  cursorCol.value = main.head - line.from + 1
-  totalLines.value = state.doc.lines
-  selectionLength.value = Math.abs(main.to - main.from)
-  updateHeadingsAndBreadcrumb(state.doc, line.number)
-}
-
 // 大纲 & 面包屑
 interface BreadcrumbItem {
   title: string
@@ -265,6 +221,50 @@ function updateHeadingsAndBreadcrumb(doc: any, currentLine: number) {
   breadcrumbs.value = [...stack]
   allHeadings.value = items
 }
+
+function updateCursorInfo(view: any) {
+  const state = view.state
+  const main = state.selection.main
+  const line = state.doc.lineAt(main.head)
+  cursorLine.value = line.number
+  cursorCol.value = main.head - line.from + 1
+  totalLines.value = state.doc.lines
+  selectionLength.value = Math.abs(main.to - main.from)
+  updateHeadingsAndBreadcrumb(state.doc, line.number)
+}
+
+// 监听编辑器变化，更新光标位置
+const attachedViews = new WeakSet()
+
+watch(editor, (view) => {
+  if (!view || attachedViews.has(view))
+    return
+
+  attachedViews.add(view)
+
+  // 初始化一次
+  updateCursorInfo(view)
+
+  const extension = EditorView.updateListener.of((update) => {
+    // 只在光标或文档变化时更新
+    if (update.selectionSet || update.docChanged) {
+      updateCursorInfo(update.view)
+    }
+  })
+
+  view.dispatch({
+    effects: StateEffect.appendConfig.of(extension),
+  })
+}, { immediate: true })
+
+// 切换文章时立即刷新光标及统计信息
+watch(currentPost, () => {
+  nextTick(() => {
+    if (editor.value) {
+      updateCursorInfo(editor.value)
+    }
+  })
+})
 
 const activeHeadingLine = computed(() => {
   if (breadcrumbs.value.length === 0)

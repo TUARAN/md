@@ -2,8 +2,7 @@
 import { ArrowLeft, ArrowRight, Check, ExternalLink, Minus, Sparkles, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { getCreatorOffer } from '@/constants/creatorOffer'
-import { PLATFORM_MATRIX_ROUTE } from '@/stores/socialAccounts'
-import { CREATOR_CARD_HASH } from '@/utils/creatorRoutes'
+import { CREATOR_CARD_HASH, creatorPlatformMatrixRoute } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
 
 const props = defineProps<{
@@ -18,18 +17,25 @@ const SERVICE_ACCENT: Record<string, string> = {
 
 const offer = computed(() => getCreatorOffer(props.creatorId))
 
-onMounted(() => {
-  if (offer.value)
-    document.title = offer.value.pageTitle
-  if (window.location.hash.replace(/^#/, ``) === CREATOR_CARD_HASH) {
-    nextTick(() => {
-      document.getElementById(CREATOR_CARD_HASH)?.scrollIntoView({ block: `start` })
-    })
+const homepageLabel = computed(() => {
+  const url = offer.value?.homepage
+  if (!url)
+    return ``
+  try {
+    return new URL(url).hostname.replace(/^www\./, ``)
+  }
+  catch {
+    return url
   }
 })
 
+watch(offer, (value) => {
+  if (value)
+    document.title = value.pageTitle
+}, { immediate: true })
+
 function goPlatformMatrix() {
-  window.location.href = PLATFORM_MATRIX_ROUTE
+  window.location.href = creatorPlatformMatrixRoute(props.creatorId)
 }
 
 function openHomepage() {
@@ -37,6 +43,14 @@ function openHomepage() {
   if (url)
     window.open(url, `_blank`, `noopener,noreferrer`)
 }
+
+onMounted(() => {
+  if (window.location.hash.replace(/^#/, ``) === CREATOR_CARD_HASH) {
+    nextTick(() => {
+      document.getElementById(CREATOR_CARD_HASH)?.scrollIntoView({ block: `start` })
+    })
+  }
+})
 </script>
 
 <template>
@@ -52,7 +66,7 @@ function openHomepage() {
           <ArrowLeft class="mr-1.5 h-4 w-4" />
           平台矩阵
         </Button>
-        <span class="font-mono text-[11px] text-muted-foreground">tuaran · 创作名片</span>
+        <span class="font-mono text-[11px] text-muted-foreground">{{ offer.id }} · 创作名片</span>
       </nav>
 
       <!-- Hero：视觉重心 -->
@@ -115,7 +129,7 @@ function openHomepage() {
           <h2 class="text-sm font-semibold">
             服务档位
           </h2>
-          <span class="text-xs text-muted-foreground">安东尼本人交付</span>
+          <span class="text-xs text-muted-foreground">{{ offer.displayName }}本人交付</span>
         </div>
 
         <div class="grid gap-3 md:grid-cols-3">
@@ -270,8 +284,8 @@ function openHomepage() {
 
       <footer class="mt-3 shrink-0 text-center text-[10px] text-muted-foreground">
         {{ offer.contactHint }} ·
-        <button type="button" class="text-primary hover:underline" @click="openHomepage">
-          tuaran.me
+        <button v-if="homepageLabel" type="button" class="text-primary hover:underline" @click="openHomepage">
+          {{ homepageLabel }}
         </button>
       </footer>
     </div>
@@ -283,7 +297,7 @@ function openHomepage() {
         未找到该创作者
       </h1>
       <p class="mt-2 text-sm text-muted-foreground">
-        当前仅开放 <span class="font-mono">tuaran</span> 的创作名片。
+        暂无 <span class="font-mono">{{ creatorId }}</span> 的创作名片数据。
       </p>
       <Button class="mt-4" variant="outline" @click="goPlatformMatrix">
         返回平台矩阵

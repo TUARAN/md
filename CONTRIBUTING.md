@@ -40,7 +40,7 @@
   - core          # 核心 markdown 渲染器
   - shared        # 共享的配置、常量、类型和工具函数
   - example       # 公众号 openapi 接口代理服务示例
-  - md-cli        # 命令行工具（上游 @doocs/md-cli）
+  - md-cli        # 命令行工具（`packages/md-cli`，npm 包名仍为 @doocs/md-cli）
 - workers
   - gnews-proxy   # 资讯检索代理（可选）
 ```

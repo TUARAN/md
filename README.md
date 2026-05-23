@@ -85,22 +85,23 @@
 
 ## 🖼️ 支持的图床服务
 
-> 上传图片前请在编辑器「图片上传」对话框中选择图床并完成配置；本仓库不再提供内置公共图床。
+> 「默认」图床由服务端代传 GitHub，用户零配置；部署者需在 Worker Secret 或 `.env.local` 中设置 `IMGBED_GITHUB_TOKENS`（勿提交到 Git）。
 
 | #   | 图床                                                   | 使用时是否需要配置                                                         | 备注                                                                                                                   |
 | --- | ------------------------------------------------------ | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| 1   | [GitHub](https://github.com)                           | 配置 `Repo`、`Token` 参数                                                  | [如何获取 GitHub token？](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) |
-| 2   | [阿里云](https://www.aliyun.com/product/oss)           | 配置 `AccessKey ID`、`AccessKey Secret`、`Bucket`、`Region` 参数           | [如何使用阿里云 OSS？](https://help.aliyun.com/document_detail/31883.html)                                             |
-| 3   | [腾讯云](https://cloud.tencent.com/act/pro/cos)        | 配置 `SecretId`、`SecretKey`、`Bucket`、`Region` 参数                      | [如何使用腾讯云 COS？](https://cloud.tencent.com/document/product/436/38484)                                           |
-| 4   | [七牛云](https://www.qiniu.com/products/kodo)          | 配置 `AccessKey`、`SecretKey`、`Bucket`、`Domain`、`Region` 参数           | [如何使用七牛云 Kodo？](https://developer.qiniu.com/kodo)                                                              |
-| 5   | [MinIO](https://min.io/)                               | 配置 `Endpoint`、`Port`、`UseSSL`、`Bucket`、`AccessKey`、`SecretKey` 参数 | [如何使用 MinIO？](http://docs.minio.org.cn/docs/master/)                                                              |
-| 6   | [S3 协议](https://aws.amazon.com/s3/)                  | 配置 `Endpoint`、`Region`、`Bucket`、`AccessKey`、`SecretKey` 参数         | 支持 AWS S3、Oracle、DigitalOcean 等兼容 S3 的存储服务                                                                 |
-| 7   | [公众号](https://mp.weixin.qq.com/)                    | 配置 `appID`、`appsecret`、`代理域名` 参数                                 | [如何使用公众号图床？](https://md-pages.doocs.org/tutorial)                                                            |
-| 8   | [Cloudflare R2](https://developers.cloudflare.com/r2/) | 配置 `AccountId`、`AccessKey`、`SecretKey`、`Bucket`、`Domain` 参数        | [如何使用 S3 API 操作 R2？](https://developers.cloudflare.com/r2/api/s3/api/)                                          |
-| 9   | [又拍云](https://www.upyun.com/)                       | 配置 `Bucket`、`Operator`、`Password`、`Domain` 参数                       | [如何使用 又拍云？](https://help.upyun.com/)                                                                           |
-| 10  | [Telegram](https://core.telegram.org/api)              | 配置 `Bot Token`、`Chat ID` 参数                                           | [如何使用 Telegram 图床？](https://github.com/doocs/md/blob/main/docs/telegram-usage.md)                               |
-| 11  | [Cloudinary](https://cloudinary.com/)                  | 配置 `Cloud Name`、`API Key`、`API Secret` 参数                            | [如何使用 Cloudinary？](https://cloudinary.com/documentation/upload_images)                                            |
-| 12  | 自定义上传                                             | 是                                                                         | [如何自定义上传？](/docs/custom-upload.md)                                                                             |
+| 1   | 默认                                                   | 否（需部署方配置服务端 Token）                                             | 经 `/api/imgbed/default` 代传 GitHub                                                                                   |
+| 2   | [GitHub](https://github.com)                           | 配置 `Repo`、`Token` 参数                                                  | [如何获取 GitHub token？](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) |
+| 3   | [阿里云](https://www.aliyun.com/product/oss)           | 配置 `AccessKey ID`、`AccessKey Secret`、`Bucket`、`Region` 参数           | [如何使用阿里云 OSS？](https://help.aliyun.com/document_detail/31883.html)                                             |
+| 4   | [腾讯云](https://cloud.tencent.com/act/pro/cos)        | 配置 `SecretId`、`SecretKey`、`Bucket`、`Region` 参数                      | [如何使用腾讯云 COS？](https://cloud.tencent.com/document/product/436/38484)                                           |
+| 5   | [七牛云](https://www.qiniu.com/products/kodo)          | 配置 `AccessKey`、`SecretKey`、`Bucket`、`Domain`、`Region` 参数           | [如何使用七牛云 Kodo？](https://developer.qiniu.com/kodo)                                                              |
+| 6   | [MinIO](https://min.io/)                               | 配置 `Endpoint`、`Port`、`UseSSL`、`Bucket`、`AccessKey`、`SecretKey` 参数 | [如何使用 MinIO？](http://docs.minio.org.cn/docs/master/)                                                              |
+| 7   | [S3 协议](https://aws.amazon.com/s3/)                  | 配置 `Endpoint`、`Region`、`Bucket`、`AccessKey`、`SecretKey` 参数         | 支持 AWS S3、Oracle、DigitalOcean 等兼容 S3 的存储服务                                                                 |
+| 8   | [公众号](https://mp.weixin.qq.com/)                    | 配置 `appID`、`appsecret`、`代理域名` 参数                                 | [如何使用公众号图床？](https://md-pages.doocs.org/tutorial)                                                            |
+| 9   | [Cloudflare R2](https://developers.cloudflare.com/r2/) | 配置 `AccountId`、`AccessKey`、`SecretKey`、`Bucket`、`Domain` 参数        | [如何使用 S3 API 操作 R2？](https://developers.cloudflare.com/r2/api/s3/api/)                                          |
+| 10  | [又拍云](https://www.upyun.com/)                       | 配置 `Bucket`、`Operator`、`Password`、`Domain` 参数                       | [如何使用 又拍云？](https://help.upyun.com/)                                                                           |
+| 11  | [Telegram](https://core.telegram.org/api)              | 配置 `Bot Token`、`Chat ID` 参数                                           | [如何使用 Telegram 图床？](https://github.com/doocs/md/blob/main/docs/telegram-usage.md)                               |
+| 12  | [Cloudinary](https://cloudinary.com/)                  | 配置 `Cloud Name`、`API Key`、`API Secret` 参数                            | [如何使用 Cloudinary？](https://cloudinary.com/documentation/upload_images)                                            |
+| 13  | 自定义上传                                             | 是                                                                         | [如何自定义上传？](/docs/custom-upload.md)                                                                             |
 
 ## 🎬 产品演示
 
@@ -163,46 +164,44 @@ pnpm web wrangler:deploy
 
 ## 🚀 快速搭建私有服务
 
-以下方式来自上游 [doocs/md](https://github.com/doocs/md)，主要用于部署**编辑器本体**（排版、图床、复制等）。若需完整使用本站的多平台同步与 CSYNC，请按上文自行构建并配置扩展 manifest 中的站点域名。
+### 推荐：本站完整工作流
 
-### 📦 方式 1. 使用 npm cli
-
-通过上游 npm cli 可快速搭建私有化 Markdown 编辑器。
+克隆本仓库并构建 Web 应用（含 CSYNC 打包、默认图床 API、工作流页面）：
 
 ```sh
-# 安装
-npm i -g @doocs/md-cli
+git clone https://github.com/TUARAN/md.git
+cd md
+pnpm install
+pnpm package:csync
+pnpm web build          # 静态资源
+pnpm web wrangler:deploy # 部署到 Cloudflare（可选）
+```
 
-# 启动
-md-cli
+在线体验：[syncblog.cn](https://syncblog.cn)
 
-# 访问
+### 📦 方式 1. 本仓库 CLI
+
+```sh
+pnpm install
+pnpm build:cli
+pnpm cli -- port=8800
 open http://127.0.0.1:8800
-
-# 启动并指定端口
-md-cli port=8899
-
-# 访问
-open http://127.0.0.1:8899
 ```
 
-md-cli 支持以下命令行参数：
+`md-cli` 支持 `port`、`spaceId`、`clientSecret` 等参数，详见 [`packages/md-cli/README.md`](packages/md-cli/README.md)。
 
-- `port` 指定端口号，默认 8800，如果被占用会随机使用一个新端口。
-- `spaceId` dcloud 服务空间配置
-- `clientSecret` dcloud 服务空间配置
+> npm 上的 `@doocs/md-cli` 为上游包名；完整同步能力请使用本仓库构建，而非仅安装上游 CLI。
 
-### 🐳 方式 2. 使用 Docker 镜像
+### 🐳 方式 2. Docker（编辑器静态页）
 
-如果你是 Docker 用户，也可以直接使用一条命令，启动**完全属于你的、私有化运行的实例**。
+在本仓库根目录构建：
 
 ```sh
-docker run -d -p 8080:80 doocs/md:latest
+docker build -f docker/latest/Dockerfile.static -t syncblog-md:local .
+docker run -d -p 8080:80 syncblog-md:local
 ```
 
-容器运行起来之后，打开浏览器，访问 http://localhost:8080 即可。
-
-关于本项目 Docker 镜像的更多详细信息，可以关注 https://github.com/doocs/docker-md
+若只需上游原版编辑器、不需要 CSYNC / 工作流，仍可使用上游镜像 `doocs/md:latest`（见 [doocs/docker-md](https://github.com/doocs/docker-md)）。
 
 ## 👥 谁在使用
 
