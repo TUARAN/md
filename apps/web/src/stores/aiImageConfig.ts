@@ -3,6 +3,7 @@ import {
   DEFAULT_SERVICE_KEY,
   DEFAULT_SERVICE_TYPE,
 } from '@md/shared/constants'
+import { secureStore } from '@/utils/secureStore'
 import { store } from '@/utils/storage'
 
 /**
@@ -63,14 +64,23 @@ export const useAIImageConfigStore = defineStore(`AIImageConfig`, () => {
 
   // ==================== API Key 管理 ====================
 
-  // API Key（按服务类型分别持久化）
+  // API Key（按服务类型分别持久化，使用 secureStore 加密存储）
   const apiKey = customRef<string>((track, trigger) => {
     let cachedKey = ``
+    let loadedType = ``
 
-    // 异步加载初始值
-    store.get(`openai_image_key_${type.value}`).then((value) => {
-      cachedKey = value || DEFAULT_SERVICE_KEY
-    })
+    function loadKey(forType: string) {
+      loadedType = forType
+      secureStore.get(`openai_image_key_${forType}`).then((value) => {
+        if (loadedType !== forType)
+          return
+        cachedKey = value || DEFAULT_SERVICE_KEY
+        trigger()
+      })
+    }
+
+    loadKey(type.value)
+    watch(type, newType => loadKey(newType))
 
     return {
       get() {
@@ -82,7 +92,7 @@ export const useAIImageConfigStore = defineStore(`AIImageConfig`, () => {
         trigger()
 
         if (type.value !== DEFAULT_SERVICE_TYPE) {
-          store.set(`openai_image_key_${type.value}`, val)
+          void secureStore.set(`openai_image_key_${type.value}`, val)
         }
       },
     }
@@ -134,7 +144,7 @@ export const useAIImageConfigStore = defineStore(`AIImageConfig`, () => {
     // 清理所有服务相关的持久化数据
     await Promise.all(
       imageServiceOptions.map(async ({ value }) => {
-        await store.remove(`openai_image_key_${value}`)
+        await secureStore.remove(`openai_image_key_${value}`)
         await store.remove(`openai_image_model_${value}`)
         await store.remove(`openai_image_endpoint_${value}`)
       }),

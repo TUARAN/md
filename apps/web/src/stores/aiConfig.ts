@@ -5,6 +5,7 @@ import {
   DEFAULT_SERVICE_TEMPERATURE,
   DEFAULT_SERVICE_TYPE,
 } from '@md/shared/constants'
+import { secureStore } from '@/utils/secureStore'
 import { store } from '@/utils/storage'
 
 /**
@@ -33,14 +34,24 @@ export const useAIConfigStore = defineStore(`AIConfig`, () => {
 
   // ==================== API Key 管理 ====================
 
-  // API Key（按服务类型分别持久化）
+  // API Key（按服务类型分别持久化，使用 secureStore 加密存储）
   const apiKey = customRef<string>((track, trigger) => {
     let cachedKey = ``
+    let loadedType = ``
 
-    // 异步加载初始值
-    store.get(`openai_key_${type.value}`).then((value) => {
-      cachedKey = value || DEFAULT_SERVICE_KEY
-    })
+    function loadKey(forType: string) {
+      loadedType = forType
+      secureStore.get(`openai_key_${forType}`).then((value) => {
+        // 期间用户可能已切换服务类型，避免覆盖
+        if (loadedType !== forType)
+          return
+        cachedKey = value || DEFAULT_SERVICE_KEY
+        trigger()
+      })
+    }
+
+    loadKey(type.value)
+    watch(type, newType => loadKey(newType))
 
     return {
       get() {
@@ -52,7 +63,7 @@ export const useAIConfigStore = defineStore(`AIConfig`, () => {
         trigger()
 
         if (type.value !== DEFAULT_SERVICE_TYPE) {
-          store.set(`openai_key_${type.value}`, val)
+          void secureStore.set(`openai_key_${type.value}`, val)
         }
       },
     }
@@ -97,7 +108,7 @@ export const useAIConfigStore = defineStore(`AIConfig`, () => {
     // 清理所有服务相关的持久化数据
     await Promise.all(
       serviceOptions.map(async ({ value }) => {
-        await store.remove(`openai_key_${value}`)
+        await secureStore.remove(`openai_key_${value}`)
         await store.remove(`openai_model_${value}`)
       }),
     )

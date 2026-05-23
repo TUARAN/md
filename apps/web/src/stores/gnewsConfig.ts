@@ -1,5 +1,6 @@
 import type { NewsSourceProvider } from '@md/shared/utils/gnews'
 import { DEFAULT_SERVICE_KEY } from '@md/shared/constants'
+import { secureStore } from '@/utils/secureStore'
 import { store } from '@/utils/storage'
 
 /**
@@ -33,7 +34,8 @@ export const useGNewsConfigStore = defineStore(`GNewsConfig`, () => {
 
     function loadKey() {
       const activeProvider = provider.value
-      store.get(storageKey()).then((value) => {
+      // 使用 secureStore 加密存储用户填写的 API Key
+      secureStore.get(storageKey()).then((value) => {
         cached.set(
           activeProvider,
           value ?? (activeProvider === `gnews` ? DEFAULT_SERVICE_KEY : ``),
@@ -53,7 +55,7 @@ export const useGNewsConfigStore = defineStore(`GNewsConfig`, () => {
       set(val: string) {
         cached.set(provider.value, val)
         trigger()
-        void store.set(storageKey(), val)
+        void secureStore.set(storageKey(), val)
       },
     }
   })

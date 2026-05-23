@@ -13,8 +13,27 @@ function readRequestBody(req: IncomingMessage) {
   })
 }
 
+type DefaultImgbedModule = typeof import('@md/shared/utils/defaultImgbed')
+
 export function defaultImgbedDevPlugin(): Plugin {
   let env: Record<string, string> = {}
+  let modulePromise: Promise<DefaultImgbedModule | null> | null = null
+
+  // 通过 Vite 的 ssrLoadModule 走 Vite 的转译管线，避免 Node 22 < 22.18
+  // 不支持原生 ESM 加载 .ts 时崩溃；同时把首次加载失败缓存为 null，请求层返回
+  // 500 而不会让整个 dev server 进程因 unhandled rejection 退出。
+  function loadModule(server: import('vite').ViteDevServer): Promise<DefaultImgbedModule | null> {
+    modulePromise ??= (async () => {
+      try {
+        return await server.ssrLoadModule(`@md/shared/utils/defaultImgbed`) as DefaultImgbedModule
+      }
+      catch (err) {
+        console.warn(`[default-imgbed-dev] failed to load handler, default imgbed will be disabled in dev:`, err)
+        return null
+      }
+    })()
+    return modulePromise
+  }
 
   return {
     name: `default-imgbed-dev`,
@@ -23,7 +42,12 @@ export function defaultImgbedDevPlugin(): Plugin {
     },
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        const { handleDefaultImgbedRequest, resolveDefaultImgbedPathname } = await import(`@md/shared/utils/defaultImgbed`)
+        const mod = await loadModule(server)
+        if (!mod) {
+          next()
+          return
+        }
+        const { handleDefaultImgbedRequest, resolveDefaultImgbedPathname } = mod
         const url = new URL(req.url || `/`, `http://${req.headers.host || `localhost`}`)
         if (!resolveDefaultImgbedPathname(url.pathname)) {
           next()
