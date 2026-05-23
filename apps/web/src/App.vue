@@ -127,7 +127,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <AppSplash />
   <RouterView />
 
   <ConfirmDialog />

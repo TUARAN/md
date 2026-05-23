@@ -26,11 +26,9 @@ export const APP_CURRENT_SCOPE
 
 export const documentTitle = `${APP_NAME} — ${APP_SLOGAN}`
 
-/** 启动遮罩：产品名 */
-export const APP_SPLASH_TITLE = APP_NAME
-
-/** 启动遮罩：slogan(简短版,首屏视觉) */
-export const APP_SPLASH_SLOGAN = `30 分钟分发 30+ 平台`
+// 启动 splash 由 apps/web/index.html 直接渲染(纯 HTML/CSS,无需等 Vue),
+// 不再走 Vue 组件,因此 APP_SPLASH_* 常量已删除。如需改 splash 文案直接编辑
+// index.html。
 
 /** 可选：配置后顶部「数据获取」将新开此外链，覆盖默认的 GNews 资讯面板（Vite：`VITE_DATA_NAV_URL`） */
 export function getDataAcquisitionNavUrl(): string {

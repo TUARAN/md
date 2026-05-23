@@ -16,72 +16,77 @@
     <link rel="shortcut icon" href="/favicon.png" />
     <link rel="apple-touch-icon-precomposed" href="/favicon.png" />
     <style>
+      /**
+       * Inline splash —— HTML 解析完就显示,无需等 Vue 加载完。
+       * Vue `app.mount('#app')` 会替换掉 #app 的内容,自动把 splash 移除。
+       * 注意:这里是真正且唯一的 splash。不要在 Vue 组件里再画一个 — 那样会
+       * 在 Vue 挂载瞬间出现"两个 splash"(inline → Vue,视觉不连续)。
+       */
       .loading {
         position: fixed;
-        top: 0;
-        left: 0;
+        inset: 0;
         z-index: 99999;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        width: 100vw;
-        height: 100vh;
-        font-size: 18px;
+        gap: 1rem;
+        background-color: #ffffff;
       }
 
-      .loading::before {
-        content: url('/src/assets/images/favicon.png');
-        width: 100px;
-        height: 100px;
-        margin-bottom: 1rem;
+      .loading-logo {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        user-select: none;
       }
 
       .loading .splash-title {
-        margin-bottom: 0.35rem;
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: #141414;
       }
 
       .loading .splash-slogan {
-        margin: 0 1rem 0.75rem;
-        max-width: 22rem;
+        margin: 0;
+        max-width: 26rem;
+        padding: 0 1rem;
         text-align: center;
-        font-size: 0.95rem;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #555;
-      }
-
-      .loading.dark .splash-slogan {
-        color: #ccc;
+        font-size: 1rem;
+        font-weight: 500;
+        line-height: 1.5;
+        color: #6b7280;
       }
 
       .loading.dark {
-        color: #ffffff;
         background-color: #141414;
       }
 
-      .loading .txt {
+      .loading.dark .splash-title {
+        color: #ffffff;
+      }
+
+      .loading.dark .splash-slogan {
+        color: #a1a1aa;
+      }
+
+      .loading .timeout-tip {
         position: absolute;
-        bottom: 10%;
+        bottom: 8%;
       }
 
-      .loading .txt::after {
-        content: '...';
-        animation: dots 1.5s steps(4, end) infinite;
-      }
-
-      @keyframes dots {
-        0% {
-          content: ' ';
+      @media (max-width: 640px) {
+        .loading-logo {
+          width: 88px;
+          height: 88px;
         }
-        25% {
-          content: '.';
+        .loading .splash-title {
+          font-size: 1.35rem;
         }
-        50% {
-          content: '..';
-        }
-        75% {
-          content: '...';
+        .loading .splash-slogan {
+          font-size: 0.9rem;
         }
       }
     </style>
@@ -93,10 +98,10 @@
     </noscript>
     <div id="app">
       <div class="loading">
+        <img src="/src/assets/images/favicon.png" alt="" class="loading-logo" />
         <strong class="splash-title">博主联盟同步工具</strong>
-        <p class="splash-slogan">一文多发，30分钟完成30+平台同步</p>
-        <p class="txt">正在加载</p>
-        <p class="timeout-tip" style="display: none; color: #e53935; font-size: 16px; margin-top: 2em">
+        <p class="splash-slogan">30 分钟分发 30+ 平台</p>
+        <p class="timeout-tip" style="display: none; color: #e53935; font-size: 14px">
           加载时间过长，请尝试刷新页面或按 F12 查看控制台是否有异常信息
         </p>
       </div>
