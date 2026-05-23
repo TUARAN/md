@@ -1,47 +1,26 @@
 <script setup lang="ts">
-import { ArrowRight, ExternalLink, Megaphone, Users } from 'lucide-vue-next'
+/**
+ * WorkflowMatrixPage —— workflow 第 4 步「平台矩阵」
+ *
+ * 与 `/creator-profile` 路由共用 `<CreatorProfileBody />` 主体(2026-05 合并),
+ * 本页只负责工作流外壳:页头标题 + 创作者切换 + 「数据从哪来」说明 + 底部
+ * 「上一步/下一步」导航。卡片上多一个「宣发」按钮(workflow context),点击后
+ * 把该平台写入 ui.workflowDistributionPlatform 并跳 `/distribution`。
+ */
+import { ArrowRight, Megaphone, Users } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import CreatorProfileBody from '@/components/creator-profile/CreatorProfileBody.vue'
 import { Button } from '@/components/ui/button'
-import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
-import { getCreatorPlatformMatrix, getWorkflowCreator } from '@/constants/creators'
-import { useSocialAccountsStore } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
-import { creatorPlatformMatrixRoute } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
 import WorkflowCreatorPicker from './WorkflowCreatorPicker.vue'
 import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
 
 const uiStore = useUIStore()
-const { workflowCreatorId, workflowDistributionPlatform, workflowMatrixDataSourceExpanded } = storeToRefs(uiStore)
+const { workflowDistributionPlatform, workflowMatrixDataSourceExpanded } = storeToRefs(uiStore)
 const { setWorkflowDistributionPlatform } = uiStore
 const router = useRouter()
-
-const socialAccountsStore = useSocialAccountsStore()
-
-const creator = computed(() => getWorkflowCreator(workflowCreatorId.value))
-
-const matrixRows = computed(() => {
-  const base = getCreatorPlatformMatrix(workflowCreatorId.value)
-  // 检测缓存只对应当前登录的创作者（TUARAN）；其它创作者沿用仓库快照
-  if (workflowCreatorId.value !== TUARAN_CREATOR_ID)
-    return base
-  const detected = new Map(
-    socialAccountsStore.accounts
-      .filter(a => a.followers || a.reads)
-      .map(a => [a.type, a]),
-  )
-  return base.map((row) => {
-    const hit = detected.get(row.type)
-    return hit
-      ? { ...row, followers: hit.followers || row.followers, reads: hit.reads || row.reads }
-      : row
-  })
-})
-
-function openFullMatrix() {
-  window.open(creatorPlatformMatrixRoute(workflowCreatorId.value), `_blank`, `noopener,noreferrer`)
-}
 
 function goDistribution(platformType?: string) {
   if (platformType)
@@ -51,14 +30,6 @@ function goDistribution(platformType?: string) {
 
 function goContentSync() {
   router.push({ name: `sync` })
-}
-
-function selectRow(type: string) {
-  setWorkflowDistributionPlatform(type)
-}
-
-function openPlatformUrl(url: string) {
-  window.open(url, `_blank`, `noopener,noreferrer`)
 }
 
 function onMatrixDataSourceToggle(event: Event) {
@@ -77,9 +48,7 @@ function onMatrixDataSourceToggle(event: Event) {
         平台矩阵
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        内容同步成稿后，按创作者
-        <span class="font-mono text-foreground">{{ workflowCreatorId }}</span>
-        梳理各平台账号与粉丝/阅读快照，再进入宣发活跃制定渠道策略。
+        梳理各平台账号与粉丝/阅读快照，确认渠道后进入「宣发活跃」制定策略。
       </p>
       <details
         class="mt-2 rounded-lg border border-border/50 bg-muted/10 text-xs leading-relaxed text-muted-foreground"
@@ -96,23 +65,19 @@ function onMatrixDataSourceToggle(event: Event) {
             <span class="font-medium">COSE</span>
             与
             <span class="font-medium">CSYNC</span>
-            后，于「检测账号 / 完整矩阵」页重新检测，扩展会把主页、粉丝、阅读等字段写入本地缓存，并优先展示在本表。
+            后，于本页点「重新检测账号」(空状态下出现),扩展会把主页/粉丝/阅读写入本地缓存。
           </p>
           <p>
             <span class="font-medium text-foreground">限制与兜底：</span>
-            部分平台无法统计全量阅读，或主页/个人中心难以稳定抓取（尤其部分大厂云社区），此时会回落到仓库中的静态快照；也支持在代码里
-            <span class="font-medium">手动维护</span>
-            后随版本更新。
+            部分平台无法统计全量阅读、或主页/个人中心难以稳定抓取，此时仅显示已缓存字段。
           </p>
           <p>
             <span class="font-medium text-foreground">创作者 ID：</span>
-            默认维护
-            <span class="font-mono text-foreground">tuaran</span>
-            （安东尼）。Fork 本仓库、改
+            默认维护 <span class="font-mono text-foreground">tuaran</span> (安东尼)。其他创作者通过
             <code class="rounded bg-muted px-1 py-px text-[10px]">socialAccounts.ts</code>
             /
             <code class="rounded bg-muted px-1 py-px text-[10px]">creatorOffer/</code>
-            后提 PR 即可接入其他创作者。
+            PR 接入。
             <a
               href="https://github.com/TUARAN/md/blob/main/docs/creator-profile-urls.md"
               target="_blank"
@@ -127,93 +92,12 @@ function onMatrixDataSourceToggle(event: Event) {
       </div>
     </template>
 
-    <div class="space-y-4 pb-4">
-      <section v-if="creator" class="rounded-[18px] border border-border/80 bg-white/80 p-4 shadow-sm dark:bg-card">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p class="text-sm font-semibold">
-              {{ creator.displayName }}
-            </p>
-            <p class="text-xs text-muted-foreground">
-              {{ creator.subtitle }}
-            </p>
-          </div>
-          <Button variant="outline" size="sm" @click="openFullMatrix">
-            检测账号 / 完整矩阵
-            <ExternalLink class="ml-1.5 h-3.5 w-3.5" />
-          </Button>
-        </div>
-
-        <div class="mt-3 max-w-2xl overflow-x-auto rounded-lg border border-border/60">
-          <table class="w-full border-collapse text-sm">
-            <thead>
-              <tr class="border-b border-border/60 bg-muted/30 text-[10px] font-medium text-muted-foreground">
-                <th class="px-3 py-2 text-left font-medium">
-                  平台
-                </th>
-                <th class="w-[5.5rem] px-2 py-2 text-right font-medium">
-                  粉丝
-                </th>
-                <th class="w-[5.5rem] px-2 py-2 text-right font-medium">
-                  阅读
-                </th>
-                <th class="w-[4.25rem] px-2 py-2 text-right font-medium">
-                  操作
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in matrixRows"
-                :key="row.type"
-                class="border-b border-border/40 last:border-0"
-                :class="workflowDistributionPlatform === row.type ? 'bg-primary/[0.06]' : ''"
-              >
-                <td class="px-3 py-2">
-                  <button
-                    type="button"
-                    class="inline-flex max-w-full items-center gap-1 text-left font-medium transition-colors"
-                    :class="workflowDistributionPlatform === row.type
-                      ? 'text-primary'
-                      : 'text-foreground hover:text-primary'"
-                    @click="selectRow(row.type)"
-                  >
-                    {{ getPlatformProfileTitle(row.type) }}
-                    <ExternalLink
-                      v-if="row.url"
-                      class="h-3 w-3 shrink-0 opacity-60"
-                      @click.stop="openPlatformUrl(row.url)"
-                    />
-                  </button>
-                </td>
-                <td class="px-2 py-2 text-right text-xs tabular-nums text-muted-foreground">
-                  {{ row.followers }}
-                </td>
-                <td class="px-2 py-2 text-right text-xs tabular-nums text-muted-foreground">
-                  {{ row.reads }}
-                </td>
-                <td class="px-2 py-2 text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    class="h-7 px-2 text-[10px]"
-                    @click="goDistribution(row.type)"
-                  >
-                    宣发
-                  </Button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="mt-3 text-[11px] leading-snug text-muted-foreground">
-          点击平台名可选中当前渠道；「宣发」跳转宣发活跃并加载该平台策略。数字优先来自 COSE/CSYNC 检测缓存，缺省时用仓库快照（可手动改代码更新）。
-        </p>
-      </section>
-
-      <section v-else class="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        未找到创作者 <span class="font-mono">{{ workflowCreatorId }}</span> 的平台配置。
-      </section>
+    <div class="flex flex-col">
+      <CreatorProfileBody
+        :enable-workflow-actions="true"
+        :show-stats="false"
+        @select-distribution="goDistribution"
+      />
 
       <section class="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
         <Button variant="outline" size="sm" @click="goContentSync">
