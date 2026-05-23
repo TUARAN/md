@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BarChart3, ChevronRight, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw, Users } from 'lucide-vue-next'
-import { computed, inject, ref } from 'vue'
+import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw, Users } from 'lucide-vue-next'
+import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
-import { APP_HEADER_BRAND_LINE, getDataAcquisitionNavUrl } from '@/constants/branding'
+import { getDataAcquisitionNavUrl } from '@/constants/branding'
 import { CREATOR_CARD_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
@@ -25,7 +25,6 @@ const route = useRoute()
 
 /** 当前 workflow 步骤 id,由路由名派生(代替老的 ui.workflowAppPage 状态) */
 const workflowAppPage = computed(() => String(route.name ?? `sync`))
-const isContentFactoryExpanded = ref(true)
 
 const {
   aboutDialogVisible,
@@ -62,10 +61,6 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
   router.push({ name: stepId })
 }
 
-function toggleContentFactory() {
-  isContentFactoryExpanded.value = !isContentFactoryExpanded.value
-}
-
 function openCreatorCard() {
   window.open(CREATOR_CARD_ROUTE, `_blank`, `noopener,noreferrer`)
 }
@@ -73,161 +68,102 @@ function openCreatorCard() {
 
 <template>
   <header
-    class="header-container h-15 flex flex-wrap items-center justify-between px-5 relative"
+    class="header-container h-12 flex items-center justify-between gap-3 px-4 md:px-5 relative"
   >
-    <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-2 md:gap-x-4 md:gap-y-2">
-      <!-- 工作流导航（桌面）：一级 — 数据获取 → … → 内容同步（当前）→ … -->
-      <div
-        class="workflow-nav-strip hidden min-w-0 shrink md:flex md:items-center gap-1 rounded-xl bg-muted/30 px-2 py-1"
+    <!-- 桌面工作流导航：直接 6 个 step,无前缀,无装饰 -->
+    <nav
+      class="workflow-nav hidden min-w-0 flex-1 md:flex items-center gap-1 overflow-x-auto whitespace-nowrap"
+      aria-label="工作流"
+    >
+      <button
+        v-for="step in workflowSteps"
+        :key="step.id"
+        type="button"
+        class="workflow-step inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
+        :class="[
+          workflowAppPage === step.id
+            ? 'workflow-step--current bg-primary/10 text-primary'
+            : step.comingSoon
+              ? 'workflow-step--pending text-muted-foreground/55 hover:bg-muted/40'
+              : 'workflow-step--inactive text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+        ]"
+        :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
+        :aria-current="workflowAppPage === step.id ? 'step' : undefined"
+        @click="openWorkflowStep(step.id)"
+      >
+        <component
+          :is="step.icon"
+          class="size-4 shrink-0"
+          aria-hidden="true"
+        />
+        <span class="truncate">{{ step.label }}</span>
+        <span
+          v-if="step.comingSoon"
+          class="workflow-step-badge"
+        >后续</span>
+      </button>
+    </nav>
+
+    <!-- 移动端：工作流横向滚 + 汉堡菜单 -->
+    <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
+      <nav
+        class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
+        aria-label="工作流"
       >
         <button
+          v-for="step in workflowSteps"
+          :key="step.id"
           type="button"
-          class="inline-flex shrink-0 items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-base font-semibold text-foreground shadow-none transition-colors hover:text-primary"
-          :aria-expanded="isContentFactoryExpanded"
-          aria-controls="workflow-nav-desktop"
-          @click="toggleContentFactory"
+          class="workflow-step inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
+          :class="[
+            workflowAppPage === step.id
+              ? 'workflow-step--current bg-primary/10 text-primary'
+              : step.comingSoon
+                ? 'workflow-step--pending text-muted-foreground/55'
+                : 'workflow-step--inactive text-muted-foreground',
+          ]"
+          :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
+          :aria-current="workflowAppPage === step.id ? 'step' : undefined"
+          @click="openWorkflowStep(step.id)"
         >
-          <span>内容工厂</span>
-          <ChevronRight
-            class="size-4 transition-transform"
-            :class="{ 'rotate-180': !isContentFactoryExpanded }"
+          <component
+            :is="step.icon"
+            class="size-3.5 shrink-0"
             aria-hidden="true"
           />
+          <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
         </button>
-        <nav
-          v-show="isContentFactoryExpanded"
-          id="workflow-nav-desktop"
-          class="workflow-nav flex min-w-0 items-center gap-0.5 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
-          aria-label="工作流"
-        >
-          <template v-for="(step, index) in workflowSteps" :key="step.id">
-            <span
-              v-if="index > 0"
-              class="workflow-chevron shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            >→</span>
-            <button
-              type="button"
-              class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
-                workflowAppPage === step.id
-                  ? 'workflow-step--current text-primary underline decoration-primary/45 underline-offset-2'
-                  : step.comingSoon
-                    ? 'workflow-step--pending text-muted-foreground/60 hover:bg-transparent hover:text-muted-foreground'
-                    : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
-              ]"
-              :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
-              :aria-current="workflowAppPage === step.id ? 'step' : undefined"
-              @click="openWorkflowStep(step.id)"
-            >
-              <component
-                :is="step.icon"
-                class="size-4 shrink-0" :class="[
-                  workflowAppPage === step.id ? 'text-primary' : 'text-muted-foreground',
-                ]"
-              />
-              <span class="max-w-[5.5rem] truncate sm:max-w-none">{{ step.label }}</span>
-              <span
-                v-if="step.comingSoon"
-                class="workflow-step-badge"
-              >后续</span>
-            </button>
-          </template>
-        </nav>
-      </div>
-
-      <!-- 移动端：工作流优先，其次汉堡菜单 -->
-      <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
-        <nav
-          class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap rounded-xl bg-muted/30 px-2 py-1 [-ms-overflow-style:none]"
-          aria-label="工作流"
-        >
-          <button
-            type="button"
-            class="inline-flex shrink-0 items-center gap-1 rounded-sm border-0 bg-transparent p-0 text-base font-semibold text-foreground shadow-none transition-colors hover:text-primary"
-            :aria-expanded="isContentFactoryExpanded"
-            aria-controls="workflow-nav-mobile"
-            @click="toggleContentFactory"
+      </nav>
+      <Menubar class="menubar shrink-0 border-0 p-0">
+        <MenubarMenu>
+          <MenubarTrigger
+            class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
           >
-            <span>内容工厂</span>
-            <ChevronRight
-              class="size-4 transition-transform"
-              :class="{ 'rotate-180': !isContentFactoryExpanded }"
-              aria-hidden="true"
-            />
-          </button>
-          <template v-for="(step, index) in workflowSteps" :key="step.id">
-            <span
-              v-if="isContentFactoryExpanded && index > 0"
-              class="workflow-chevron shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            >→</span>
-            <button
-              v-show="isContentFactoryExpanded"
-              type="button"
-              class="workflow-step inline-flex shrink-0 items-center gap-1 m-0 appearance-none rounded-none border-0 bg-transparent p-0 shadow-none transition-colors" :class="[
-                workflowAppPage === step.id
-                  ? 'workflow-step--current text-primary underline decoration-primary/45 underline-offset-2'
-                  : step.comingSoon
-                    ? 'workflow-step--pending text-muted-foreground/60 hover:bg-transparent hover:text-muted-foreground'
-                    : 'workflow-step--inactive text-muted-foreground hover:bg-transparent hover:text-foreground',
-              ]"
-              :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
-              :aria-current="workflowAppPage === step.id ? 'step' : undefined"
-              @click="openWorkflowStep(step.id)"
-            >
-              <component
-                :is="step.icon"
-                class="size-4 shrink-0" :class="[
-                  workflowAppPage === step.id ? 'text-primary' : 'text-muted-foreground',
-                ]"
-              />
-              <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
-              <span
-                v-if="step.comingSoon"
-                class="workflow-step-badge hidden sm:inline"
-              >后续</span>
-            </button>
-          </template>
-        </nav>
-        <Menubar class="menubar shrink-0 border-0 p-0">
-          <MenubarMenu>
-            <MenubarTrigger
-              class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none ring-offset-background transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
-            >
-              <Menu class="size-4 pointer-events-none" />
-            </MenubarTrigger>
-            <MenubarContent align="start">
-              <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
-              <EditDropdown :as-sub="true" @copy="handleCopy" />
-              <FormatDropdown :as-sub="true" />
-              <InsertDropdown :as-sub="true" />
-              <StyleDropdown :as-sub="true" />
-              <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
-            </MenubarContent>
-          </MenubarMenu>
-        </Menubar>
-      </div>
+            <Menu class="size-4 pointer-events-none" />
+          </MenubarTrigger>
+          <MenubarContent align="start">
+            <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
+            <EditDropdown :as-sub="true" @copy="handleCopy" />
+            <FormatDropdown :as-sub="true" />
+            <InsertDropdown :as-sub="true" />
+            <StyleDropdown :as-sub="true" />
+            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
     </div>
 
-    <div class="ml-auto hidden min-w-0 shrink-0 items-center gap-3 md:flex">
+    <div class="hidden shrink-0 items-center gap-2 md:flex">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        class="h-8 shrink-0"
+        class="h-8 shrink-0 text-muted-foreground hover:text-foreground"
         @click="openCreatorCard"
       >
-        <IdCard class="mr-2 h-4 w-4" />
+        <IdCard class="mr-1.5 h-4 w-4" />
         创作名片
       </Button>
-
-      <!-- 右上角品牌一行艺术字（非按钮、无衬底；小屏省略） -->
-      <p
-        class="header-brand-slogan pointer-events-none m-0 max-w-[min(100%,36rem)] shrink truncate text-right"
-        :title="`“${APP_HEADER_BRAND_LINE}”`"
-      >
-        <span class="header-brand-slogan__line">“{{ APP_HEADER_BRAND_LINE }}”</span>
-      </p>
     </div>
   </header>
 
@@ -251,77 +187,9 @@ function openCreatorCard() {
   backdrop-filter: blur(12px);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
-
-  @media (max-width: 768px) {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
 }
 
-/** 顶栏右上角：单行艺术字（渐变 + 衬线气质，无框线、无按钮感） */
-.header-brand-slogan {
-  line-height: 1.25;
-}
-
-.header-brand-slogan__line {
-  display: inline;
-  /* Two identical halves (0–50% / 50–100%) so background-position can loop without a seam */
-  background-image: linear-gradient(
-    100deg,
-    hsl(var(--primary) / 0.72) 0%,
-    hsl(var(--primary)) 11%,
-    hsl(var(--foreground) / 0.82) 20%,
-    hsl(var(--foreground) / 0.96) 25%,
-    hsl(var(--foreground) / 0.82) 30%,
-    hsl(var(--primary)) 39%,
-    hsl(var(--primary) / 0.72) 50%,
-    hsl(var(--primary) / 0.72) 50%,
-    hsl(var(--primary)) 61%,
-    hsl(var(--foreground) / 0.82) 70%,
-    hsl(var(--foreground) / 0.96) 75%,
-    hsl(var(--foreground) / 0.82) 80%,
-    hsl(var(--primary)) 89%,
-    hsl(var(--primary) / 0.72) 100%
-  );
-  background-size: 200% 100%;
-  background-position: 0% 50%;
-  background-repeat: no-repeat;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  /* 偏书面/刊头气质的衬线（系统有可则用，无则优雅回退） */
-  font-family: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC', ui-serif, Georgia, serif;
-  font-size: clamp(0.8125rem, 0.75rem + 0.5vw, 1rem);
-  font-weight: 600;
-  letter-spacing: 0.13em;
-  font-feature-settings: 'kern' 1;
-  filter: drop-shadow(0 0 18px hsl(var(--primary) / 0.18));
-  animation: header-brand-sweep 5s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .header-brand-slogan__line {
-    animation: none;
-    background-image: linear-gradient(
-      100deg,
-      hsl(var(--primary)) 0%,
-      hsl(var(--primary) / 0.78) 45%,
-      hsl(var(--foreground) / 0.72) 100%
-    );
-    background-size: 100% 100%;
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes header-brand-sweep {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 100% 50%;
-  }
-}
-
+.workflow-nav,
 .workflow-nav-mobile {
   scrollbar-width: none;
 
@@ -330,36 +198,14 @@ function openCreatorCard() {
   }
 }
 
-.workflow-chevron {
-  opacity: 0.5;
-}
-
 .workflow-step {
   border: 0;
-  background: transparent;
-  font-size: var(--header-tab-size);
-  font-weight: var(--header-tab-weight);
-  line-height: var(--header-tab-leading);
+  cursor: pointer;
+  font-family: inherit;
   letter-spacing: normal;
   text-transform: none;
 
-  &:is(button) {
-    cursor: pointer;
-    font-family: inherit;
-    font-size: var(--header-tab-size);
-    font-weight: var(--header-tab-weight);
-    line-height: var(--header-tab-leading);
-  }
-
-  &--inactive:is(button):hover {
-    background: transparent;
-  }
-
-  &--pending {
-    opacity: 0.72;
-  }
-
-  &--inactive:is(button):focus-visible {
+  &:focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
@@ -367,12 +213,11 @@ function openCreatorCard() {
 
 .workflow-step-badge {
   border-radius: 999px;
-  border: 1px solid hsl(var(--border));
-  padding: 0 0.25rem;
+  padding: 0 0.375rem;
   font-size: 0.625rem;
   line-height: 1rem;
   color: hsl(var(--muted-foreground));
-  background: hsl(var(--muted) / 0.45);
+  background: hsl(var(--muted) / 0.6);
 }
 
 .menubar {

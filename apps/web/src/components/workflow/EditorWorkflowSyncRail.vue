@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Palette } from 'lucide-vue-next'
+import { Copy, MoreHorizontal, Palette } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { inject } from 'vue'
 import EditDropdown from '@/components/editor/editor-header/EditDropdown.vue'
@@ -10,7 +10,7 @@ import InsertDropdown from '@/components/editor/editor-header/InsertDropdown.vue
 import PostInfo from '@/components/editor/editor-header/PostInfo.vue'
 import StyleDropdown from '@/components/editor/editor-header/StyleDropdown.vue'
 import { Button } from '@/components/ui/button'
-import { Menubar } from '@/components/ui/menubar'
+import { Menubar, MenubarContent, MenubarMenu, MenubarTrigger } from '@/components/ui/menubar'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { useUIStore } from '@/stores/ui'
@@ -36,65 +36,67 @@ function copyToWeChat() {
 </script>
 
 <template>
+  <!--
+    /sync 页面右侧操作区:
+    - 主操作:复制 / 发布(PostInfo) / 样式面板切换
+    - 次级菜单:6 个 dropdown(文件/编辑/格式/插入/样式/帮助)收进单个「⋯」入口,
+      节省顶部纵向空间;键盘和鼠标都能照常逐项展开,只是少一行视觉重量
+  -->
   <div
-    class="editor-workflow-sync-rail flex w-full min-w-0 flex-col gap-2.5 lg:max-w-none lg:items-end"
+    class="editor-workflow-sync-rail flex w-full min-w-0 flex-wrap items-center justify-end gap-2"
   >
-    <!-- 主操作：横向排列，禁止再套 max-w-min 之类会把文字压成竖条的样式 -->
-    <div class="flex w-full min-w-0 flex-wrap items-center justify-end gap-2">
-      <Button
-        variant="outline"
-        class="h-9 shrink-0"
-        type="button"
-        @click="copyToWeChat"
-      >
-        <Copy class="mr-2 h-4 w-4" />
-        <span>复制</span>
-      </Button>
-
-      <div class="shrink-0">
-        <PostInfo />
-      </div>
-
-      <Button
-        variant="outline"
-        class="h-9 shrink-0"
-        type="button"
-        :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
-        @click="isOpenRightSlider = !isOpenRightSlider"
-      >
-        <Palette class="mr-2 h-4 w-4" />
-        <span>侧栏</span>
-      </Button>
-    </div>
-
-    <!-- 次级菜单：始终横向，窄屏可横向滚动，避免竖排文字 -->
-    <div
-      class="sync-rail-menubar w-full min-w-0 lg:flex lg:justify-end"
-      aria-label="同步与编辑菜单"
+    <Button
+      variant="outline"
+      size="sm"
+      class="h-9 shrink-0"
+      type="button"
+      @click="copyToWeChat"
     >
-      <div
-        class="min-w-0 max-w-full overflow-x-auto overflow-y-hidden pb-0.5 [-ms-overflow-style:none] [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border"
-      >
-        <div
-          class="inline-flex w-max min-w-0 rounded-md border border-border/80 bg-background/95 p-0.5 dark:bg-background/80"
-        >
-          <Menubar
-            class="menubar menubar--secondary flex h-auto flex-nowrap items-center gap-1 border-0 bg-transparent p-0 shadow-none"
-          >
-            <FileDropdown @open-editor-state="handleOpenEditorState" />
-            <EditDropdown @copy="handleCopy" />
-            <FormatDropdown />
-            <InsertDropdown />
-            <StyleDropdown />
-            <HelpDropdown
-              @open-about="handleOpenAbout"
-              @open-fund="handleOpenFund"
-              @open-markdown-help="handleOpenMarkdownHelp"
-            />
-          </Menubar>
-        </div>
-      </div>
+      <Copy class="mr-2 h-4 w-4" />
+      <span>复制</span>
+    </Button>
+
+    <div class="shrink-0">
+      <PostInfo />
     </div>
+
+    <Button
+      variant="outline"
+      size="sm"
+      class="h-9 shrink-0"
+      :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
+      type="button"
+      :title="isOpenRightSlider ? '隐藏样式面板' : '显示样式面板'"
+      @click="isOpenRightSlider = !isOpenRightSlider"
+    >
+      <Palette class="mr-2 h-4 w-4" />
+      <span>样式</span>
+    </Button>
+
+    <Menubar class="menubar menubar--secondary shrink-0 border-0 bg-transparent p-0 shadow-none">
+      <MenubarMenu>
+        <MenubarTrigger
+          class="more-menu-trigger inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+          aria-label="更多编辑菜单"
+        >
+          <MoreHorizontal class="size-4" />
+          <span>菜单</span>
+        </MenubarTrigger>
+        <MenubarContent align="end" class="min-w-[10rem]">
+          <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
+          <EditDropdown :as-sub="true" @copy="handleCopy" />
+          <FormatDropdown :as-sub="true" />
+          <InsertDropdown :as-sub="true" />
+          <StyleDropdown :as-sub="true" />
+          <HelpDropdown
+            :as-sub="true"
+            @open-about="handleOpenAbout"
+            @open-fund="handleOpenFund"
+            @open-markdown-help="handleOpenMarkdownHelp"
+          />
+        </MenubarContent>
+      </MenubarMenu>
+    </Menubar>
   </div>
 </template>
 

@@ -7,11 +7,12 @@
  * 提供。`<KeepAlive>` 保证用户在 6 个 workflow 路由间切换时编辑器实例不重建,
  * codemirror 内容、光标、滚动位置、面板尺寸全部保留。
  */
-import { ChevronDown, RefreshCw } from 'lucide-vue-next'
+import { HelpCircle, RefreshCw } from 'lucide-vue-next'
 import { provide } from 'vue'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -175,34 +176,31 @@ onUnmounted(() => {
     <WorkflowPageShell :scroll-body="false">
       <template #header>
         <div
-          class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6"
+          class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
         >
-          <div class="min-w-0 max-w-xl">
+          <!-- 标题 + 说明气泡(取代原先单独占两行的描述 + COSE/CSYNC details) -->
+          <div class="flex min-w-0 items-center gap-1.5">
             <WorkflowPageTitle>
               <template #icon>
                 <RefreshCw />
               </template>
               内容同步
             </WorkflowPageTitle>
-            <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-              左栏定稿 Markdown，右栏核对图文；分发时点「发布」写各站草稿。
-            </p>
-            <details
-              class="group mt-2 w-full overflow-hidden rounded-md border border-border/50 bg-muted/10 dark:bg-muted/5"
-            >
-              <summary
-                class="flex cursor-pointer list-none items-center gap-2 px-2.5 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground [&::-webkit-details-marker]:hidden"
-              >
-                <ChevronDown
-                  class="h-3.5 w-3.5 shrink-0 transition-transform duration-200 group-open:rotate-180"
-                  aria-hidden="true"
-                />
-                COSE / CSYNC 说明（可选）
-              </summary>
-              <div
-                class="space-y-2 border-t border-border/40 px-2.5 py-2.5 text-xs leading-relaxed text-muted-foreground"
-              >
-                <p>
+            <Popover>
+              <PopoverTrigger as-child>
+                <button
+                  type="button"
+                  class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  aria-label="关于本页说明"
+                >
+                  <HelpCircle class="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent class="w-80 text-xs leading-relaxed text-muted-foreground" align="start">
+                <p class="text-foreground font-medium">
+                  左栏定稿 Markdown，右栏核对图文；分发时点「发布」写各站草稿。
+                </p>
+                <p class="mt-2">
                   各站编辑页差异大，编辑器用双扩展：多数平台走
                   <a
                     href="https://github.com/doocs/cose"
@@ -210,26 +208,25 @@ onUnmounted(() => {
                     rel="noopener noreferrer"
                     class="font-medium text-foreground underline underline-offset-2"
                   >COSE</a>
-                  （商店「cose 文章同步助手」）；知乎 / 公众号 / 微博可优先走
+                  ；知乎 / 公众号 / 微博可优先走
                   <span class="font-medium text-foreground">CSYNC</span>
-                  （页面桥接为 <code class="rounded bg-muted px-1 py-px text-[10px]">$pluginSyncer</code>）。
+                  （页面桥接 <code class="rounded bg-muted px-1 py-px text-[10px]">$pluginSyncer</code>）。
                   CSYNC 请
                   <a
                     href="#"
                     class="font-medium text-foreground underline underline-offset-2"
                     @click.prevent="downloadCsyncExtensionZip()"
-                  >从本站下载 .zip</a>
-                  解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载（与「发布」对话框一致）。
+                  >下载 .zip</a>
+                  解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载。
                 </p>
-                <p class="text-[11px] leading-relaxed">
+                <p class="mt-2 text-[11px]">
                   「发布」里带 CSYNC 角标的由 CSYNC 写入，其余由 COSE 处理。
                 </p>
-              </div>
-            </details>
+              </PopoverContent>
+            </Popover>
           </div>
-          <div
-            class="min-w-0 w-full shrink-0 lg:w-auto lg:max-w-[42rem]"
-          >
+
+          <div class="min-w-0 shrink-0">
             <EditorWorkflowSyncRail />
           </div>
         </div>
