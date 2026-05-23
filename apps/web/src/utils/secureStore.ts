@@ -13,6 +13,8 @@
  *   - 同源 XSS(攻击者依然可以调用 `secureStore.get` 解密)
  *   该层是纵深防御的一层,不是终极方案。真正高敏感凭证应当用后端代理 + 短期 token。
  */
+import type { Ref } from 'vue'
+import { ref, watch } from 'vue'
 import { store } from './storage'
 
 const DB_NAME = `__md_sec__`
@@ -196,6 +198,102 @@ export const secureStore = {
 
   async remove(key: string): Promise<void> {
     await store.remove(key)
+  },
+
+  /**
+   * 读取并 JSON 反序列化加密对象;明文(legacy)首次读取触发就地迁移。
+   * 解析失败或没有数据时返回 defaultValue。
+   */
+  async getJSON<T>(key: string, defaultValue: T): Promise<T> {
+    const raw = await store.get(key)
+    if (raw == null)
+      return defaultValue
+
+    if (!isCiphertext(raw)) {
+      // 旧版明文 JSON:解析后立即加密回写,做无感迁移
+      try {
+        const parsed = JSON.parse(raw) as T
+        try {
+          await this.setJSON(key, parsed)
+        }
+        catch (err) {
+          warnFallback(err)
+        }
+        return parsed
+      }
+      catch (err) {
+        console.warn(`[secureStore] legacy JSON parse failed for`, key, err)
+        return defaultValue
+      }
+    }
+
+    try {
+      const plain = await decryptString(raw)
+      if (plain == null)
+        return defaultValue
+      return JSON.parse(plain) as T
+    }
+    catch (err) {
+      warnFallback(err)
+      return defaultValue
+    }
+  },
+
+  async setJSON<T>(key: string, value: T): Promise<void> {
+    let text: string
+    try {
+      text = JSON.stringify(value)
+    }
+    catch (err) {
+      console.error(`[secureStore] stringify failed for`, key, err)
+      throw err
+    }
+    await this.set(key, text)
+  },
+
+  /**
+   * 加密版的 `store.reactive`:
+   * - 同步返回带 defaultValue 的 Ref<T>(首次渲染不阻塞)
+   * - 异步解密 / 反序列化已存值,落入 ref
+   * - deep watch,任何修改自动加密回写
+   * - 老明文 JSON 在首次读取时自动迁移到密文
+   *
+   * 与 `store.reactive` 不同的是:**初始值始终是 defaultValue**(因为解密是
+   * 异步)。在表单等场景里,绑定 `:initial-values` 时,vee-validate v4 会跟随
+   * 这个 Ref 变化重置表单值;若使用方依赖同步初值,请改用其它方式。
+   */
+  reactiveJSON<T extends object>(key: string, defaultValue: T): Ref<T> {
+    const data = ref<T>({ ...defaultValue } as T) as Ref<T>
+
+    let suppressNextWatch = false
+    this.getJSON<T>(key, defaultValue).then((loaded) => {
+      // 仅在确实有持久化值时覆盖默认值;避免把 defaultValue 立即触发写回
+      if (loaded !== defaultValue) {
+        suppressNextWatch = true
+        data.value = { ...loaded }
+      }
+    }).catch((err) => {
+      console.warn(`[secureStore] reactiveJSON load failed:`, key, err)
+    })
+
+    // 在下个微任务才挂 watch,避免初始赋值触发一次无意义的加密写
+    Promise.resolve().then(() => {
+      watch(
+        data,
+        (newValue) => {
+          if (suppressNextWatch) {
+            suppressNextWatch = false
+            return
+          }
+          this.setJSON(key, newValue).catch((err) => {
+            console.error(`[secureStore] reactiveJSON save failed:`, key, err)
+          })
+        },
+        { deep: true },
+      )
+    })
+
+    return data
   },
 }
 

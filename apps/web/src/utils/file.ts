@@ -8,6 +8,7 @@ import Buffer from 'buffer-from'
 import CryptoJS from 'crypto-js'
 import * as qiniu from 'qiniu-js'
 import { v4 as uuidv4 } from 'uuid'
+import { secureStore } from './secureStore'
 import { store } from './storage'
 
 const IMG_HOST_CONFIG_HINT = `请先在「图片上传」对话框中选择图床并完成配置`
@@ -44,7 +45,7 @@ async function defaultImgbedUpload(content: string, filename: string) {
 }
 
 async function getRepoConfig(platform: `github` | `gitee`) {
-  const customConfig = await store.getJSON<any>(`${platform}Config`, {}) || {}
+  const customConfig = await secureStore.getJSON<any>(`${platform}Config`, {}) || {}
   const repoUrl = customConfig.repo
     ?.replace(`https://${platform}.com/`, ``)
     ?.replace(`http://${platform}.com/`, ``)
@@ -182,8 +183,10 @@ function getQiniuToken(accessKey: string, secretKey: string, putPolicy: {
 }
 
 async function qiniuUpload(file: File) {
-  const configStr = await store.get(`qiniuConfig`)
-  const { accessKey, secretKey, bucket, region, path, domain } = JSON.parse(configStr!)
+  const config = await secureStore.getJSON<any>(`qiniuConfig`, null as any)
+  if (!config)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  const { accessKey, secretKey, bucket, region, path, domain } = config
   const token = getQiniuToken(accessKey, secretKey, {
     scope: bucket,
     deadline: Math.trunc(Date.now() / 1000) + 3600,
@@ -212,7 +215,7 @@ async function qiniuUpload(file: File) {
 
 async function aliOSSFileUpload(file: File) {
   const dateFilename = getDateFilename(file.name)
-  const config = await store.getJSON(`aliOSSConfig`, { region: ``, bucket: ``, accessKeyId: ``, accessKeySecret: ``, useSSL: true, cdnHost: ``, path: `` })
+  const config = await secureStore.getJSON(`aliOSSConfig`, { region: ``, bucket: ``, accessKeyId: ``, accessKeySecret: ``, useSSL: true, cdnHost: ``, path: `` })
   const { region, bucket, accessKeyId, accessKeySecret, useSSL, cdnHost, path }
     = config || { region: ``, bucket: ``, accessKeyId: ``, accessKeySecret: ``, useSSL: true, cdnHost: ``, path: `` }
 
@@ -276,8 +279,10 @@ async function aliOSSFileUpload(file: File) {
 
 async function txCOSFileUpload(file: File) {
   const dateFilename = getDateFilename(file.name)
-  const configStr = await store.get(`txCOSConfig`)
-  const { secretId, secretKey, bucket, region, path, cdnHost } = JSON.parse(configStr!)
+  const config = await secureStore.getJSON<any>(`txCOSConfig`, null as any)
+  if (!config)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  const { secretId, secretKey, bucket, region, path, cdnHost } = config
 
   // Transform txCOSConfig to S3 format
   // Tencent Cloud COS S3 endpoint: https://cos.<Region>.myqcloud.com
@@ -341,8 +346,10 @@ async function txCOSFileUpload(file: File) {
 
 async function minioFileUpload(file: File) {
   const dateFilename = getDateFilename(file.name)
-  const configStr = await store.get(`minioConfig`)
-  const { endpoint, port, useSSL, bucket, accessKey, secretKey } = JSON.parse(configStr!)
+  const config = await secureStore.getJSON<any>(`minioConfig`, null as any)
+  if (!config)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  const { endpoint, port, useSSL, bucket, accessKey, secretKey } = config
   const s3Client = new S3Client({
     endpoint: `${useSSL ? `https` : `http`}://${endpoint}${port ? `:${port}` : ``}`,
     credentials: {
@@ -377,7 +384,7 @@ const PROTOCOL_REGEX = /^https?:\/\//
 
 async function s3Upload(file: File) {
   const dateFilename = getDateFilename(file.name)
-  const config = await store.getJSON(`s3Config`, {
+  const config = await secureStore.getJSON(`s3Config`, {
     endpoint: ``,
     region: ``,
     bucket: ``,
@@ -461,12 +468,9 @@ interface MpResponse {
   errmsg: string
 }
 async function getMpToken(appID: string, appsecret: string, proxyOrigin: string) {
-  const data = await store.get(`mpToken:${appID}`)
-  if (data) {
-    const token = JSON.parse(data)
-    if (token.expire && token.expire > Date.now()) {
-      return token.access_token
-    }
+  const token = await secureStore.getJSON<any>(`mpToken:${appID}`, null as any)
+  if (token && token.expire && token.expire > Date.now()) {
+    return token.access_token
   }
   const requestOptions = {
     method: `POST`,
@@ -486,7 +490,7 @@ async function getMpToken(appID: string, appsecret: string, proxyOrigin: string)
       ...res,
       expire: Date.now() + res.expires_in * 1000,
     }
-    await store.setJSON(`mpToken:${appID}`, tokenInfo)
+    await secureStore.setJSON(`mpToken:${appID}`, tokenInfo)
     return res.access_token
   }
   return ``
@@ -495,8 +499,10 @@ async function getMpToken(appID: string, appsecret: string, proxyOrigin: string)
 const isCfWorkers = import.meta.env.CF_WORKERS === `1`
 
 async function mpFileUpload(file: File) {
-  const configStr = await store.get(`mpConfig`)
-  let { appID, appsecret, proxyOrigin } = JSON.parse(configStr!)
+  const config = await secureStore.getJSON<any>(`mpConfig`, null as any)
+  if (!config)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  let { appID, appsecret, proxyOrigin } = config
   // 未填写代理域名且是 Cloudflare Workers 环境时，使用当前域名作为代理域名
   if (!proxyOrigin && isCfWorkers) {
     proxyOrigin = window.location.origin
@@ -543,8 +549,10 @@ async function mpFileUpload(file: File) {
 // -----------------------------------------------------------------------
 
 async function r2Upload(file: File) {
-  const configStr = await store.get(`r2Config`)
-  const { accountId, accessKey, secretKey, bucket, path, domain } = JSON.parse(configStr!)
+  const config = await secureStore.getJSON<any>(`r2Config`, null as any)
+  if (!config)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  const { accountId, accessKey, secretKey, bucket, path, domain } = config
   const dir = path ? `${path}/` : ``
   const filename = dir + getDateFilename(file.name)
   const client = new S3Client({ region: `auto`, endpoint: `https://${accountId}.r2.cloudflarestorage.com`, credentials: { accessKeyId: accessKey, secretAccessKey: secretKey } })
@@ -568,8 +576,10 @@ async function r2Upload(file: File) {
 // -----------------------------------------------------------------------
 
 async function upyunUpload(file: File) {
-  const configStr = await store.get(`upyunConfig`)
-  const { bucket, operator, password, path, domain } = JSON.parse(configStr!)
+  const config = await secureStore.getJSON<any>(`upyunConfig`, null as any)
+  if (!config)
+    throw new Error(IMG_HOST_CONFIG_HINT)
+  const { bucket, operator, password, path, domain } = config
   const filename = `${path}/${getDateFilename(file.name)}`
   const uri = `/${bucket}/${filename}`
   const arrayBuffer = await file.arrayBuffer()
@@ -601,7 +611,7 @@ async function upyunUpload(file: File) {
 // Telegram File Upload
 // -----------------------------------------------------------------------
 async function telegramUpload(file: File): Promise<string> {
-  const config = await store.getJSON(`telegramConfig`, { token: ``, chatId: `` })
+  const config = await secureStore.getJSON(`telegramConfig`, { token: ``, chatId: `` })
   const { token, chatId } = config || { token: ``, chatId: `` }
 
   // 1. sendPhoto
@@ -659,7 +669,7 @@ async function telegramUpload(file: File): Promise<string> {
  * }
  */
 async function cloudinaryUpload(file: File): Promise<string> {
-  const config = await store.getJSON(`cloudinaryConfig`, { cloudName: ``, apiKey: ``, apiSecret: ``, uploadPreset: ``, folder: ``, domain: `` })
+  const config = await secureStore.getJSON(`cloudinaryConfig`, { cloudName: ``, apiKey: ``, apiSecret: ``, uploadPreset: ``, folder: ``, domain: `` })
   const {
     cloudName,
     apiKey,

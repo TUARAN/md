@@ -6,6 +6,7 @@ import * as yup from 'yup'
 import { useUIStore } from '@/stores/ui'
 import { checkImage } from '@/utils'
 import { isImgHostConfigured } from '@/utils/file'
+import { secureStore } from '@/utils/secureStore'
 import { store } from '@/utils/storage'
 
 const emit = defineEmits([`uploadImage`])
@@ -22,7 +23,7 @@ const githubSchema = toTypedSchema(yup.object({
   useCDN: yup.boolean().required(),
 }))
 
-const githubConfig = store.reactive(`githubConfig`, { repo: ``, branch: ``, accessToken: ``, useCDN: false })
+const githubConfig = secureStore.reactiveJSON(`githubConfig`, { repo: ``, branch: ``, accessToken: ``, useCDN: false })
 
 async function githubSubmit(formValues: any) {
   Object.assign(githubConfig.value, formValues)
@@ -40,7 +41,7 @@ const aliOSSSchema = toTypedSchema(yup.object({
   path: yup.string().optional(),
 }))
 
-const aliOSSConfig = store.reactive(`aliOSSConfig`, {
+const aliOSSConfig = secureStore.reactiveJSON(`aliOSSConfig`, {
   accessKeyId: ``,
   accessKeySecret: ``,
   bucket: ``,
@@ -65,7 +66,7 @@ const txCOSSchema = toTypedSchema(yup.object({
   path: yup.string().optional(),
 }))
 
-const txCOSConfig = store.reactive(`txCOSConfig`, {
+const txCOSConfig = secureStore.reactiveJSON(`txCOSConfig`, {
   secretId: ``,
   secretKey: ``,
   bucket: ``,
@@ -89,7 +90,7 @@ const qiniuSchema = toTypedSchema(yup.object({
   path: yup.string().optional(),
 }))
 
-const qiniuConfig = store.reactive(`qiniuConfig`, {
+const qiniuConfig = secureStore.reactiveJSON(`qiniuConfig`, {
   accessKey: ``,
   secretKey: ``,
   bucket: ``,
@@ -113,7 +114,7 @@ const minioOSSSchema = toTypedSchema(yup.object({
   secretKey: yup.string().required(`SecretKey 不能为空`),
 }))
 
-const minioOSSConfig = store.reactive(`minioConfig`, {
+const minioOSSConfig = secureStore.reactiveJSON(`minioConfig`, {
   endpoint: ``,
   port: ``,
   useSSL: true,
@@ -139,7 +140,7 @@ const s3Schema = toTypedSchema(yup.object({
   pathStyle: yup.boolean().optional(),
 }))
 
-const s3Config = store.reactive(`s3Config`, {
+const s3Config = secureStore.reactiveJSON(`s3Config`, {
   endpoint: ``,
   region: ``,
   bucket: ``,
@@ -163,7 +164,7 @@ const telegramSchema = toTypedSchema(
   }),
 )
 
-const telegramConfig = store.reactive(`telegramConfig`, { token: ``, chatId: `` })
+const telegramConfig = secureStore.reactiveJSON(`telegramConfig`, { token: ``, chatId: `` })
 
 async function telegramSubmit(values: any) {
   Object.assign(telegramConfig.value, values)
@@ -201,7 +202,7 @@ const mpSchema = computed(() =>
   })),
 )
 
-const mpConfig = store.reactive(`mpConfig`, {
+const mpConfig = secureStore.reactiveJSON(`mpConfig`, {
   proxyOrigin: ``,
   appID: ``,
   appsecret: ``,
@@ -222,7 +223,7 @@ const r2Schema = toTypedSchema(yup.object({
   path: yup.string().optional(),
 }))
 
-const r2Config = store.reactive(`r2Config`, {
+const r2Config = secureStore.reactiveJSON(`r2Config`, {
   accountId: ``,
   accessKey: ``,
   secretKey: ``,
@@ -247,7 +248,7 @@ const upyunSchema = computed(() => toTypedSchema(
   }),
 ))
 
-const upyunConfig = store.reactive(`upyunConfig`, {
+const upyunConfig = secureStore.reactiveJSON(`upyunConfig`, {
   bucket: ``,
   operator: ``,
   password: ``,
@@ -276,7 +277,7 @@ const cloudinarySchema = toTypedSchema(
   }),
 )
 
-const cloudinaryConfig = store.reactive(`cloudinaryConfig`, {
+const cloudinaryConfig = secureStore.reactiveJSON(`cloudinaryConfig`, {
   cloudName: ``,
   apiKey: ``,
   apiSecret: ``,
