@@ -737,7 +737,7 @@ async function cloudinaryUpload(file: File): Promise<string> {
 // -----------------------------------------------------------------------
 
 async function formCustomUpload(content: string, file: File) {
-  const customConfig = await store.get(`formCustomConfig`)
+  const customConfig = await secureStore.get(`formCustomConfig`)
   const str = `
     async (CUSTOM_ARG) => {
       ${customConfig}
