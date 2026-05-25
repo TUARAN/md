@@ -23,7 +23,7 @@ const config = secureStore.reactiveJSON(`txCOSConfig`, {
   path: ``,
 })
 
-async function onSubmit(values: typeof config.value) {
+async function onSubmit(values: Record<string, unknown>) {
   Object.assign(config.value, values)
   toast.success(`保存成功`)
 }

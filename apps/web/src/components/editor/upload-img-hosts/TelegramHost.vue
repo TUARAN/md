@@ -12,7 +12,7 @@ const schema = toTypedSchema(yup.object({
 
 const config = secureStore.reactiveJSON(`telegramConfig`, { token: ``, chatId: `` })
 
-async function onSubmit(values: typeof config.value) {
+async function onSubmit(values: Record<string, unknown>) {
   Object.assign(config.value, values)
   toast.success(`保存成功`)
 }

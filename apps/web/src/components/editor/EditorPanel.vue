@@ -228,7 +228,6 @@ async function showFileStructure(root: FileSystemDirectoryHandle) {
     const dirs: FileSystemDirectoryHandle[] = [root]
     for (const dir of dirs) {
       cwd += `${dir.name}/`
-      // @ts-expect-error FileSystem Access API 的 async iteration 类型在某些 TS lib 版本中缺失
       for await (const [, handle] of dir) {
         if (handle.kind === `file`) {
           result.push({
@@ -294,9 +293,12 @@ function mdLocalToRemote() {
     for (const item of evt.dataTransfer.items.filter(item => item.kind === `file`)) {
       item
         .getAsFileSystemHandle()
-        .then(async (handle: { kind: string, getFile: () => any }) => {
+        .then(async (handle: FileSystemHandle | null) => {
+          if (handle == null) {
+            return
+          }
           if (handle.kind === `directory`) {
-            const list = (await showFileStructure(handle)) as {
+            const list = (await showFileStructure(handle as FileSystemDirectoryHandle)) as {
               path: string
               file: File
             }[]
@@ -304,7 +306,7 @@ function mdLocalToRemote() {
             uploadMdImg({ md, list })
           }
           else {
-            const file = await handle.getFile()
+            const file = await (handle as FileSystemFileHandle).getFile()
             if (await beforeImageUpload(file)) {
               uploadImage(file)
             }
