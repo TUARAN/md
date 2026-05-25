@@ -198,9 +198,9 @@ async function runAIAction() {
       },
     })
   }
-  catch (e: any) {
+  catch (e) {
     console.error(`请求失败：`, e)
-    error.value = e.message || `请求失败`
+    error.value = e instanceof Error ? e.message : `请求失败`
   }
 }
 

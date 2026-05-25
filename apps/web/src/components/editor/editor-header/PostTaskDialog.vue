@@ -100,8 +100,8 @@ async function runPluginSyncerPublish(accounts: PostAccount[]) {
         task => applyPluginProgress(task),
       )
     }
-    catch (e: any) {
-      markAccountsFailed(accounts, e?.message || `CSYNC 发布失败`)
+    catch (e) {
+      markAccountsFailed(accounts, e instanceof Error ? e.message : `CSYNC 发布失败`)
     }
     return
   }
@@ -186,8 +186,8 @@ async function startPost(targetAccounts?: PostAccount[]) {
           catch (e) {
             reject(e)
           }
-        }).catch((e: any) => {
-          markAccountsFailed(cose, e?.message || `COSE 发布失败`)
+        }).catch((e: unknown) => {
+          markAccountsFailed(cose, e instanceof Error ? e.message : `COSE 发布失败`)
         })
       }
     }

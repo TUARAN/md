@@ -770,7 +770,7 @@ async function formCustomUpload(content: string, file: File) {
     // Use Function constructor instead of eval
     // eslint-disable-next-line no-new-func
     const fn = new Function(`return (${str})`)()
-    fn(exportObj).catch((err: any) => {
+    fn(exportObj).catch((err: unknown) => {
       console.error(err)
       reject(err)
     })

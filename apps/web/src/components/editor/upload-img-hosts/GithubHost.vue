@@ -14,7 +14,7 @@ const schema = toTypedSchema(yup.object({
 
 const config = secureStore.reactiveJSON(`githubConfig`, { repo: ``, branch: ``, accessToken: ``, useCDN: false })
 
-async function onSubmit(values: any) {
+async function onSubmit(values: typeof config.value) {
   Object.assign(config.value, values)
   toast.success(`保存成功`)
 }

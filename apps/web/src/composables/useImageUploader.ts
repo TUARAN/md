@@ -71,12 +71,14 @@ export function useImageUploader() {
         const blob = await fetchBlob(proxyUrl)
         return new File([blob], filename, { type: blob.type })
       }
-      catch (proxyErr: any) {
+      catch (proxyErr) {
         console.error(`Proxy fetch failed for ${url}`, proxyErr)
-        const isCors = proxyErr.message.includes('Failed to fetch') || proxyErr.name === 'TypeError'
+        const proxyMsg = proxyErr instanceof Error ? proxyErr.message : String(proxyErr)
+        const isCors = proxyMsg.includes('Failed to fetch')
+          || (proxyErr instanceof TypeError)
         const msg = isCors
           ? '跨域请求失败：目标图片禁止了跨域访问，且代理服务也无法获取。'
-          : `图片下载失败: ${proxyErr.message}`
+          : `图片下载失败: ${proxyMsg}`
         throw new Error(msg)
       }
     }
@@ -113,9 +115,9 @@ export function useImageUploader() {
 
       return url
     }
-    catch (err: any) {
+    catch (err) {
       console.error(err)
-      const msg = err.message || '上传失败'
+      const msg = err instanceof Error ? err.message : '上传失败'
       error.value = msg
       throw new Error(msg)
     }

@@ -129,13 +129,13 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
 
       toast.success(`文件夹「${handle.name}」已打开`)
     }
-    catch (error: any) {
-      if (error.name === `AbortError`) {
-        // 用户取消了选择
+    catch (error) {
+      // 用户取消了文件选择对话框,不算异常
+      if (error instanceof DOMException && error.name === `AbortError`)
         return
-      }
-      loadError.value = error.message || `打开文件夹失败`
-      toast.error(`打开文件夹失败: ${error.message}`)
+      const msg = error instanceof Error ? error.message : String(error)
+      loadError.value = msg || `打开文件夹失败`
+      toast.error(`打开文件夹失败: ${msg}`)
     }
     finally {
       isLoading.value = false
@@ -171,8 +171,8 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       const tree = await buildFileTree(handle, handle.name)
       fileTree.value = [tree]
     }
-    catch (error: any) {
-      loadError.value = error.message || `加载文件树失败`
+    catch (error) {
+      loadError.value = error instanceof Error ? error.message : `加载文件树失败`
       throw error
     }
   }
@@ -221,7 +221,7 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
         return a.name.localeCompare(b.name, `zh-CN`)
       })
     }
-    catch (error: any) {
+    catch (error) {
       console.error(`读取目录失败: ${path}`, error)
     }
 
@@ -252,8 +252,9 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       const file = await fileHandle.getFile()
       return await file.text()
     }
-    catch (error: any) {
-      toast.error(`读取文件失败: ${error.message}`)
+    catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      toast.error(`读取文件失败: ${msg}`)
       throw error
     }
   }
@@ -292,8 +293,8 @@ export const useFolderSourceStore = defineStore(`folderSource`, () => {
       await writable.write(content)
       await writable.close()
     }
-    catch (error: any) {
-      console.error(`保存文件失败: ${error.message}`)
+    catch (error) {
+      console.error(`保存文件失败:`, error)
       throw error
     }
   }

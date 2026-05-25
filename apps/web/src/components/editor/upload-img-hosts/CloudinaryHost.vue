@@ -29,7 +29,7 @@ const config = secureStore.reactiveJSON(`cloudinaryConfig`, {
   domain: ``,
 })
 
-async function onSubmit(values: any) {
+async function onSubmit(values: typeof config.value) {
   Object.assign(config.value, values)
   toast.success(`保存成功`)
 }

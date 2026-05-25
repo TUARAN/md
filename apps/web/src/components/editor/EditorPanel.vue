@@ -176,7 +176,7 @@ async function compressImage(file: File) {
 
 async function uploadImage(
   file: File,
-  cb?: { (url: any, data: string): void, (arg0: unknown): void } | undefined,
+  cb?: ((url: string, data: string) => void),
   applyUrl?: boolean,
 ) {
   try {
@@ -198,7 +198,7 @@ async function uploadImage(
     }
   }
   catch (err) {
-    toast.error((err as any).message)
+    toast.error(err instanceof Error ? err.message : String(err))
   }
   finally {
     isImgLoading.value = false
@@ -221,25 +221,24 @@ async function getMd({ list }: { list: { path: string, file: File }[] }) {
   })
 }
 
-async function showFileStructure(root: any) {
-  const result = []
+async function showFileStructure(root: FileSystemDirectoryHandle) {
+  const result: Array<{ path: string, file?: File }> = []
   let cwd = ``
   try {
-    const dirs = [root]
+    const dirs: FileSystemDirectoryHandle[] = [root]
     for (const dir of dirs) {
       cwd += `${dir.name}/`
+      // @ts-expect-error FileSystem Access API 的 async iteration 类型在某些 TS lib 版本中缺失
       for await (const [, handle] of dir) {
         if (handle.kind === `file`) {
           result.push({
             path: cwd + handle.name,
-            file: await handle.getFile(),
+            file: await (handle as FileSystemFileHandle).getFile(),
           })
         }
         else {
-          result.push({
-            path: `${cwd + handle.name}/`,
-          })
-          dirs.push(handle)
+          result.push({ path: `${cwd + handle.name}/` })
+          dirs.push(handle as FileSystemDirectoryHandle)
         }
       }
     }

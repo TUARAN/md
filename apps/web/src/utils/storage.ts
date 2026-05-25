@@ -88,7 +88,7 @@ export class RestfulStorageEngine implements StorageEngine {
     private getAuthToken?: () => string | null,
   ) {}
 
-  private async request(method: string, endpoint: string, data?: any): Promise<any> {
+  private async request(method: string, endpoint: string, data?: unknown): Promise<unknown> {
     const headers: HeadersInit = {
       'Content-Type': `application/json`,
     }
@@ -113,8 +113,8 @@ export class RestfulStorageEngine implements StorageEngine {
 
   async get(key: string): Promise<string | null> {
     try {
-      const result = await this.request(`GET`, `/storage/${encodeURIComponent(key)}`)
-      return result.value ?? null
+      const result = await this.request(`GET`, `/storage/${encodeURIComponent(key)}`) as { value?: string } | null
+      return result?.value ?? null
     }
     catch {
       return null
@@ -144,8 +144,8 @@ export class RestfulStorageEngine implements StorageEngine {
   }
 
   async keys(): Promise<string[]> {
-    const result = await this.request(`GET`, `/storage/keys`)
-    return result.keys ?? []
+    const result = await this.request(`GET`, `/storage/keys`) as { keys?: string[] } | null
+    return result?.keys ?? []
   }
 }
 
@@ -335,7 +335,7 @@ class StorageManager {
         trigger()
 
         // 异步保存
-        this.setJSON(key, valueToStore).catch((error: any) => {
+        this.setJSON(key, valueToStore).catch((error: unknown) => {
           console.error(`[Storage] Failed to save custom reactive data:`, key, error)
         })
       },

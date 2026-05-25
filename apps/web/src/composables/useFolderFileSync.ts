@@ -36,7 +36,7 @@ export function useFolderFileSync() {
     try {
       await folderStore.writeFile(filePath, content)
     }
-    catch (error: any) {
+    catch (error) {
       console.error('文件同步失败:', error)
     }
   }
