@@ -30,8 +30,7 @@
     "type-check": "pnpm --filter @md/web type-check",
     "postinstall": "simple-git-hooks",
     "inspector": "pnpx node-modules-inspector",
-    "utools:package": "node ./scripts/package-utools.mjs",
-    "package:csync": "node ./scripts/package-csync-extension.mjs"
+    "utools:package": "node ./scripts/package-utools.mjs"
   },
   "dependencies": {
     "@codemirror/state": "6.6.0",

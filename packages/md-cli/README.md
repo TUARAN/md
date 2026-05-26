@@ -16,7 +16,7 @@ pnpm cli -- port=8800
 
 ## 通过 npm 安装（上游包名，仅编辑器本体）
 
-npm 包名仍为 `@doocs/md-cli`（历史兼容）。若只需上游编辑器、不需要本站 CSYNC / 工作流，可：
+npm 包名仍为 `@doocs/md-cli`（历史兼容）。若只需上游编辑器、不需要本站工作流，可：
 
 ```bash
 npm install -g @doocs/md-cli

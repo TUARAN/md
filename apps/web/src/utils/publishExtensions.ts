@@ -1,35 +1,9 @@
-import type { Post, PostAccount } from '@md/shared/types'
-
-/**
- * 优先走 CSYNC（$pluginSyncer）的平台白名单。
- *
- * 2026-05：CSYNC 已降为可选项，主推路径是改造版 COSE（TUARAN/cose）—— 它已经
- * 覆盖知乎/公众号/微博/思否，没有任何平台需要"必须由 CSYNC 写入"。
- * 这里保留为空 Set 但不删，是因为：
- *  - 运行时仍探测 `$pluginSyncer`，装了 CSYNC 的老用户继续工作
- *  - 想临时把某平台切回 CSYNC 通道时，往这里加 type 即可（不需要改路由逻辑）
- *  - 类型签名稳定，`mergeCoseAndPluginSyncerAccounts` / `isPluginSyncerAccount`
- *    依赖这个集合，清掉就坏
- */
-export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set<string>()
-
-export type PostAccountSyncSource = `cose` | `plugin-syncer`
-
-/**
- * 账号是否由 CSYNC（plugin-syncer）发布。
- * 这是 CSYNC / COSE 路由的唯一判定——merge 标注与 partition 分桶必须共用它，
- * 否则会出现「标成 plugin-syncer 却被分到 COSE 桶」的错配（角标、进度文案、发布通道都会对不上）。
- */
-export function isPluginSyncerAccount(account: Pick<PostAccount, `type` | `syncSource`>): boolean {
-  return account.syncSource === `plugin-syncer` && PLUGIN_SYNCER_PREFERRED_TYPES.has(account.type)
-}
+import type { PostAccount } from '@md/shared/types'
 
 declare global {
   interface Window {
     /** COSE「文章同步助手」扩展在页面注入的桥接对象 */
     $cose?: CoseApi
-    /** CSYNC 等在页面注入的桥接对象（需扩展在本页加载 content script 才能 connected） */
-    $pluginSyncer?: PluginSyncerApi
   }
 }
 
@@ -45,7 +19,7 @@ export interface CoseTask {
   accounts: PostAccount[]
 }
 
-/** COSE「文章同步助手」在页面注入的桥接 API；方法均为可选——按扩展版本而定 */
+/** COSE「文章同步助手」在页面注入的桥接 API；方法均为可选，按扩展版本而定 */
 export interface CoseApi {
   getPlatforms?: () => PostAccount[]
   getAccounts?: (callback: (accounts: PostAccount[]) => void) => void
@@ -58,144 +32,4 @@ export interface CoseApi {
     onProgress: (status: { accounts?: PostAccount[] }) => void,
     onDone: () => void,
   ) => void
-}
-
-export interface PluginSyncerApi {
-  version: string
-  readonly connected: boolean
-  getPlatforms: () => Promise<unknown>
-  syncArticle?: (task: PluginSyncerTask, onProgress?: (task: PluginSyncerTaskProgress) => void) => Promise<unknown>
-  openSyncPanel?: (article: Record<string, unknown>) => Promise<unknown>
-}
-
-export interface PluginSyncerTask {
-  post: {
-    title: string
-    content: string
-    markdown: string
-    thumb: string
-  }
-  platforms: { type: string, title: string }[]
-}
-
-export interface PluginSyncerTaskProgress {
-  platforms: Array<{
-    type: string
-    title?: string
-    status: string
-    error?: string
-    msg?: string
-    editResp?: { draftLink?: string }
-  }>
-}
-
-export function normalizePluginSyncerGetPlatformsResult(data: unknown): unknown[] {
-  if (Array.isArray(data))
-    return data
-  if (data && typeof data === `object`) {
-    const o = data as Record<string, unknown>
-    if (Array.isArray(o.platforms))
-      return o.platforms
-    if (Array.isArray(o.data))
-      return o.data
-  }
-  return []
-}
-
-export function mapPluginSyncerAuthToAccounts(data: unknown): PostAccount[] {
-  const rows = normalizePluginSyncerGetPlatformsResult(data) as Record<string, unknown>[]
-  const out: PostAccount[] = []
-  for (const row of rows) {
-    if (!row || typeof row !== `object`)
-      continue
-    const meta = row.meta as Record<string, unknown> | undefined
-    const id = String(row.id ?? row.platformId ?? meta?.id ?? ``).trim()
-    if (!id)
-      continue
-    const name = String(row.name ?? meta?.name ?? id)
-    const icon = String(row.icon ?? meta?.icon ?? ``)
-    const home = String(row.homepage ?? row.home ?? ``)
-    const auth = row.authenticated === true
-    const u = (row.userInfo ?? {}) as Record<string, unknown>
-    const displayName = auth ? String(u.name ?? u.nick ?? `已登录`) : `未登录`
-    const uid = String(u.id ?? u.weiboId ?? `${id}-plugin`)
-    const avatar = u.avatar as string | undefined
-    out.push({
-      type: id,
-      title: name,
-      icon: icon || `data:image/gif;base64,R0lGODlhAQABAAAAACw=`,
-      home,
-      uid,
-      displayName,
-      avatar,
-      checked: false,
-      loggedIn: auth,
-      isChecking: false,
-      syncSource: `plugin-syncer`,
-    })
-  }
-  return out
-}
-
-export function mergeCoseAndPluginSyncerAccounts(
-  coseRows: PostAccount[],
-  pluginRows: PostAccount[],
-  channelReady: boolean,
-): PostAccount[] {
-  if (!channelReady || pluginRows.length === 0)
-    return coseRows.map(a => ({ ...a, syncSource: (a.syncSource ?? `cose`) as PostAccountSyncSource }))
-
-  const pluginByType = new Map(pluginRows.map(p => [p.type, p]))
-  const usedPlugin = new Set<string>()
-  const result: PostAccount[] = []
-
-  for (const c of coseRows) {
-    const plug = pluginByType.get(c.type)
-    if (plug && PLUGIN_SYNCER_PREFERRED_TYPES.has(c.type) && plug.loggedIn) {
-      result.push({
-        ...plug,
-        checked: c.checked,
-        isChecking: false,
-        syncSource: `plugin-syncer`,
-      })
-      usedPlugin.add(c.type)
-    }
-    else {
-      result.push({ ...c, syncSource: `cose` })
-    }
-  }
-
-  for (const plug of pluginRows) {
-    if (usedPlugin.has(plug.type) || !plug.loggedIn || result.some(r => r.type === plug.type))
-      continue
-    // 非首选类型即使只有 CSYNC 检测到，也按 PLUGIN_SYNCER_PREFERRED_TYPES 策略归 COSE 发布，
-    // 保持 syncSource 与实际发布通道一致（否则角标/进度文案会误标 CSYNC）。
-    result.push({
-      ...plug,
-      syncSource: PLUGIN_SYNCER_PREFERRED_TYPES.has(plug.type) ? `plugin-syncer` : `cose`,
-    })
-  }
-
-  return result
-}
-
-export function dispatchPluginSyncerOpenPanel(post: Pick<Post, `title` | `content` | `markdown` | `thumb` | `desc`>) {
-  window.dispatchEvent(new CustomEvent(`plugin-syncer-open-panel`, {
-    detail: {
-      title: post.title,
-      html: post.content,
-      cover: post.thumb,
-      markdown: post.markdown,
-      summary: post.desc,
-    },
-  }))
-}
-
-export function partitionAccountsBySyncSource(accounts: PostAccount[]): {
-  pluginSyncer: PostAccount[]
-  cose: PostAccount[]
-} {
-  const pluginSyncer = accounts.filter(isPluginSyncerAccount)
-  const cose = accounts.filter(a => !isPluginSyncerAccount(a))
-  return { pluginSyncer, cose }
 }

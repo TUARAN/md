@@ -27,7 +27,6 @@ import { useCursorSync } from '@/composables/useCursorSync'
 import { EDITOR_WECHAT_COPY_KEY, useEditorWechatCopy } from '@/composables/useEditorWechatCopy'
 import { useScrollSync } from '@/composables/useScrollSync'
 import { useUIStore } from '@/stores/ui'
-import { downloadCsyncExtensionZip } from '@/utils/downloadCsyncExtension'
 
 const uiStore = useUIStore()
 
@@ -178,7 +177,7 @@ onUnmounted(() => {
         <div
           class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
         >
-          <!-- 标题 + 说明气泡(取代原先单独占两行的描述 + COSE/CSYNC details) -->
+          <!-- 标题 + 说明气泡 -->
           <div class="flex min-w-0 items-center gap-1.5">
             <WorkflowPageTitle>
               <template #icon>
@@ -216,20 +215,6 @@ onUnmounted(() => {
                     class="font-medium text-foreground underline underline-offset-2"
                   >TUARAN/cose 改造版</a>。
                 </p>
-                <details class="mt-2 text-[11px]">
-                  <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
-                    备选：CSYNC（可选）
-                  </summary>
-                  <p class="mt-1">
-                    早期独立的同步扩展，COSE 改造版已覆盖其全部独占平台，<strong class="text-foreground">默认无需安装</strong>。仍想用作备选时请
-                    <a
-                      href="#"
-                      class="font-medium text-foreground underline underline-offset-2"
-                      @click.prevent="downloadCsyncExtensionZip()"
-                    >下载 .zip</a>
-                    解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载。「发布」里带 CSYNC 角标的由它写入。
-                  </p>
-                </details>
               </PopoverContent>
             </Popover>
           </div>

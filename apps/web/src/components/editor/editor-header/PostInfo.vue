@@ -9,8 +9,6 @@ import { useRenderStore } from '@/stores/render'
 import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
-import { downloadCsyncExtensionZip } from '@/utils/downloadCsyncExtension'
-import { PLUGIN_SYNCER_PREFERRED_TYPES } from '@/utils/publishExtensions'
 import { toast } from '@/utils/toast'
 
 defineOptions({
@@ -29,12 +27,8 @@ const { isMobile } = storeToRefs(uiStore)
 const {
   allAccounts,
   extensionInstalled,
-  pluginSyncerScriptPresent,
-  pluginAuthSnapshot,
   isCheckingLogin,
   getPlatformLoginUrl,
-  refreshPluginAuth,
-  tryMergePluginIntoAccounts,
   startLoginDetection,
   redetectAccounts,
   cacheAccountsToProfile,
@@ -56,11 +50,7 @@ const allowPost = computed(() => {
   const hasSelection = allAccounts.value.some(a => a.checked && a.loggedIn)
   if (!hasSelection)
     return false
-  const coseOk = extensionInstalled.value
-  const pluginOk = pluginAuthSnapshot.value.some(
-    a => a.loggedIn && PLUGIN_SYNCER_PREFERRED_TYPES.has(a.type),
-  )
-  return coseOk || pluginOk
+  return extensionInstalled.value
 })
 
 const collapsedCategories = ref<Set<string>>(new Set([`云平台及开发者社区`]))
@@ -101,7 +91,7 @@ function toggleCategorySelectAll(accounts: PostAccount[]) {
 }
 
 async function prePost() {
-  if ((extensionInstalled.value || pluginSyncerScriptPresent.value) && allAccounts.value.length === 0)
+  if (extensionInstalled.value && allAccounts.value.length === 0)
     startLoginDetection({ silent: true })
 
   let auto: Post = {
@@ -138,7 +128,6 @@ async function prePost() {
 
 watch(dialogVisible, (newVal) => {
   if (newVal) {
-    void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
     prePost()
   }
 })
@@ -238,38 +227,9 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <p class="mt-2 text-xs">
               标题或正文写错？多为目标平台后台改版所致，先升级 COSE 到最新；仍异常请到对应仓库反馈。
             </p>
-            <details class="mt-2 text-xs">
-              <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
-                高级 / 备选方案：CSYNC（可选）
-              </summary>
-              <div class="mt-1.5 space-y-1.5 pl-0">
-                <p>
-                  CSYNC 是早期独立的同步扩展，现在 COSE 改造版已经覆盖了它独占的全部平台，<strong class="text-foreground">默认无需安装</strong>。
-                  仍想用作备选时，点
-                  <a
-                    href="#"
-                    class="font-medium text-primary underline underline-offset-2"
-                    @click.prevent="downloadCsyncExtensionZip()"
-                  >下载 CSYNC（.zip）</a>，按相同步骤解压并加载
-                  <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">csync-extension</code> 文件夹。
-                </p>
-                <p>
-                  自建部署：构建前执行
-                  <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">pnpm package:csync</code>（可选），或直接加载仓库内
-                  <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">apps/web/vendor/csync-extension</code> 调试。
-                </p>
-              </div>
-            </details>
           </div>
 
-          <Alert v-if="pluginSyncerScriptPresent && !pluginAuthSnapshot.length">
-            <Info class="h-4 w-4" />
-            <AlertDescription class="text-sm">
-              已检测到 CSYNC 脚本，但未能连接（<code class="text-xs">$pluginSyncer.connected === false</code>）。请确认扩展已正确加载、manifest 中包含当前站点域名后重新加载扩展。若只想用 COSE，可忽略此提示。
-            </AlertDescription>
-          </Alert>
-
-          <Alert v-if="!extensionInstalled && !pluginAuthSnapshot.length">
+          <Alert v-if="!extensionInstalled">
             <Info class="h-4 w-4" />
             <AlertTitle>未检测到可用发布扩展</AlertTitle>
             <AlertDescription>
@@ -360,7 +320,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
                 <div v-show="!collapsedCategories.has(category.name)" class="grid grid-cols-2 gap-x-8 gap-y-2 pl-5">
                   <div
                     v-for="account in category.accounts"
-                    :key="`${account.syncSource || 'cose'}-${account.type}-${account.uid}`"
+                    :key="`${account.type}-${account.uid}`"
                     class="flex items-center gap-2 whitespace-nowrap"
                   >
                     <CheckboxRoot
@@ -378,7 +338,6 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
                       class="inline-block h-[16px] w-[16px] shrink-0"
                     >
                     <span class="text-sm font-medium">{{ account.title }}</span>
-                    <span v-if="account.syncSource === 'plugin-syncer'" class="text-xs text-muted-foreground">CSYNC</span>
                     <template v-if="account.isChecking">
                       <Loader2 class="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" />
                       <span class="text-xs text-muted-foreground">检测中</span>

@@ -16,7 +16,7 @@
 
 **博主联盟同步工具**面向博主、开发者创作者与内容运营团队，用于搭建从**数据获取 → 风格二创 → 内容同步 → 创作名片**的一站式内容工作台。它保留 Markdown 编辑、主题排版、图床与 AI 辅助能力，并进一步强化多平台账号检测、跨平台草稿写入、创作者主页导航展示等分发场景。
 
-**当前阶段重心**：**内容分发与同步**。编辑器通过 COSE 与配套的 **CSYNC** 浏览器扩展分流处理不同平台，尽量把同一篇内容写入知乎、公众号、微博、CSDN、掘金等平台草稿；同时提供「创作名片」页面，汇总创作者的平台主页，便于对外展示账号矩阵。
+**当前阶段重心**：**内容分发与同步**。编辑器通过 **COSE** 浏览器扩展把同一篇内容写入知乎、公众号、微博、CSDN、掘金等平台草稿；同时提供「创作名片」页面，汇总创作者的平台主页，便于对外展示账号矩阵。
 
 > 本项目编辑器内核源自开源社区项目 [doocs/md](https://github.com/doocs/md)，在此基础上强化了产品与流程叙事。**若对你有帮助，欢迎点个 Star ⭐️。**
 
@@ -54,7 +54,7 @@
 - ✅ **AI 集成** - 集成主流 AI 模型（DeepSeek、OpenAI、通义千问、腾讯混元、火山方舟、302.AI 等），智能辅助内容创作
 - ✅ **数据获取** - 接入资讯检索入口，支持把素材带入二创流程
 - ✅ **风格二创** - 内置长文提示词模板，可将资讯素材转成可继续排版的 Markdown
-- ✅ **内容同步** - 通过 COSE / CSYNC 扩展分流，支持多平台草稿写入
+- ✅ **内容同步** - 通过 COSE 扩展，支持多平台草稿写入
 - ✅ **创作名片** - 自动缓存已登录平台账号，生成面向品牌方的平台主页导航页
 
 ## 🔄 工作流导航
@@ -76,13 +76,12 @@
 
 多平台草稿写入依赖 **COSE** 浏览器扩展：
 
-| 扩展                                                                                                   | 适用场景                                       | 获取方式                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| [COSE 官方版（doocs/cose）](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk) | 知乎 / 公众号 / 微博 / 思否 / 掘金 / CSDN 等   | Chrome 网上应用店安装                                                                                                                           |
-| [COSE 改造版（TUARAN/cose）](https://github.com/TUARAN/cose/releases/latest)                           | 官方版漏写或字段对不上时的备选；覆盖更多边角场 | GitHub Releases 下载 `.zip`，`chrome://extensions/` → 「开发者模式」→「加载已解压」                                                             |
-| **CSYNC**（可选，早期产物）                                                                            | COSE 改造版已覆盖其全部独占平台；默认无需安装  | 仍想用时：在 [syncblog.cn](https://syncblog.cn) 内容同步页 / 发布弹窗的「高级 / 备选方案」折叠面里下载 `.zip`，同样以「加载已解压的扩展」方式装 |
+| 扩展                                                                                                   | 适用场景                                       | 获取方式                                                                            |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------- |
+| [COSE 官方版（doocs/cose）](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk) | 知乎 / 公众号 / 微博 / 思否 / 掘金 / CSDN 等   | Chrome 网上应用店安装                                                               |
+| [COSE 改造版（TUARAN/cose）](https://github.com/TUARAN/cose/releases/latest)                           | 官方版漏写或字段对不上时的备选；覆盖更多边角场 | GitHub Releases 下载 `.zip`，`chrome://extensions/` → 「开发者模式」→「加载已解压」 |
 
-> 装 **COSE** 任一版本即可在内容同步页检测账号并写入草稿。CSYNC 现已降为可选项，仅供与 `$pluginSyncer` 桥接的老链路兜底。自建部署时 `pnpm package:csync` 是可选脚本，仅当你想把 CSYNC zip 一并打入站点静态资源（保留下载入口）才需要运行；也可直接加载仓库内 `apps/web/vendor/csync-extension` 目录调试。
+> 装 **COSE** 任一版本即可在内容同步页检测账号并写入草稿。
 
 ## 🖼️ 支持的图床服务
 
@@ -127,10 +126,6 @@ nvm i && nvm use
 # 安装依赖
 pnpm i
 
-# 打包 CSYNC 扩展（可选；仅当想在站点内提供 CSYNC 下载入口时执行。
-# 主推 COSE 由用户从 chromewebstore / TUARAN/cose releases 直接安装，无需在本仓打包）
-pnpm package:csync
-
 # 启动开发模式
 pnpm web dev
 # 访问 http://localhost:5173/md/
@@ -141,7 +136,7 @@ pnpm web build
 # 部署在根目录（Cloudflare / Netlify 等）
 pnpm web build:h5-netlify
 
-# 一键：打包 CSYNC + CF 构建 + wrangler deploy
+# 一键：CF 构建 + wrangler deploy
 pnpm deploy:cloudflare
 
 # Chrome 插件（WXT）启动及调试
@@ -174,7 +169,6 @@ pnpm web wrangler:deploy
 git clone https://github.com/TUARAN/md.git
 cd md
 pnpm install
-pnpm package:csync       # 可选：仅当想在站点内提供 CSYNC 备选下载时执行
 pnpm web build           # 静态资源
 pnpm web wrangler:deploy # 部署到 Cloudflare（可选）
 ```
@@ -203,7 +197,7 @@ docker build -f docker/latest/Dockerfile.static -t syncblog-md:local .
 docker run -d -p 8080:80 syncblog-md:local
 ```
 
-若只需上游原版编辑器、不需要 CSYNC / 工作流，仍可使用上游镜像 `doocs/md:latest`（见 [doocs/docker-md](https://github.com/doocs/docker-md)）。
+若只需上游原版编辑器、不需要本站工作流，仍可使用上游镜像 `doocs/md:latest`（见 [doocs/docker-md](https://github.com/doocs/docker-md)）。
 
 ## 👥 谁在使用
 

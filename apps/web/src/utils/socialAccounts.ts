@@ -11,7 +11,6 @@ export interface PublicSocialAccount {
   avatar?: string
   url: string
   loggedIn: boolean
-  syncSource?: PostAccount[`syncSource`]
   followers?: string
   reads?: string
   updatedAt: number
@@ -95,7 +94,7 @@ const TUARAN_ESTIMATED_PROFILE_STATS = { followers: `100`, reads: `2万` } as co
 
 /**
  * TUARAN 各平台粉丝/阅读静态快照（③，见 docs/creator-profile-urls.md「数据来源总览」）。
- * 优先级：COSE/CSYNC 检测 + localStorage 缓存（①②）> 本表；仅缺字段时用本表补位。
+ * 优先级：COSE 检测 + localStorage 缓存（①②）> 本表；仅缺字段时用本表补位。
  */
 export const PLATFORM_DEFAULT_PROFILE_STATS: Record<string, { followers: string, reads: string }> = {
   juejin: { followers: `11,834`, reads: `2,410,254` },
@@ -522,7 +521,6 @@ export function normalizePublicSocialAccounts(accounts: PostAccount[]) {
         avatar: account.avatar,
         url: resolveSocialAccountUrl(account),
         loggedIn: !!account.loggedIn,
-        syncSource: account.syncSource,
         followers,
         reads,
         updatedAt: now,

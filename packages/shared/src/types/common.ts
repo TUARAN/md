@@ -70,8 +70,6 @@ export interface PostAccount {
   isChecking?: boolean
   status?: string
   error?: string
-  /** 多扩展发布：知乎 / 公众号 / 微博可走 csync（$pluginSyncer），其余默认 COSE */
-  syncSource?: `cose` | `plugin-syncer`
 }
 
 export interface Post {

@@ -24,7 +24,7 @@ export const TUARAN_OFFER = {
       id: `lite`,
       name: `Lite · 同步分发`,
       summary: `你方成稿，我负责排版优化与多平台草稿/发布协助。`,
-      deliverables: [`Markdown 排版与主题统一`, `多平台草稿写入（COSE / CSYNC）`, `发布前检查清单`],
+      deliverables: [`Markdown 排版与主题统一`, `多平台草稿写入（COSE）`, `发布前检查清单`],
       timeline: `约 3–5 个工作日`,
       fit: `已有稿件，只需渠道触达`,
     },

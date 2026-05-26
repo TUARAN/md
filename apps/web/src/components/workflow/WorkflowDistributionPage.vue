@@ -6,7 +6,7 @@
  *  - 左列  : `<CreatorProfileBody>` 平台账号矩阵 + 数据来源说明 + 创作者切换
  *  - 右列  : 当前选中平台的宣发策略 (打法要点 / 近期动作 / 粉丝阶梯), sticky
  * 移动端  : 上下纵向铺叠, 右列在下
- * 选择行为: 左列卡片上的「宣发」按钮直接更新 `ui.workflowDistributionPlatform`,
+ * 选择行为: 点击左列卡片直接更新 `ui.workflowDistributionPlatform`,
  *           右列实时刷新, 不再跨页跳转
  */
 import { Megaphone, Target } from 'lucide-vue-next'
@@ -71,7 +71,7 @@ function onMatrixDataSourceToggle(event: Event) {
         宣发活跃
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        左侧梳理平台矩阵, 点任意账号卡上的「宣发」即可在右侧切换当前
+        左侧梳理平台矩阵, 点任意账号卡即可在右侧切换当前
         <span class="font-mono text-foreground">{{ workflowCreatorId }}</span>
         ·
         <span class="font-medium text-foreground">{{ platformLabel }}</span>
@@ -88,11 +88,9 @@ function onMatrixDataSourceToggle(event: Event) {
         <div class="space-y-2 border-t border-border/40 px-3 py-2.5">
           <p>
             <span class="font-medium text-foreground">常规路径：</span>
-            在浏览器安装并登录
+            在浏览器安装
             <span class="font-medium">COSE</span>
-            与
-            <span class="font-medium">CSYNC</span>
-            后，于本页点「重新检测账号」(空状态下出现),扩展会把主页/粉丝/阅读写入本地缓存。
+            并登录目标平台后，于本页点「重新检测账号」(空状态下出现),扩展会把主页/粉丝/阅读写入本地缓存。
           </p>
           <p>
             <span class="font-medium text-foreground">限制与兜底：</span>

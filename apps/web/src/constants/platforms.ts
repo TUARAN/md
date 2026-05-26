@@ -11,7 +11,7 @@
 export type PlatformCategoryId = `media` | `blog` | `cloud`
 
 export interface PlatformDef {
-  /** canonical 平台 key（与 COSE/CSYNC 扩展上报一致） */
+  /** canonical 平台 key（与 COSE 扩展上报一致） */
   type: string
   /** 展示名（发布弹窗、矩阵、宣发页共用） */
   title: string

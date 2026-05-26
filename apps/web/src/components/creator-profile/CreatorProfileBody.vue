@@ -9,7 +9,7 @@
  *  - 账号搜索 + 按分类的账号卡片网格(含「待登录」占位)
  *  - 空状态(无检测缓存时引导用户重新检测)
  *
- * 当父级开启 `enableWorkflowActions` 时,每张卡片追加「宣发」按钮,
+ * 当父级开启 `enableWorkflowActions` 时,点击卡片即可触发宣发平台切换。
  * 父级捕获 `selectDistribution` 事件后, 把目标平台写入
  * `ui.workflowDistributionPlatform` 让右列策略面板实时切换。
  *
@@ -17,7 +17,7 @@
  * 保留「Body」命名。
  */
 import type { PublicSocialAccount } from '@/utils/socialAccounts'
-import { ExternalLink, LogIn, Megaphone, RefreshCw, Search, Users } from 'lucide-vue-next'
+import { ExternalLink, LogIn, RefreshCw, Search, Users } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -29,13 +29,13 @@ import { getPlatformProfileTitle, SOCIAL_ACCOUNT_CATEGORIES } from '@/utils/soci
 
 /**
  * 显示用账号类型 —— 扩展 PublicSocialAccount,加上 `pending` 标记。
- * pending=true 表示该平台在当前创作者的支持目录中,但还未通过 COSE/CSYNC
+ * pending=true 表示该平台在当前创作者的支持目录中,但还未通过 COSE
  * 检测到本地账号,卡片以「待登录」灰态展示。
  */
 type AccountDisplay = PublicSocialAccount & { pending?: boolean }
 
 interface Props {
-  /** workflow 模式:卡片追加「宣发」按钮 */
+  /** workflow 模式:点击卡片切换右侧宣发策略 */
   enableWorkflowActions?: boolean
   /** 是否显示顶部统计卡 */
   showStats?: boolean
@@ -65,7 +65,7 @@ const accountSearch = ref(``)
 const profile = computed(() => socialAccountsStore.activeProfile)
 
 /**
- * 真实检测到的账号:直接读 store 内的原始 `accounts` 数组(只含 COSE/CSYNC
+ * 真实检测到的账号:直接读 store 内的原始 `accounts` 数组(只含 COSE
  * 检测出的)。注意不走 `mergeDefaultProfileAccounts`,后者会把所有支持平台
  * 合成成「已登录」默认占位,导致拿不到"已检测/未检测"边界。
  */
@@ -173,6 +173,10 @@ async function handleRedetectAccounts() {
 function onDistribute(account: PublicSocialAccount) {
   emit(`selectDistribution`, account.type)
 }
+
+function isSelectedDistribution(account: PublicSocialAccount) {
+  return props.enableWorkflowActions && uiStore.workflowDistributionPlatform === account.type
+}
 </script>
 
 <template>
@@ -222,7 +226,7 @@ function onDistribute(account: PublicSocialAccount) {
 
     <section class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 py-3 text-xs text-muted-foreground">
       <span>数据来源：本机缓存</span>
-      <span>{{ isCheckingLogin ? '正在通过 COSE / CSYNC 检测已登录账号…' : '需安装扩展；登录新平台后请点「重新检测账号」' }}</span>
+      <span>{{ isCheckingLogin ? '正在通过 COSE 检测已登录账号…' : '需安装扩展；登录新平台后请点「重新检测账号」' }}</span>
     </section>
 
     <!-- workflow 模式下 0 已检测的引导:补一个顶层「重新检测」CTA(空状态卡片此时不显示) -->
@@ -232,7 +236,7 @@ function onDistribute(account: PublicSocialAccount) {
     >
       <p class="text-amber-800 dark:text-amber-200">
         本机尚未检测到任何已登录账号。
-        请先安装 COSE / CSYNC 扩展并在各平台登录,然后点右侧按钮触发检测。
+        请先安装 COSE 扩展并在各平台登录,然后点右侧按钮触发检测。
       </p>
       <Button
         size="sm"
@@ -292,8 +296,15 @@ function onDistribute(account: PublicSocialAccount) {
               :key="`${account.type}-${account.uid}-${account.displayName}`"
               class="relative rounded-lg border p-4 shadow-sm transition-colors dark:bg-card"
               :class="account.pending
-                ? 'border-dashed border-border/70 bg-muted/30 hover:border-muted-foreground/40'
-                : 'border-border bg-background hover:border-primary/50'"
+                ? isSelectedDistribution(account)
+                  ? 'cursor-pointer border-primary/70 bg-primary/[0.04] ring-1 ring-primary/25'
+                  : 'cursor-pointer border-dashed border-border/70 bg-muted/30 hover:border-muted-foreground/40'
+                : isSelectedDistribution(account)
+                  ? 'cursor-pointer border-primary/80 bg-primary/[0.04] ring-1 ring-primary/30'
+                  : props.enableWorkflowActions
+                    ? 'cursor-pointer border-border bg-background hover:border-primary/50 hover:bg-muted/20'
+                    : 'border-border bg-background hover:border-primary/50'"
+              @click="enableWorkflowActions && onDistribute(account)"
             >
               <span
                 v-if="account.pending"
@@ -358,19 +369,10 @@ function onDistribute(account: PublicSocialAccount) {
                 <Button
                   class="w-full sm:flex-1"
                   variant="outline"
-                  @click="openAccount(account)"
+                  @click.stop="openAccount(account)"
                 >
                   <component :is="account.pending ? LogIn : ExternalLink" class="mr-2 h-4 w-4" />
                   {{ account.pending ? '去登录' : '打开主页' }}
-                </Button>
-                <Button
-                  v-if="enableWorkflowActions"
-                  class="w-full sm:flex-1"
-                  variant="default"
-                  @click="onDistribute(account)"
-                >
-                  <Megaphone class="mr-2 h-4 w-4" />
-                  宣发
                 </Button>
               </div>
             </article>
@@ -394,7 +396,7 @@ function onDistribute(account: PublicSocialAccount) {
         暂无账号缓存
       </h2>
       <p class="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-        请安装 COSE 或 CSYNC 扩展，并在各平台完成登录后，点击下方按钮重新检测；也可回到编辑器「发布」面板检测。
+        请安装 COSE 扩展，并在各平台完成登录后，点击下方按钮重新检测；也可回到编辑器「发布」面板检测。
       </p>
       <div class="mt-5 flex flex-wrap items-center justify-center gap-2">
         <Button

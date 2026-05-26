@@ -2,19 +2,13 @@ import type { PostAccount } from '@md/shared/types'
 import type { CoseApi } from '@/utils/publishExtensions'
 import { getPlatformLoginUrl, normalizePlatformType } from '@/constants/platforms'
 import { useSocialAccountsStore } from '@/stores/socialAccounts'
-import {
-  mapPluginSyncerAuthToAccounts,
-  mergeCoseAndPluginSyncerAccounts,
-} from '@/utils/publishExtensions'
 import { toast } from '@/utils/toast'
 
 const allAccounts = ref<PostAccount[]>([])
 const extensionInstalled = ref(false)
-const pluginSyncerScriptPresent = ref(false)
-const pluginAuthSnapshot = ref<PostAccount[]>([])
 const isCheckingLogin = ref(false)
 
-/** COSE 账号检测的兜底超时（ms）：超过即视为检测结束，复位状态并用 CSYNC 数据补充 */
+/** COSE 账号检测的兜底超时（ms）：超过即视为检测结束，复位状态 */
 const COSE_DETECTION_TIMEOUT_MS = 15000
 
 let extensionProbeStarted = false
@@ -42,50 +36,14 @@ function getInitialPlatforms(): PostAccount[] {
   return []
 }
 
-async function refreshPluginAuth() {
-  if (!window.$pluginSyncer?.getPlatforms) {
-    pluginAuthSnapshot.value = []
-    return
-  }
-  if (!window.$pluginSyncer.connected) {
-    pluginAuthSnapshot.value = []
-    return
-  }
-  try {
-    const raw = await window.$pluginSyncer.getPlatforms()
-    pluginAuthSnapshot.value = mapPluginSyncerAuthToAccounts(raw)
-  }
-  catch {
-    pluginAuthSnapshot.value = []
-  }
-}
-
-function tryMergePluginIntoAccounts() {
-  if (pluginAuthSnapshot.value.length === 0)
-    return
-  if (allAccounts.value.length === 0) {
-    allAccounts.value = pluginAuthSnapshot.value.map(a => ({
-      ...a,
-      checked: false,
-      isChecking: false,
-    }))
-    return
-  }
-  allAccounts.value = mergeCoseAndPluginSyncerAccounts(
-    allAccounts.value,
-    pluginAuthSnapshot.value,
-    !!window.$pluginSyncer?.connected,
-  )
-}
-
 function finishDetectionWithToast() {
   const socialAccountsStore = useSocialAccountsStore()
   socialAccountsStore.cacheFromPostAccounts(allAccounts.value)
   const loggedIn = allAccounts.value.filter(a => a.loggedIn).length
   if (loggedIn > 0)
     toast.success(`账号检测完成，已识别 ${loggedIn} 个已登录平台`)
-  else if (!extensionInstalled.value && pluginAuthSnapshot.value.length === 0)
-    toast.error(`未检测到 COSE / CSYNC 扩展，请先安装并刷新页面`)
+  else if (!extensionInstalled.value)
+    toast.error(`未检测到 COSE 扩展，请先安装并刷新页面`)
   else
     toast.info(`检测完成，暂无已登录平台；可先点「登录」完成平台登录后再检测`)
 }
@@ -112,11 +70,8 @@ function startLoginDetection(options?: { silent?: boolean }) {
       clearTimeout(timeoutId)
       allAccounts.value = allAccounts.value.map(a => ({ ...a, isChecking: false }))
       isCheckingLogin.value = false
-      void refreshPluginAuth().then(() => {
-        tryMergePluginIntoAccounts()
-        if (!silent)
-          finishDetectionWithToast()
-      })
+      if (!silent)
+        finishDetectionWithToast()
     }
 
     timeoutId = setTimeout(settle, COSE_DETECTION_TIMEOUT_MS)
@@ -144,19 +99,8 @@ function startLoginDetection(options?: { silent?: boolean }) {
     return
   }
 
-  isCheckingLogin.value = true
-  void refreshPluginAuth().then(() => {
-    if (pluginAuthSnapshot.value.length > 0) {
-      allAccounts.value = pluginAuthSnapshot.value.map(a => ({
-        ...a,
-        checked: false,
-        isChecking: false,
-      }))
-    }
-    isCheckingLogin.value = false
-    if (!silent)
-      finishDetectionWithToast()
-  })
+  if (!silent)
+    finishDetectionWithToast()
 }
 
 function ensureExtensionProbe() {
@@ -165,20 +109,12 @@ function ensureExtensionProbe() {
   extensionProbeStarted = true
 
   let coseDetectionStarted = false
-  let pluginAuthFetched = false
   const probe = () => {
     if (getCose() !== undefined) {
       extensionInstalled.value = true
       if (!coseDetectionStarted) {
         coseDetectionStarted = true
         startLoginDetection({ silent: true })
-      }
-    }
-    if (window.$pluginSyncer !== undefined) {
-      pluginSyncerScriptPresent.value = true
-      if (!pluginAuthFetched) {
-        pluginAuthFetched = true
-        void refreshPluginAuth().then(() => tryMergePluginIntoAccounts())
       }
     }
   }
@@ -207,7 +143,7 @@ export function usePlatformAccountDetection() {
 
   const loggedInCount = computed(() => allAccounts.value.filter(a => a.loggedIn).length)
   const hasPublishExtension = computed(
-    () => extensionInstalled.value || pluginAuthSnapshot.value.some(a => a.loggedIn),
+    () => extensionInstalled.value,
   )
 
   async function redetectAccounts() {
@@ -218,12 +154,8 @@ export function usePlatformAccountDetection() {
 
     if (getCose() !== undefined)
       extensionInstalled.value = true
-    if (window.$pluginSyncer !== undefined)
-      pluginSyncerScriptPresent.value = true
 
     toast.info(`正在通过扩展重新检测已登录账号…`)
-    await refreshPluginAuth()
-    tryMergePluginIntoAccounts()
     startLoginDetection({ silent: false })
   }
 
@@ -238,14 +170,10 @@ export function usePlatformAccountDetection() {
   return {
     allAccounts,
     extensionInstalled,
-    pluginSyncerScriptPresent,
-    pluginAuthSnapshot,
     isCheckingLogin,
     loggedInCount,
     hasPublishExtension,
     getPlatformLoginUrl,
-    refreshPluginAuth,
-    tryMergePluginIntoAccounts,
     startLoginDetection,
     redetectAccounts,
     cacheAccountsToProfile,

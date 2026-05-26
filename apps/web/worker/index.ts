@@ -22,7 +22,7 @@ export default class extends WorkerEntrypoint<Env> {
     if (resolveDefaultImgbedPathname(url.pathname))
       return handleDefaultImgbedRequest(request, this.env)
 
-    // 仅代理微信公众号 API；其余请求（含 csync-extension.zip、前端静态资源）走 ASSETS
+    // 仅代理微信公众号 API；其余请求（含前端静态资源）走 ASSETS
     if (url.pathname.startsWith(`/cgi-bin/`))
       return this.proxyWeixin(request, url)
 

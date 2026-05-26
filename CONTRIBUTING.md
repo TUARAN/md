@@ -2,7 +2,7 @@
 
 感谢你对 **博主联盟同步工具**（[TUARAN/md](https://github.com/TUARAN/md)）的兴趣！我们欢迎任何形式的贡献，包括但不限于报告缺陷、改进文档、提交新特性或修复 Bug。本指南旨在帮助你快速地为项目做出贡献。
 
-> 编辑器内核源自 [doocs/md](https://github.com/doocs/md)。若变更仅涉及通用 Markdown 排版、图床等上游能力，也可向上游提交 PR；与本站工作流、CSYNC、创作名片等相关的改动请在本仓库进行。
+> 编辑器内核源自 [doocs/md](https://github.com/doocs/md)。若变更仅涉及通用 Markdown 排版、图床等上游能力，也可向上游提交 PR；与本站工作流、COSE 接入、创作名片等相关的改动请在本仓库进行。
 
 ## 目录
 
@@ -33,7 +33,7 @@
 
 ```shell
 - apps
-  - web           # 网页、工作流与 CSYNC 扩展源码
+  - web           # 网页与工作流源码
   - vscode        # VSCode 插件
 - packages
   - config        # 项目级别配置
@@ -61,10 +61,7 @@ git remote add upstream https://github.com/TUARAN/md.git
 # 3. 安装依赖
 pnpm install
 
-# 4. 打包 CSYNC 扩展（可选；CSYNC 现为可选备选，仅在想让站点提供 .zip 下载入口时执行）
-pnpm package:csync
-
-# 5. 启动本地开发
+# 4. 启动本地开发
 pnpm web dev
 # 访问 http://localhost:5173/md/
 ```
@@ -89,7 +86,6 @@ pnpm web dev
 
    ```bash
    pnpm run lint
-   pnpm package:csync   # 可选，仅当本次改动涉及 CSYNC zip 入口
    pnpm --filter @md/web type-check
    pnpm --filter @md/web build
    ```
@@ -113,7 +109,7 @@ pnpm web dev
 > VITE_LAUNCH_EDITOR=cursor
 > ```
 >
-> 多平台同步功能需在 Chrome 中安装 [COSE 官方版](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk)，或下载 [TUARAN/cose 改造版](https://github.com/TUARAN/cose/releases/latest)；CSYNC 现为可选备选，需要时再加载 `apps/web/vendor/csync-extension`（详见 [README](./README.md)）。
+> 多平台同步功能需在 Chrome 中安装 [COSE 官方版](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk)，或下载 [TUARAN/cose 改造版](https://github.com/TUARAN/cose/releases/latest)。
 
 ## 代码规范
 
@@ -155,9 +151,9 @@ feat(editor): 支持自定义快捷键
 
 1. **描述清晰**：在 PR 模板中说明变更动机、相关 Issue、实现方案及影响范围。
 2. **保持小而聚焦**：一个 PR 只做一件事，方便审阅。
-3. **确保测试**：新增/变更功能需自测，涉及同步时请优先验证 COSE 场景；CSYNC 改动才需补测 CSYNC 场景。
+3. **确保测试**：新增/变更功能需自测，涉及同步时请验证 COSE 场景。
 4. **更新文档**：公共 API 或行为变更必须同步更新 README / 相关 docs。
-5. **CI 通过**：PR 必须通过 CI（类型检查、构建；`package:csync` 仅在动到 CSYNC zip 时跑）。
+5. **CI 通过**：PR 必须通过 CI（类型检查、构建）。
 6. **等待审核**：维护者会在 1 ～ 3 个工作日内回复。请耐心等待并根据建议进行修订。
 
 ## Issue 报告
