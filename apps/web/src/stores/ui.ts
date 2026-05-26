@@ -12,7 +12,7 @@ import { store } from '@/utils/storage'
  * 描述「目标步骤」。新代码应使用 `router.push({ name })` 进行导航,不再依赖
  * 任何 ui store 内部的 workflowAppPage 状态(已移除)。
  */
-export type WorkflowAppPage = `data` | `creation` | `sync` | `matrix` | `distribution` | `stats`
+export type WorkflowAppPage = `data` | `creation` | `sync` | `distribution` | `stats`
 
 /**
  * UI 状态 Store

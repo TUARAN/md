@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw, Users } from 'lucide-vue-next'
+import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -45,8 +45,7 @@ const workflowSteps = [
   { id: `data` as const, label: `数据获取`, icon: Database, phase: `主链路` },
   { id: `creation` as const, label: `风格二创`, icon: PenLine, phase: `主链路` },
   { id: `sync` as const, label: `内容同步`, icon: RefreshCw, phase: `主链路` },
-  { id: `matrix` as const, label: `平台矩阵`, icon: Users, phase: `主链路` },
-  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone, phase: `建设中` },
+  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone, phase: `主链路` },
   { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `后续`, comingSoon: true },
 ]
 

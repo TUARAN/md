@@ -7,10 +7,11 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  * - Web / Cloudflare Workers / Netlify: history mode,干净路径,SPA fallback 已在
  *   netlify.toml 和 wrangler.jsonc(`not_found_handling: single-page-application`)中配好
  * - 浏览器扩展(WXT 编译产物运行在 chrome-extension://)和 uTools(file://): hash mode
- * - 主入口 6 个 workflow 步骤(sync/data/creation/matrix/distribution/stats)挂在
- *   EditorLayout 下,共享 EditorHeader 顶栏
- * - 创作名片(`/creator-offer/:creatorId`)和平台矩阵展示页(`/creator-profile`)是
- *   独立公开页,不挂顶栏
+ * - 主入口 5 个 workflow 步骤(sync/data/creation/distribution/stats)挂在
+ *   EditorLayout 下,共享 EditorHeader 顶栏。2026-05 把原「平台矩阵」并入
+ *   「宣发活跃」(左列矩阵 + 右列单平台策略),`/matrix` 重定向到 `/distribution`
+ * - 创作名片(`/creator-offer/:creatorId`)是独立公开页,不挂顶栏。
+ *   原 `/creator-profile` 公开矩阵已废弃,重定向到 `/distribution`
  *
  * 旧版兼容(过渡期):访问 `/#content-sync`、`/#data` 等老书签会被 beforeEach 守卫
  * 重写为 `/sync`、`/data` 等新路径
@@ -22,22 +23,21 @@ const SyncPage = () => import('@/views/SyncPage.vue')
 // 非默认 workflow 页一律懒加载,首屏只装编辑器
 const WorkflowDataPage = () => import('@/components/workflow/WorkflowDataPage.vue')
 const WorkflowCreationPage = () => import('@/components/workflow/WorkflowCreationPage.vue')
-const WorkflowMatrixPage = () => import('@/components/workflow/WorkflowMatrixPage.vue')
 const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDistributionPage.vue')
 const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.vue')
 
 const CreatorOfferPage = () => import('@/views/CreatorOfferPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
-export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `matrix`, `distribution`, `stats`] as const
+export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `distribution`, `stats`] as const
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
-/** 旧版 hash → 新路由名映射,用于兼容老书签 */
+/** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
 const LEGACY_HASH_TO_ROUTE: Record<string, WorkflowRouteName> = {
   'content-sync': `sync`,
   'data': `data`,
   'creation': `creation`,
-  'matrix': `matrix`,
+  'matrix': `distribution`,
   'distribution': `distribution`,
   'stats': `stats`,
 }
@@ -51,13 +51,14 @@ const routes: RouteRecordRaw[] = [
       { path: `sync`, name: `sync`, component: SyncPage },
       { path: `data`, name: `data`, component: WorkflowDataPage },
       { path: `creation`, name: `creation`, component: WorkflowCreationPage },
-      { path: `matrix`, name: `matrix`, component: WorkflowMatrixPage },
       { path: `distribution`, name: `distribution`, component: WorkflowDistributionPage },
       { path: `stats`, name: `stats`, component: WorkflowStatsPage },
     ],
   },
-  // /creator-profile 已合并入 /matrix(2026-05);保留 redirect 兜住旧书签和外部链接
-  { path: `/creator-profile`, redirect: `/matrix` },
+  // /matrix 已并入 /distribution(2026-05);保留 redirect 兜住老书签 / 旧外链
+  { path: `/matrix`, redirect: `/distribution` },
+  // /creator-profile 早期公开矩阵页, 一并指向 /distribution
+  { path: `/creator-profile`, redirect: `/distribution` },
   {
     path: `/creator-offer/:creatorId`,
     name: `creator-offer`,

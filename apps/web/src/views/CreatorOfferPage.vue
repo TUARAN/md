@@ -40,9 +40,10 @@ watch(offer, (value) => {
 }, { immediate: true })
 
 function goPlatformMatrix() {
-  // 让 /matrix 用 creator-offer 页的 creatorId 加载,而不是上次缓存的
+  // 让「宣发活跃」用 creator-offer 页的 creatorId 加载,而不是上次缓存的
+  // (2026-05 起平台矩阵并入 /distribution 左列)
   uiStore.setWorkflowCreatorId(props.creatorId)
-  router.push({ name: `matrix` })
+  router.push({ name: `distribution` })
 }
 
 function openHomepage() {

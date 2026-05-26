@@ -2,17 +2,19 @@
 /**
  * CreatorProfileBody —— 创作者账号矩阵主体
  *
- * 由 workflow `/matrix` 路由的 WorkflowMatrixPage 使用。负责:
+ * 现在的唯一消费方是 `WorkflowDistributionPage` 的左列 (2026-05 合并自原
+ * `/matrix` 平台矩阵页)。负责:
  *  - 统计卡(创作者 ID / 类型 / 账号数 / 最近更新)
  *  - 数据来源/检测状态条
  *  - 账号搜索 + 按分类的账号卡片网格(含「待登录」占位)
  *  - 空状态(无检测缓存时引导用户重新检测)
  *
  * 当父级开启 `enableWorkflowActions` 时,每张卡片追加「宣发」按钮,
- * 父级捕获 `selectDistribution` 事件后跳转 `/distribution`。
+ * 父级捕获 `selectDistribution` 事件后, 把目标平台写入
+ * `ui.workflowDistributionPlatform` 让右列策略面板实时切换。
  *
- * 2026-05 历史:曾同时服务于已废弃的 `/creator-profile` 公开分享页,故
- * 命名为「Body」。现在 `/matrix` 是唯一消费方。
+ * 历史命名:曾同时服务于已废弃的 `/creator-profile` 公开分享页,故
+ * 保留「Body」命名。
  */
 import type { PublicSocialAccount } from '@/utils/socialAccounts'
 import { ExternalLink, LogIn, Megaphone, RefreshCw, Search, Users } from 'lucide-vue-next'
