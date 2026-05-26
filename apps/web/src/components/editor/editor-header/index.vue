@@ -42,11 +42,11 @@ function handleCopy(mode: string) {
 }
 
 const workflowSteps = [
-  { id: `data` as const, label: `数据获取`, icon: Database, phase: `主链路` },
-  { id: `creation` as const, label: `风格二创`, icon: PenLine, phase: `主链路` },
-  { id: `sync` as const, label: `内容同步`, icon: RefreshCw, phase: `主链路` },
-  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone, phase: `主链路` },
-  { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `后续`, comingSoon: true },
+  { id: `data` as const, label: `数据获取`, icon: Database, phase: `主链路`, comingSoon: false },
+  { id: `creation` as const, label: `风格二创`, icon: PenLine, phase: `主链路`, comingSoon: false },
+  { id: `sync` as const, label: `内容同步`, icon: RefreshCw, phase: `主链路`, comingSoon: false },
+  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone, phase: `主链路`, comingSoon: false },
+  { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `主链路`, comingSoon: false },
 ]
 
 function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
