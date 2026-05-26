@@ -210,42 +210,62 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
         <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-4">
           <div class="rounded-lg border border-border/80 bg-muted/25 px-4 py-3 text-sm leading-relaxed text-muted-foreground dark:bg-muted/15">
             <p class="font-medium text-foreground">
-              发布前请安装浏览器扩展
+              发布前请安装 COSE 浏览器扩展
             </p>
             <ol class="mt-2 list-decimal space-y-2 pl-5">
               <li>
-                <strong class="text-foreground">安装 CSYNC（推荐）</strong>：点击
+                <strong class="text-foreground">推荐：Chrome 应用商店官方版</strong>：
                 <a
-                  href="#"
+                  href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   class="font-medium text-primary underline underline-offset-2"
-                  @click.prevent="downloadCsyncExtensionZip()"
-                >下载 CSYNC 扩展（.zip）</a>，解压后在 Chrome 打开
-                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>，开启「开发者模式」→「加载已解压的扩展程序」，选择解压得到的
-                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">csync-extension</code> 文件夹。
+                >安装 COSE（cose 文章同步助手）</a>，覆盖知乎 / 公众号 / 微博 / 思否等主流平台的草稿写入。
               </li>
               <li>
-                <strong class="text-foreground">扩展如何分工</strong>：CSYNC 已匹配当前站点时，知乎 / 公众号 / 微博由其写入；其余平台或未匹配时，请安装
-                <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="font-medium text-primary underline underline-offset-2">COSE</a>，或在目标站登录后再检测账号。
+                <strong class="text-foreground">改造版（覆盖更多平台 / 修过的版本）</strong>：从
+                <a
+                  href="https://github.com/TUARAN/cose/releases/latest"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-medium text-primary underline underline-offset-2"
+                >TUARAN/cose releases</a>
+                下载最新 zip，解压后在
+                <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>
+                开启「开发者模式」→「加载已解压的扩展程序」。仅在官方版漏写入或字段对不上时再用。
               </li>
             </ol>
             <p class="mt-2 text-xs">
-              标题或正文填错？多为平台后台改版导致，请先升级 CSYNC / COSE；仍异常请向对应扩展项目反馈。
+              标题或正文写错？多为目标平台后台改版所致，先升级 COSE 到最新；仍异常请到对应仓库反馈。
             </p>
             <details class="mt-2 text-xs">
               <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
-                自建部署 / 本地开发
+                高级 / 备选方案：CSYNC（可选）
               </summary>
-              <p class="mt-1 pl-0">
-                构建前执行 <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">pnpm package:csync</code>；调试时也可直接加载仓库内
-                <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">apps/web/vendor/csync-extension</code>。
-              </p>
+              <div class="mt-1.5 space-y-1.5 pl-0">
+                <p>
+                  CSYNC 是早期独立的同步扩展，现在 COSE 改造版已经覆盖了它独占的全部平台，<strong class="text-foreground">默认无需安装</strong>。
+                  仍想用作备选时，点
+                  <a
+                    href="#"
+                    class="font-medium text-primary underline underline-offset-2"
+                    @click.prevent="downloadCsyncExtensionZip()"
+                  >下载 CSYNC（.zip）</a>，按相同步骤解压并加载
+                  <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">csync-extension</code> 文件夹。
+                </p>
+                <p>
+                  自建部署：构建前执行
+                  <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">pnpm package:csync</code>（可选），或直接加载仓库内
+                  <code class="rounded bg-background px-1 py-0.5 dark:bg-muted">apps/web/vendor/csync-extension</code> 调试。
+                </p>
+              </div>
             </details>
           </div>
 
           <Alert v-if="pluginSyncerScriptPresent && !pluginAuthSnapshot.length">
             <Info class="h-4 w-4" />
             <AlertDescription class="text-sm">
-              已检测到 CSYNC 脚本，但未能连接（<code class="text-xs">$pluginSyncer.connected === false</code>）。请确认已通过上方 zip 解压加载扩展，且 manifest 中已包含当前站点域名，然后重新加载扩展。
+              已检测到 CSYNC 脚本，但未能连接（<code class="text-xs">$pluginSyncer.connected === false</code>）。请确认扩展已正确加载、manifest 中包含当前站点域名后重新加载扩展。若只想用 COSE，可忽略此提示。
             </AlertDescription>
           </Alert>
 
@@ -253,7 +273,10 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <Info class="h-4 w-4" />
             <AlertTitle>未检测到可用发布扩展</AlertTitle>
             <AlertDescription>
-              请至少安装 <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" class="underline text-primary">COSE（cose 文章同步助手）</a>，或按上方说明下载本站提供的 CSYNC（.zip）解压加载，以支持知乎 / 公众号 / 微博。
+              请安装
+              <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" rel="noopener noreferrer" class="underline text-primary">COSE 官方版</a>
+              或下载
+              <a href="https://github.com/TUARAN/cose/releases/latest" target="_blank" rel="noopener noreferrer" class="underline text-primary">改造版（TUARAN/cose）</a>，安装后回到本页点「重新检测账号」。
             </AlertDescription>
           </Alert>
 

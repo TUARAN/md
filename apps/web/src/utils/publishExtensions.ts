@@ -1,7 +1,17 @@
 import type { Post, PostAccount } from '@md/shared/types'
 
-/** 知乎、公众号、微博、思否优先走 CSYNC（$pluginSyncer），其余走 COSE */
-export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set([`zhihu`, `wechat`, `weibo`, `segmentfault`])
+/**
+ * 优先走 CSYNC（$pluginSyncer）的平台白名单。
+ *
+ * 2026-05：CSYNC 已降为可选项，主推路径是改造版 COSE（TUARAN/cose）—— 它已经
+ * 覆盖知乎/公众号/微博/思否，没有任何平台需要"必须由 CSYNC 写入"。
+ * 这里保留为空 Set 但不删，是因为：
+ *  - 运行时仍探测 `$pluginSyncer`，装了 CSYNC 的老用户继续工作
+ *  - 想临时把某平台切回 CSYNC 通道时，往这里加 type 即可（不需要改路由逻辑）
+ *  - 类型签名稳定，`mergeCoseAndPluginSyncerAccounts` / `isPluginSyncerAccount`
+ *    依赖这个集合，清掉就坏
+ */
+export const PLUGIN_SYNCER_PREFERRED_TYPES = new Set<string>()
 
 export type PostAccountSyncSource = `cose` | `plugin-syncer`
 

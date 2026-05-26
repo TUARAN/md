@@ -74,14 +74,15 @@
 
 ## 🔌 浏览器扩展（内容同步）
 
-多平台草稿写入依赖浏览器扩展，编辑器会按平台分流：
+多平台草稿写入依赖 **COSE** 浏览器扩展：
 
-| 扩展                                                                                                   | 适用场景                                        | 获取方式                                                                                                            |
-| ------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| [COSE（cose 文章同步助手）](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk) | CSDN、掘金等 COSE 已支持的平台                  | Chrome 网上应用店安装                                                                                               |
-| **CSYNC**（本站配套）                                                                                  | 知乎、公众号、微博等与 `syncblog.cn` 联动的平台 | 在 [syncblog.cn](https://syncblog.cn) 内容同步页按提示下载 `.zip`，解压后在 `chrome://extensions/` 加载已解压的扩展 |
+| 扩展                                                                                                   | 适用场景                                       | 获取方式                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [COSE 官方版（doocs/cose）](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk) | 知乎 / 公众号 / 微博 / 思否 / 掘金 / CSDN 等   | Chrome 网上应用店安装                                                                                                                           |
+| [COSE 改造版（TUARAN/cose）](https://github.com/TUARAN/cose/releases/latest)                           | 官方版漏写或字段对不上时的备选；覆盖更多边角场 | GitHub Releases 下载 `.zip`，`chrome://extensions/` → 「开发者模式」→「加载已解压」                                                             |
+| **CSYNC**（可选，早期产物）                                                                            | COSE 改造版已覆盖其全部独占平台；默认无需安装  | 仍想用时：在 [syncblog.cn](https://syncblog.cn) 内容同步页 / 发布弹窗的「高级 / 备选方案」折叠面里下载 `.zip`，同样以「加载已解压的扩展」方式装 |
 
-> 至少安装 **COSE** 或 **CSYNC** 之一，才能在内容同步页检测账号并写入草稿。自建部署需在构建前执行 `pnpm package:csync`，将扩展 zip 打入静态资源；也可直接加载仓库内 `apps/web/vendor/csync-extension` 目录进行调试。
+> 装 **COSE** 任一版本即可在内容同步页检测账号并写入草稿。CSYNC 现已降为可选项，仅供与 `$pluginSyncer` 桥接的老链路兜底。自建部署时 `pnpm package:csync` 是可选脚本，仅当你想把 CSYNC zip 一并打入站点静态资源（保留下载入口）才需要运行；也可直接加载仓库内 `apps/web/vendor/csync-extension` 目录调试。
 
 ## 🖼️ 支持的图床服务
 
@@ -126,7 +127,8 @@ nvm i && nvm use
 # 安装依赖
 pnpm i
 
-# 打包 CSYNC 扩展（写入 apps/web/public/，供站点下载与 CI 构建）
+# 打包 CSYNC 扩展（可选；仅当想在站点内提供 CSYNC 下载入口时执行。
+# 主推 COSE 由用户从 chromewebstore / TUARAN/cose releases 直接安装，无需在本仓打包）
 pnpm package:csync
 
 # 启动开发模式
@@ -166,14 +168,14 @@ pnpm web wrangler:deploy
 
 ### 推荐：本站完整工作流
 
-克隆本仓库并构建 Web 应用（含 CSYNC 打包、默认图床 API、工作流页面）：
+克隆本仓库并构建 Web 应用（含默认图床 API、工作流页面）：
 
 ```sh
 git clone https://github.com/TUARAN/md.git
 cd md
 pnpm install
-pnpm package:csync
-pnpm web build          # 静态资源
+pnpm package:csync       # 可选：仅当想在站点内提供 CSYNC 备选下载时执行
+pnpm web build           # 静态资源
 pnpm web wrangler:deploy # 部署到 Cloudflare（可选）
 ```
 

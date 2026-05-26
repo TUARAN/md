@@ -201,27 +201,35 @@ onUnmounted(() => {
                   左栏定稿 Markdown，右栏核对图文；分发时点「发布」写各站草稿。
                 </p>
                 <p class="mt-2">
-                  各站编辑页差异大，编辑器用双扩展：多数平台走
+                  各站编辑页差异大，发布走
                   <a
-                    href="https://github.com/doocs/cose"
+                    href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="font-medium text-foreground underline underline-offset-2"
-                  >COSE</a>
-                  ；知乎 / 公众号 / 微博可优先走
-                  <span class="font-medium text-foreground">CSYNC</span>
-                  （页面桥接 <code class="rounded bg-muted px-1 py-px text-[10px]">$pluginSyncer</code>）。
-                  CSYNC 请
+                  >COSE 扩展</a>
+                  把内容写到知乎 / 公众号 / 微博 / 思否 / 掘金等各站草稿。覆盖范围不够时改装
                   <a
-                    href="#"
+                    href="https://github.com/TUARAN/cose/releases/latest"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     class="font-medium text-foreground underline underline-offset-2"
-                    @click.prevent="downloadCsyncExtensionZip()"
-                  >下载 .zip</a>
-                  解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载。
+                  >TUARAN/cose 改造版</a>。
                 </p>
-                <p class="mt-2 text-[11px]">
-                  「发布」里带 CSYNC 角标的由 CSYNC 写入，其余由 COSE 处理。
-                </p>
+                <details class="mt-2 text-[11px]">
+                  <summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+                    备选：CSYNC（可选）
+                  </summary>
+                  <p class="mt-1">
+                    早期独立的同步扩展，COSE 改造版已覆盖其全部独占平台，<strong class="text-foreground">默认无需安装</strong>。仍想用作备选时请
+                    <a
+                      href="#"
+                      class="font-medium text-foreground underline underline-offset-2"
+                      @click.prevent="downloadCsyncExtensionZip()"
+                    >下载 .zip</a>
+                    解压后在 <code class="rounded bg-muted px-1 py-px text-[10px]">chrome://extensions</code> 加载。「发布」里带 CSYNC 角标的由它写入。
+                  </p>
+                </details>
               </PopoverContent>
             </Popover>
           </div>
