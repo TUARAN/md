@@ -8,8 +8,10 @@ import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
+import { copyPlain } from '@/utils/clipboard'
 import { downloadCsyncExtensionZip } from '@/utils/downloadCsyncExtension'
 import { PLUGIN_SYNCER_PREFERRED_TYPES } from '@/utils/publishExtensions'
+import { toast } from '@/utils/toast'
 
 defineOptions({
   inheritAttrs: false,
@@ -163,6 +165,32 @@ function onAvatarError(account: PostAccount, event: Event) {
   if (!account)
     return
   img.style.display = `none`
+}
+
+/**
+ * 点击平台行「登录」入口：先打开平台页（同步保留用户手势，避免被弹窗拦截），
+ * 再异步把当前 Markdown 写入剪贴板，并提示用户登录后直接 Ctrl+V 粘贴。
+ * 对很多平台（思否 / 少数派 / 51CTO 等）来说，这个 URL 本来就是编辑器入口，
+ * 自动复制能把「打开 → 登录 → 手动回本站复制 → 切回粘贴」缩短为一次粘贴。
+ */
+async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
+  ev.preventDefault()
+  const url = getPlatformLoginUrl(account.type)
+  // 必须在用户手势的同步阶段调用 window.open，否则会被 Safari/Chrome 的弹窗拦截
+  window.open(url, `_blank`, `noopener,noreferrer`)
+
+  const md = editor.value?.state.doc.toString()?.trim() ?? ``
+  if (!md) {
+    toast.info(`已打开 ${account.title} 编辑页`)
+    return
+  }
+  try {
+    await copyPlain(md)
+    toast.success(`Markdown 已复制，登录 ${account.title} 后直接 Ctrl+V 粘贴`)
+  }
+  catch {
+    toast.warning(`已打开 ${account.title}，但剪贴板写入失败，请手动复制 Markdown 后粘贴`)
+  }
 }
 </script>
 
@@ -347,9 +375,12 @@ function onAvatarError(account: PostAccount, event: Event) {
                       as="a"
                       :href="getPlatformLoginUrl(account.type)"
                       target="_blank"
+                      rel="noopener noreferrer"
                       class="ml-1 text-sm text-muted-foreground hover:underline"
+                      :title="`打开 ${account.title} 编辑页，并把当前 Markdown 复制到剪贴板`"
+                      @click="openPlatformWrite(account, $event)"
                     >
-                      登录
+                      去发布
                     </Primitive>
                   </div>
                 </div>
