@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Copy, Eye, FileText, Wand2 } from 'lucide-vue-next'
+import GNewsArticleCard from '@/components/ai/gnews/GNewsArticleCard.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,40 +15,18 @@ import { Textarea } from '@/components/ui/textarea'
 import WorkflowSectionTitle from '@/components/workflow/WorkflowSectionTitle.vue'
 import { useGNewsFetchSession } from '@/composables/useGNewsFetchSession'
 
-const previewContainerRef = useTemplateRef<HTMLElement>(`previewContainerRef`)
-
 const {
   formatted,
+  articles,
+  lastProviderLabel,
   meta,
   lastError,
   maxArticles,
   sortby,
   resultTab,
-  previewHtml,
   copyMarkdownSource,
   goRemixWithAssistant,
-  onPreviewClick,
-  initPreviewRenderer,
-  disposePreviewRenderer,
-  runHighlightInPreview,
 } = useGNewsFetchSession()
-
-watch(previewHtml, () => {
-  if (!previewHtml.value.trim()) {
-    return
-  }
-  nextTick(() => {
-    runHighlightInPreview(previewContainerRef.value)
-  })
-})
-
-onMounted(() => {
-  initPreviewRenderer()
-})
-
-onBeforeUnmount(() => {
-  disposePreviewRenderer()
-})
 </script>
 
 <template>
@@ -136,21 +115,28 @@ onBeforeUnmount(() => {
         </TabsList>
         <TabsContent value="preview" class="mt-2 flex flex-col outline-none">
           <div
-            class="gnews-md-preview max-h-[min(50vh,420px)] min-h-[220px] overflow-x-auto overflow-y-auto rounded-md border border-border/80 bg-muted/20 px-3 py-3 text-sm"
+            class="max-h-[min(60vh,520px)] min-h-[220px] overflow-y-auto rounded-md border border-border/80 bg-muted/20 p-3"
           >
             <div
-              v-if="!formatted.trim()"
+              v-if="articles.length === 0"
               class="text-muted-foreground py-8 text-center text-sm"
             >
-              点击「获取资讯」后，此处将渲染可阅读的排版效果…
+              点击「获取资讯」后，此处将以卡片形式展示检索到的资讯…
             </div>
-            <div
-              v-else
-              ref="previewContainerRef"
-              class="gnews-md-preview-inner [&_a]:text-primary [&_a]:underline-offset-2 [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_th]:border [&_th]:border-border [&_th]:bg-muted/50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1 [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground"
-              @click="onPreviewClick"
-              v-html="previewHtml"
-            />
+            <div v-else class="flex flex-col gap-3">
+              <div
+                v-if="lastProviderLabel"
+                class="text-muted-foreground text-[11px] leading-relaxed"
+              >
+                本素材来自 <span class="text-foreground font-medium">{{ lastProviderLabel }}</span> 检索结果，写作或二创前请对照原文核对事实与数据（摘要 / 节选可能经过 API 截断）。
+              </div>
+              <GNewsArticleCard
+                v-for="(article, idx) in articles"
+                :key="`${article.url}-${idx}`"
+                :article="article"
+                :index="idx"
+              />
+            </div>
           </div>
         </TabsContent>
         <TabsContent value="source" class="relative mt-2 outline-none">

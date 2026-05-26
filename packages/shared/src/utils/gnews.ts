@@ -348,7 +348,7 @@ export function stripGNewsContentTailNote(text: string): string {
   return text.replace(/\s*\[\d+\s*chars\]\s*$/i, ``).trimEnd()
 }
 
-function formatArticleDate(iso: string): string {
+export function formatArticleDate(iso: string): string {
   try {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime()))

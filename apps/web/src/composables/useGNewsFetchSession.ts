@@ -1,14 +1,11 @@
-import type { RendererAPI } from '@md/shared/types'
-import { highlightPendingBlocks, hljs, initRenderer } from '@md/core'
-import { NEWS_SOURCE_OPTIONS } from '@md/shared/utils/gnews'
+import type { GNewsArticle } from '@md/shared/utils/gnews'
+import { getNewsSourceLabel, NEWS_SOURCE_OPTIONS } from '@md/shared/utils/gnews'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { resolveGNewsProxyBase, useGNews } from '@/composables/useGNews'
 import useGNewsConfigStore from '@/stores/gnewsConfig'
-import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
-import { postProcessHtml, renderMarkdown } from '@/utils'
 import { copyPlain } from '@/utils/clipboard'
 import { toast } from '@/utils/toast'
 
@@ -29,12 +26,9 @@ function createGNewsFetchSession() {
     configPanelExpanded,
   } = storeToRefs(gnewsStore)
 
-  const themeStore = useThemeStore()
   const uiStore = useUIStore()
   const { setCreationDraftMarkdown } = uiStore
   const router = useRouter()
-  const { isCiteStatus, legend, isCountStatus, isMacCodeBlock, isShowLineNumber } = storeToRefs(themeStore)
-  const { isDark } = storeToRefs(uiStore)
 
   const { loading, abort, search } = useGNews()
 
@@ -43,44 +37,13 @@ function createGNewsFetchSession() {
   const lastPageItemCount = ref(0)
 
   const formatted = ref(``)
+  const articles = ref<GNewsArticle[]>([])
+  const lastProviderLabel = ref(``)
   const meta = ref(``)
   const lastError = ref(``)
   const lastRequestUrl = ref(``)
 
   const resultTab = ref<`preview` | `source`>(`preview`)
-  const previewHtml = ref(``)
-
-  let panelRenderer: RendererAPI | null = null
-
-  function refreshGNewsPreview() {
-    if (!panelRenderer) {
-      return
-    }
-    const md = formatted.value.trim()
-    if (!md) {
-      previewHtml.value = ``
-      return
-    }
-
-    panelRenderer.reset({
-      citeStatus: isCiteStatus.value,
-      legend: legend.value,
-      countStatus: isCountStatus.value,
-      isMacCodeBlock: isMacCodeBlock.value,
-      isShowLineNumber: isShowLineNumber.value,
-      themeMode: isDark.value ? `dark` : `light`,
-    })
-
-    const { html, readingTime } = renderMarkdown(md, panelRenderer)
-    previewHtml.value = postProcessHtml(html, readingTime, panelRenderer)
-  }
-
-  watch(
-    [formatted, isCiteStatus, legend, isCountStatus, isMacCodeBlock, isShowLineNumber, isDark],
-    () => {
-      refreshGNewsPreview()
-    },
-  )
 
   const envKey = (import.meta.env.VITE_GNEWS_API_KEY ?? ``).trim()
   const gnewsProxyUrl = resolveGNewsProxyBase()
@@ -130,6 +93,7 @@ function createGNewsFetchSession() {
   async function runFetch() {
     lastError.value = ``
     formatted.value = ``
+    articles.value = []
     lastRequestUrl.value = ``
 
     const result = await search({
@@ -177,6 +141,8 @@ function createGNewsFetchSession() {
     }
 
     formatted.value = result.formatted
+    articles.value = result.articles
+    lastProviderLabel.value = getNewsSourceLabel(provider.value)
     lastTotalArticles.value = result.totalArticles
     lastPageItemCount.value = result.articles.length
     const total = result.totalArticles
@@ -241,34 +207,6 @@ function createGNewsFetchSession() {
     toast.success(`已送入风格二创工作台`)
   }
 
-  function onPreviewClick(e: MouseEvent) {
-    const a = (e.target as HTMLElement | null)?.closest(`a`)
-    const href = a?.getAttribute(`href`)?.trim()
-    if (!href || !/^https?:\/\//i.test(href))
-      return
-    e.preventDefault()
-    window.open(href, `_blank`, `noopener,noreferrer`)
-  }
-
-  function initPreviewRenderer() {
-    panelRenderer = initRenderer({
-      isMacCodeBlock: isMacCodeBlock.value,
-      isShowLineNumber: isShowLineNumber.value,
-    })
-    refreshGNewsPreview()
-  }
-
-  function disposePreviewRenderer() {
-    abort()
-    panelRenderer = null
-  }
-
-  function runHighlightInPreview(el: HTMLElement | null) {
-    if (!el || !previewHtml.value.trim())
-      return
-    highlightPendingBlocks(hljs, el)
-  }
-
   return {
     loading,
     abort,
@@ -290,20 +228,17 @@ function createGNewsFetchSession() {
     gnewsProxyUrl,
     isGNewsProxyEnabled,
     formatted,
+    articles,
+    lastProviderLabel,
     meta,
     lastError,
     resultTab,
-    previewHtml,
     fetchCurrentPage,
     fetchNextPage,
     fetchPrevPage,
     goFirstPage,
     copyMarkdownSource,
     goRemixWithAssistant,
-    onPreviewClick,
-    initPreviewRenderer,
-    disposePreviewRenderer,
-    runHighlightInPreview,
   }
 }
 
