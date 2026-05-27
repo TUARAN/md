@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Bot, ClipboardCheck, Copy, ExternalLink, Link, RefreshCw, Sparkles, Star } from 'lucide-vue-next'
+import { BarChart3, Bot, Camera, ClipboardCheck, Copy, ExternalLink, Link, RefreshCw, ShieldCheck, Sparkles, Star, UserCheck } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -38,6 +38,27 @@ const reportTemplates = [
     id: `client`,
     name: `客户交付`,
     summary: `强调结论、证据、下一步动作，便于对外汇报。`,
+  },
+] as const
+
+const accuracySteps = [
+  {
+    title: `自动抓取数据`,
+    summary: `对支持接口或页面抓取的平台，自动采集阅读、互动与发布数据，形成基础数据源。`,
+    icon: Bot,
+    tone: `text-indigo-600 bg-indigo-50 border-indigo-100`,
+  },
+  {
+    title: `快照补充校验`,
+    summary: `对不支持直接抓取的平台，由本地 Agent 调用浏览器查询，或人工上传截图快照留痕。`,
+    icon: Camera,
+    tone: `text-emerald-600 bg-emerald-50 border-emerald-100`,
+  },
+  {
+    title: `人工复核异常`,
+    summary: `人工复核异常值、缺失值和口径不一致的数据，确认后再进入最终汇报。`,
+    icon: UserCheck,
+    tone: `text-amber-600 bg-amber-50 border-amber-100`,
   },
 ] as const
 
@@ -128,17 +149,23 @@ const reportMarkdown = computed(() => {
     `| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |`,
     rows || `| - | - | 0 | 0 | 0 | 0 | 0 | 0 |`,
     ``,
-    `## 3. 分析评价`,
+    `## 3. 数据准确性保障`,
+    `- 自动抓取数据：对支持接口或页面抓取的平台，自动采集阅读、互动与发布数据，形成基础数据源。`,
+    `- 快照补充校验：对不支持直接抓取的平台，由本地 Agent 调用浏览器查询，或人工上传截图快照留痕。`,
+    `- 人工复核异常：人工复核异常值、缺失值和口径不一致的数据，确认后再进入最终汇报。`,
+    `- 闭环原则：自动采集提升效率，快照留痕保证可追溯，人工复核兜底排除异常。`,
+    ``,
+    `## 4. 分析评价`,
     `${conclusion}`,
     ``,
     `${recommendation}`,
     ``,
-    `## 4. 下一步动作`,
+    `## 5. 下一步动作`,
     `- 对评分最高的平台保留同类选题，继续观察 24h / 72h 数据变化。`,
     `- 对低互动平台重写标题与首段，把结论前置，并补充评论区引导。`,
     `- 将表现最好的长文拆成 3–5 条短内容，回流到宣发活跃页继续分发。`,
     ``,
-    `## 5. 备注`,
+    `## 6. 备注`,
     reportNote.value.trim() || `无`,
   ].join(`\n`)
 })
@@ -396,6 +423,43 @@ async function copyReport() {
               </p>
             </div>
           </div>
+        </div>
+
+        <div class="rounded-[22px] border border-gray-200 bg-white/85 p-4 shadow-sm dark:border-border dark:bg-card">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <WorkflowSectionTitle>
+              数据准确性闭环
+            </WorkflowSectionTitle>
+            <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-border dark:bg-background dark:text-emerald-300">
+              <ShieldCheck class="size-3.5" />
+              三步校验
+            </span>
+          </div>
+          <div class="mt-3 grid gap-2">
+            <article
+              v-for="(step, index) in accuracySteps"
+              :key="step.title"
+              class="flex gap-3 rounded-xl border border-border/80 bg-muted/10 p-3"
+            >
+              <div
+                class="flex size-9 shrink-0 items-center justify-center rounded-lg border"
+                :class="step.tone"
+              >
+                <component :is="step.icon" class="size-4" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-foreground">
+                  {{ index + 1 }}. {{ step.title }}
+                </p>
+                <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {{ step.summary }}
+                </p>
+              </div>
+            </article>
+          </div>
+          <p class="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600 dark:bg-background dark:text-muted-foreground">
+            自动采集提升效率，快照留痕保证可追溯，人工复核兜底排除异常，最终保障汇报数据准确可靠。
+          </p>
         </div>
       </section>
 
