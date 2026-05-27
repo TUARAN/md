@@ -2,7 +2,7 @@
 /**
  * EditorLayout
  *
- * 6 个 workflow 步骤(sync / data / creation / matrix / distribution / stats)的
+ * 5 个 workflow 步骤(sync / data / creation / distribution / stats)的
  * 公共外壳:顶部 EditorHeader 包含工作流导航(内容工厂 → 6 步)和编辑器菜单。
  *
  * 路由切换时用 `<KeepAlive>` 保留各子页面状态(编辑器内容、表单输入、滚动位置等),

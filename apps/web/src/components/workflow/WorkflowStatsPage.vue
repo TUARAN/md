@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { BarChart3, Bot, ClipboardCheck, Copy, ExternalLink, Link, RefreshCw, Sparkles, Star } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { copyPlain } from '@/utils/clipboard'
@@ -43,7 +42,7 @@ const reportTemplates = [
 ] as const
 
 const activeTemplateId = ref<(typeof reportTemplates)[number]['id']>(`weekly`)
-const linkInput = ref(`https://blog.csdn.net/tuaran/article/details/ai-agent-workflow`)
+const linkInput = ref(``)
 const reportNote = ref(`目标：验证技术长文在开发者平台的阅读效率，并判断是否值得拆成短内容二次分发。`)
 const isFetching = ref(false)
 const publishedLinks = ref<PublishedLink[]>([
@@ -159,19 +158,29 @@ function inferPlatform(url: string) {
   return `自定义链接`
 }
 
-function addPublishedLink() {
-  const url = linkInput.value.trim()
-  if (!url) {
-    toast.error(`请输入已发布链接`)
-    return
-  }
-  const id = Date.now()
+function parsePublishedUrls(input: string) {
+  const existingUrls = new Set(publishedLinks.value.map(item => item.url))
+  const uniqueUrls = new Set<string>()
+
+  return input
+    .split(/[,\n\r]+/)
+    .map(url => url.trim())
+    .filter(Boolean)
+    .filter((url) => {
+      if (existingUrls.has(url) || uniqueUrls.has(url))
+        return false
+      uniqueUrls.add(url)
+      return true
+    })
+}
+
+function createPublishedLink(url: string, index: number): PublishedLink {
   const seed = Array.from(url).reduce((sum, char) => sum + char.charCodeAt(0), 0)
-  publishedLinks.value.unshift({
-    id,
+  return {
+    id: Date.now() + index,
     platform: inferPlatform(url),
     url,
-    title: `待复盘内容 ${publishedLinks.value.length + 1}`,
+    title: `待复盘内容 ${publishedLinks.value.length + index + 1}`,
     publishedAt: new Date().toISOString().slice(0, 10),
     reads: 800 + (seed % 4200),
     likes: 20 + (seed % 140),
@@ -179,9 +188,24 @@ function addPublishedLink() {
     collects: 10 + (seed % 90),
     shares: 3 + (seed % 48),
     score: 62 + (seed % 31),
-  })
+  }
+}
+
+function addPublishedLinks() {
+  const urls = parsePublishedUrls(linkInput.value)
+  if (!linkInput.value.trim()) {
+    toast.error(`请输入已发布链接`)
+    return
+  }
+
+  if (!urls.length) {
+    toast.error(`没有可加入的新链接`)
+    return
+  }
+
+  publishedLinks.value.unshift(...urls.map(createPublishedLink))
   linkInput.value = ``
-  toast.success(`已加入抓取队列`)
+  toast.success(`已加入 ${urls.length} 条抓取队列`)
 }
 
 async function refreshMetrics() {
@@ -237,18 +261,20 @@ async function copyReport() {
           </WorkflowSectionTitle>
           <div class="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
             <div class="relative">
-              <Link class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <Link class="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" />
+              <Textarea
                 v-model="linkInput"
-                class="h-10 rounded-lg border-slate-200 bg-white pl-9 text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
-                placeholder="粘贴 CSDN、掘金、知乎等已发布链接"
-                @keydown.enter.prevent="addPublishedLink"
+                class="min-h-20 resize-none rounded-lg border-slate-200 bg-white py-3 pl-9 text-sm leading-relaxed focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
+                placeholder="粘贴 CSDN、掘金、知乎等已发布链接；多个链接请用英文逗号 , 隔开"
               />
             </div>
-            <Button class="h-10 rounded-lg bg-indigo-600 px-4 text-white hover:bg-indigo-700" type="button" @click="addPublishedLink">
+            <Button class="h-10 rounded-lg bg-indigo-600 px-4 text-white hover:bg-indigo-700 sm:self-start" type="button" @click="addPublishedLinks">
               加入抓取
             </Button>
           </div>
+          <p class="mt-2 text-xs leading-relaxed text-muted-foreground">
+            支持批量粘贴，格式示例：链接1, 链接2, 链接3；重复链接会自动跳过。
+          </p>
 
           <div class="mt-4 grid gap-2">
             <article

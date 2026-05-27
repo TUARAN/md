@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Bot, Copy, PenLine, SendHorizontal } from 'lucide-vue-next'
+import { Bot, Copy, NotebookPen, PenLine, SendHorizontal } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
+import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,13 +13,25 @@ import { toast } from '@/utils/toast'
 import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
 import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
+import XiaohongshuCampaignPanel from './XiaohongshuCampaignPanel.vue'
 
 const uiStore = useUIStore()
 const { creationDraftMarkdown } = storeToRefs(uiStore)
 const { queueAiAssistantDraftMarkdown, toggleAIDialog } = uiStore
+const route = useRoute()
 
 const templateTopic = ref(`XXX`)
 const activeFixedTemplate = ref<`none` | `insight` | `techCommunity`>(`none`)
+const creationMode = ref<`generic` | `xiaohongshu`>(`generic`)
+
+watch(
+  () => route.query.mode,
+  (mode) => {
+    if (mode === `xiaohongshu`)
+      creationMode.value = `xiaohongshu`
+  },
+  { immediate: true },
+)
 
 const insightTemplatePrompt = computed(() =>
   `撰写一篇通俗深度科技科普长文，围绕通用人工智能、科技行业、大厂技术、AI 底层技术相关内容展开，从行业发展、技术演进视角切入，梳理技术 / 产品 / 生态的发展脉络、核心逻辑、解决的实际问题与行业意义；行文自然流畅，减少生硬分段分点，采用段落式结构化叙事，逻辑层层递进，文风偏向行业洞察 + 大白话科普，面向开发者与科技爱好者，避免过度学术化；文中在对应章节节点插入主题配图，搭配配图建议；叙事结构为先抛出大众普遍困惑，引出背景，逐个拆解核心要点，串联完整演进线，最后升华行业趋势。\n主题是：${templateTopic.value.trim() || `XXX`}`,
@@ -119,11 +132,37 @@ function openAssistantWithPrompt() {
         风格二创
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        承接数据获取页的材料；可选用面向 GPT Web 或豆包的长模版，再配合右侧提示词交给 AI。
+        承接数据获取页的材料；通用二创用于长文改写，小红书图文用于封面生图、配文和成稿。
       </p>
+      <div class="mt-3 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="风格二创模式">
+        <button
+          type="button"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
+          :class="creationMode === 'generic'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+          @click="creationMode = 'generic'"
+        >
+          <PenLine class="h-4 w-4" />
+          通用二创
+        </button>
+        <button
+          type="button"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
+          :class="creationMode === 'xiaohongshu'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+          @click="creationMode = 'xiaohongshu'"
+        >
+          <NotebookPen class="h-4 w-4" />
+          小红书图文
+        </button>
+      </div>
     </template>
 
-    <div class="grid min-h-0 gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.85fr)]">
+    <XiaohongshuCampaignPanel v-if="creationMode === 'xiaohongshu'" />
+
+    <div v-else class="grid min-h-0 gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.85fr)]">
       <section class="flex min-h-0 flex-col gap-3">
         <WorkflowSectionTitle>
           输入材料
