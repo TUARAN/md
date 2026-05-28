@@ -300,6 +300,18 @@ watch(isShowImportMdDialog, (visible) => {
           </div>
         </TabsContent>
       </Tabs>
+
+      <p class="text-center text-xs text-muted-foreground/60">
+        想让站外应用自动推送文章?查看
+        <RouterLink
+          to="/docs/import"
+          target="_blank"
+          class="underline hover:text-muted-foreground"
+          @click="closeDialog"
+        >
+          站外接入文档
+        </RouterLink>
+      </p>
     </DialogContent>
   </Dialog>
 </template>

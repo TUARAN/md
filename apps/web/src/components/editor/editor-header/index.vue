@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, RefreshCw } from 'lucide-vue-next'
+import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import HelpDropdown from './HelpDropdown.vue'
 import InsertDropdown from './InsertDropdown.vue'
 import MarkdownHelpDialog from './MarkdownHelpDialog.vue'
 import StyleDropdown from './StyleDropdown.vue'
+import WorkflowNavStep from './WorkflowNavStep.vue'
 
 const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 
@@ -49,6 +50,11 @@ const workflowSteps = [
   { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `主链路`, comingSoon: false },
 ]
 
+/** 「数据获取 + 风格二创」是本站生产的一组,站外接入可整体替代它 */
+const productionSteps = workflowSteps.slice(0, 2)
+/** 「内容同步」起的后续链路,两条入口都汇入这里 */
+const pipelineSteps = workflowSteps.slice(2)
+
 function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
   if (stepId === `data`) {
     const url = getDataAcquisitionNavUrl()
@@ -74,33 +80,48 @@ function openCreatorCard() {
       class="workflow-nav hidden min-w-0 flex-1 md:flex items-center gap-1 overflow-x-auto whitespace-nowrap"
       aria-label="工作流"
     >
-      <button
-        v-for="step in workflowSteps"
-        :key="step.id"
-        type="button"
-        class="workflow-step inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors"
-        :class="[
-          workflowAppPage === step.id
-            ? 'workflow-step--current bg-primary/10 text-primary'
-            : step.comingSoon
-              ? 'workflow-step--pending text-muted-foreground/55 hover:bg-muted/40'
-              : 'workflow-step--inactive text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-        ]"
-        :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
-        :aria-current="workflowAppPage === step.id ? 'step' : undefined"
-        @click="openWorkflowStep(step.id)"
+      <!-- 站外接入:替代「数据获取 + 风格二创」的外部入口,同样汇入「内容同步」 -->
+      <RouterLink
+        to="/docs/import"
+        target="_blank"
+        class="workflow-extern inline-flex shrink-0 items-center gap-1.5 rounded-md border border-dashed border-primary/45 px-2.5 py-1.5 text-sm font-medium text-primary/90 transition-colors hover:bg-primary/10"
+        title="站外接入：站外应用把已做好的内容直接推进来,替代「数据获取 + 风格二创」两步"
       >
-        <component
-          :is="step.icon"
-          class="size-4 shrink-0"
-          aria-hidden="true"
+        <Plug class="size-4 shrink-0" aria-hidden="true" />
+        <span>站外接入</span>
+      </RouterLink>
+      <span class="nav-or shrink-0 px-1 text-xs text-muted-foreground/60" aria-hidden="true">或</span>
+
+      <!-- 本站生产组:数据获取 + 风格二创,与站外接入二选一 -->
+      <div
+        class="workflow-group inline-flex shrink-0 items-center gap-0.5 rounded-lg border border-border/60 bg-muted/30 px-1 py-0.5"
+        title="本站生产：数据获取 + 风格二创"
+      >
+        <template v-for="(step, i) in productionSteps" :key="step.id">
+          <span v-if="i > 0" class="nav-arrow shrink-0 text-muted-foreground/40" aria-hidden="true">→</span>
+          <WorkflowNavStep
+            :label="step.label"
+            :icon="step.icon"
+            :phase="step.phase"
+            :coming-soon="step.comingSoon"
+            :current="workflowAppPage === step.id"
+            @select="openWorkflowStep(step.id)"
+          />
+        </template>
+      </div>
+
+      <!-- 后续链路:内容同步 → 宣发活跃 → 闭环汇报 -->
+      <template v-for="step in pipelineSteps" :key="step.id">
+        <span class="nav-arrow shrink-0 px-0.5 text-muted-foreground/45" aria-hidden="true">→</span>
+        <WorkflowNavStep
+          :label="step.label"
+          :icon="step.icon"
+          :phase="step.phase"
+          :coming-soon="step.comingSoon"
+          :current="workflowAppPage === step.id"
+          @select="openWorkflowStep(step.id)"
         />
-        <span class="truncate">{{ step.label }}</span>
-        <span
-          v-if="step.comingSoon"
-          class="workflow-step-badge"
-        >后续</span>
-      </button>
+      </template>
     </nav>
 
     <!-- 移动端：工作流横向滚 + 汉堡菜单 -->
@@ -109,29 +130,45 @@ function openCreatorCard() {
         class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
         aria-label="工作流"
       >
-        <button
-          v-for="step in workflowSteps"
-          :key="step.id"
-          type="button"
-          class="workflow-step inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors"
-          :class="[
-            workflowAppPage === step.id
-              ? 'workflow-step--current bg-primary/10 text-primary'
-              : step.comingSoon
-                ? 'workflow-step--pending text-muted-foreground/55'
-                : 'workflow-step--inactive text-muted-foreground',
-          ]"
-          :title="step.comingSoon ? `${step.label}：后续接入` : `${step.phase}：${step.label}`"
-          :aria-current="workflowAppPage === step.id ? 'step' : undefined"
-          @click="openWorkflowStep(step.id)"
+        <RouterLink
+          to="/docs/import"
+          target="_blank"
+          class="workflow-extern inline-flex shrink-0 items-center gap-1 rounded-md border border-dashed border-primary/45 px-2 py-1 text-xs font-medium text-primary/90"
+          title="站外接入：替代「数据获取 + 风格二创」"
         >
-          <component
-            :is="step.icon"
-            class="size-3.5 shrink-0"
-            aria-hidden="true"
+          <Plug class="size-3.5 shrink-0" aria-hidden="true" />
+          <span>站外接入</span>
+        </RouterLink>
+        <span class="nav-or shrink-0 px-0.5 text-[10px] text-muted-foreground/60" aria-hidden="true">或</span>
+
+        <!-- 本站生产组 -->
+        <div class="workflow-group inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border/60 bg-muted/30 px-0.5">
+          <template v-for="(step, i) in productionSteps" :key="step.id">
+            <span v-if="i > 0" class="nav-arrow shrink-0 text-[10px] text-muted-foreground/40" aria-hidden="true">→</span>
+            <WorkflowNavStep
+              dense
+              :label="step.label"
+              :icon="step.icon"
+              :phase="step.phase"
+              :coming-soon="step.comingSoon"
+              :current="workflowAppPage === step.id"
+              @select="openWorkflowStep(step.id)"
+            />
+          </template>
+        </div>
+
+        <template v-for="step in pipelineSteps" :key="step.id">
+          <span class="nav-arrow shrink-0 px-0.5 text-[10px] text-muted-foreground/45" aria-hidden="true">→</span>
+          <WorkflowNavStep
+            dense
+            :label="step.label"
+            :icon="step.icon"
+            :phase="step.phase"
+            :coming-soon="step.comingSoon"
+            :current="workflowAppPage === step.id"
+            @select="openWorkflowStep(step.id)"
           />
-          <span class="max-w-[3.25rem] truncate">{{ step.label }}</span>
-        </button>
+        </template>
       </nav>
       <Menubar class="menubar shrink-0 border-0 p-0">
         <MenubarMenu>
@@ -195,28 +232,6 @@ function openCreatorCard() {
   &::-webkit-scrollbar {
     display: none;
   }
-}
-
-.workflow-step {
-  border: 0;
-  cursor: pointer;
-  font-family: inherit;
-  letter-spacing: normal;
-  text-transform: none;
-
-  &:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
-}
-
-.workflow-step-badge {
-  border-radius: 999px;
-  padding: 0 0.375rem;
-  font-size: 0.625rem;
-  line-height: 1rem;
-  color: hsl(var(--muted-foreground));
-  background: hsl(var(--muted) / 0.6);
 }
 
 .menubar {

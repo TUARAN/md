@@ -27,6 +27,7 @@ const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDis
 const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.vue')
 
 const CreatorOfferPage = () => import('@/views/CreatorOfferPage.vue')
+const ImportDocsPage = () => import('@/views/ImportDocsPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
 export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `distribution`, `stats`] as const
@@ -59,6 +60,8 @@ const routes: RouteRecordRaw[] = [
   { path: `/matrix`, redirect: `/distribution` },
   // /creator-profile 早期公开矩阵页, 一并指向 /distribution
   { path: `/creator-profile`, redirect: `/distribution` },
+  // 站外文章接入文档(公开页,不挂顶栏)
+  { path: `/docs/import`, name: `import-docs`, component: ImportDocsPage },
   {
     path: `/creator-offer/:creatorId`,
     name: `creator-offer`,
