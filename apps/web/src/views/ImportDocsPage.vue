@@ -256,7 +256,7 @@ function goBack() {
           <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
             每次导入后回传。<code class="rounded bg-muted px-1 py-0.5 text-[0.8em]">ok=false</code> 时
             <code class="rounded bg-muted px-1 py-0.5 text-[0.8em]">reason</code> 为
-            <code class="rounded bg-muted px-1 py-0.5 text-[0.8em]">rejected-by-user</code> 或
+            <code class="rounded bg-muted px-1 py-0.5 text-[0.8em]">origin-not-whitelisted</code> 或
             <code class="rounded bg-muted px-1 py-0.5 text-[0.8em]">no-active-post</code>。
           </p>
           <pre class="mt-3 overflow-x-auto rounded-lg bg-muted/50 p-3 text-xs"><code>{ type: 'MD_IMPORT_RESULT',
@@ -271,19 +271,21 @@ function goBack() {
           来源与授权
         </h2>
         <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-          为防止站外应用静默覆盖用户正在编辑的草稿:
+          只有<span class="font-medium text-foreground">打开或以 iframe 嵌入编辑器</span>的页面才能发来消息(它持有编辑器的 window 句柄);用户自己直接打开编辑器时,外部站点无法触达。在此之上,导入受白名单严格门禁:
         </p>
         <ul class="mt-2 space-y-2 text-sm leading-relaxed text-muted-foreground">
           <li class="flex gap-2">
             <Check class="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <span>
-              <span class="font-medium text-foreground">白名单站点</span>导入时不弹窗、直接推入。当前已开通:
+              <span class="font-medium text-foreground">仅白名单站点可导入</span>,直接写入当前文稿。当前已开通:
               <code class="rounded bg-background/70 px-1 py-0.5 text-[0.8em] dark:bg-background/40">2aran.com</code>、<code class="rounded bg-background/70 px-1 py-0.5 text-[0.8em] dark:bg-background/40">frontendnext.com</code>。
             </span>
           </li>
           <li class="flex gap-2">
             <Check class="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-            其它任意站点首次推送时,编辑器弹窗征求用户同意;允许后本次会话内不再弹窗。
+            <span>
+              <span class="font-medium text-foreground">未在白名单内的站点会被直接拒绝</span>,不写入任何内容,并回传 <code class="rounded bg-background/70 px-1 py-0.5 text-[0.8em] dark:bg-background/40">origin-not-whitelisted</code>。
+            </span>
           </li>
           <li class="flex gap-2">
             <Check class="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />

@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { documentTitle } from '@/constants/branding'
-import { useConfirmStore } from '@/stores/confirm'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -12,7 +11,6 @@ import { useUIStore } from '@/stores/ui'
 const uiStore = useUIStore()
 const postStore = usePostStore()
 const editorStore = useEditorStore()
-const confirmStore = useConfirmStore()
 const router = useRouter()
 const route = useRoute()
 const { isDark } = storeToRefs(uiStore)
@@ -38,19 +36,16 @@ interface ImportArticleMessage {
 type NormalizedImportPayload = NonNullable<ReturnType<typeof normalizeImportPayload>>
 
 /**
- * 可信来源白名单:免确认直接导入。其它来源需用户授权一次后方可写入。
- * 如需加入白名单(站外直接推入、免用户确认),联系微信 atar24。
+ * 可信来源白名单:仅这些来源可直接导入,其它来源一律拒绝。
+ * 如需加入白名单,联系微信 atar24。
  */
 const TRUSTED_IMPORT_ORIGINS = new Set([
   `https://2aran.com`,
   `https://frontendnext.com`,
 ])
 
-/** 本次会话用户已授权的来源,避免同一站点反复弹窗 */
-const sessionApprovedOrigins = new Set<string>()
-
 function isTrustedImportOrigin(origin: string) {
-  if (TRUSTED_IMPORT_ORIGINS.has(origin) || sessionApprovedOrigins.has(origin))
+  if (TRUSTED_IMPORT_ORIGINS.has(origin))
     return true
 
   try {
@@ -107,28 +102,14 @@ function handleImportMessage(event: MessageEvent) {
   if (!payload)
     return
 
-  const proceed = () => {
-    const ok = applyImport(payload)
-    replyImportResult(event, payload.requestId, ok, ok ? undefined : `no-active-post`)
-  }
-
-  // 一方可信来源直接导入;其它来源弹窗征求用户同意,防止站外静默覆盖草稿
-  if (isTrustedImportOrigin(event.origin)) {
-    proceed()
+  // 仅白名单来源可写入;其它来源一律拒绝(需联系微信 atar24 申请加白)
+  if (!isTrustedImportOrigin(event.origin)) {
+    replyImportResult(event, payload.requestId, false, `origin-not-whitelisted`)
     return
   }
 
-  confirmStore.confirm({
-    title: `允许导入文章?`,
-    description: `站点 ${event.origin} 请求向编辑器导入一篇文章,这会覆盖当前草稿。是否允许?(如需该站点免确认直接推入,可联系微信 atar24 开通白名单)`,
-    confirmText: `允许导入`,
-    cancelText: `拒绝`,
-    onConfirm: () => {
-      sessionApprovedOrigins.add(event.origin)
-      proceed()
-    },
-    onCancel: () => replyImportResult(event, payload.requestId, false, `rejected-by-user`),
-  })
+  const ok = applyImport(payload)
+  replyImportResult(event, payload.requestId, ok, ok ? undefined : `no-active-post`)
 }
 
 function postImportReady() {
