@@ -14,7 +14,6 @@ import DeepSeekRemixPanel from './DeepSeekRemixPanel.vue'
 import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
 import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
-import XiaohongshuCampaignPanel from './XiaohongshuCampaignPanel.vue'
 
 const uiStore = useUIStore()
 const { creationDraftMarkdown } = storeToRefs(uiStore)
@@ -22,34 +21,61 @@ const { queueAiAssistantDraftMarkdown, toggleAIDialog } = uiStore
 const route = useRoute()
 
 const templateTopic = ref(`XXX`)
-const activeFixedTemplate = ref<`none` | `insight` | `techCommunity`>(`none`)
-const creationMode = ref<`generic` | `xiaohongshu`>(`generic`)
-const templatesExpanded = ref(false)
+const creationMode = ref<`generic` | `xiaohongshu` | `doubao` | `gpt`>(`generic`)
 const promptPreviewExpanded = ref(false)
 
 watch(
   () => route.query.mode,
   (mode) => {
-    if (mode === `xiaohongshu`)
-      creationMode.value = `xiaohongshu`
+    if (mode === `xiaohongshu` || mode === `doubao` || mode === `gpt`)
+      creationMode.value = mode
   },
   { immediate: true },
 )
 
-const insightTemplatePrompt = computed(() =>
-  `撰写一篇通俗深度科技科普长文，围绕通用人工智能、科技行业、大厂技术、AI 底层技术相关内容展开，从行业发展、技术演进视角切入，梳理技术 / 产品 / 生态的发展脉络、核心逻辑、解决的实际问题与行业意义；行文自然流畅，减少生硬分段分点，采用段落式结构化叙事，逻辑层层递进，文风偏向行业洞察 + 大白话科普，面向开发者与科技爱好者，避免过度学术化；文中在对应章节节点插入主题配图，搭配配图建议；叙事结构为先抛出大众普遍困惑，引出背景，逐个拆解核心要点，串联完整演进线，最后升华行业趋势。\n主题是：${templateTopic.value.trim() || `XXX`}`,
+const gptStylePrompt = computed(() =>
+  [
+    `请用 GPT 生成一篇「小红书知识博主风格」的科技深度长文，主题围绕 AI 技术 / 大模型生态 / 工具链演进。`,
+    `风格要求（参考小红书图文表达）：`,
+    `1. 开头必须有真实场景或反常识钩子，口吻自然、有个人复盘感；`,
+    `2. 结构采用「开头钩子 → 4-6 段正文拆解 → 行动清单 → 互动提问」；`,
+    `3. 每段尽量给出可执行建议、避坑提醒或判断框架，不写空泛口号；`,
+    `4. 文风保持专业但通俗，像在给读者讲明白一个复杂问题；`,
+    `5. 只输出 Markdown 正文，不解释推理过程。`,
+    ``,
+    `内容范围建议：行业背景、技术原理、工具对比、落地场景、未来趋势。`,
+    `可按章节插入配图建议（不生成图片，仅写建议）。`,
+    ``,
+    `主题：${templateTopic.value.trim() || `__________`}`,
+  ].join(`\n`),
 )
 
-const techCommunityTemplatePrompt = computed(() =>
+const doubaoStylePrompt = computed(() =>
   [
-    `请严格按照【通用技术社区博客标准模板】，撰写一篇面向掘金/CSDN/InfoQ的深度技术科普长文，主题聚焦大模型生态相关技术演变迭代，内容覆盖transformers、Hugging Face、ollama、LM Studio、GGUF/GPTQ/AWQ/EXL2/MLX/VMLX等工具与格式，梳理技术发展脉络、底层原理、落地场景、方案对比与行业意义。`,
+    `请按照「豆包可稳定执行」的方式，产出一篇面向技术社区的深度科普文，并保持小红书知识类内容的表达节奏。`,
+    `写作目标：既适合掘金/CSDN/InfoQ 阅读，又具备小红书式的可读性和实操感。`,
     `写作约束：`,
-    `1. 行文自然流畅，减少生硬分点、列表，采用长段落结构化叙事，逻辑层层递进；`,
-    `2. 文风为行业洞察+通俗科普，兼顾专业性，不堆砌晦涩学术术语，面向AI开发者、技术爱好者；`,
-    `3. 按章节节点插入对应主题配图，标注配图建议；`,
-    `4. 叙事结构：抛出用户普遍困惑→行业背景引入→逐一代入技术/工具/格式拆解→梳理完整演进路线→对比优劣→落地实战视角→总结行业趋势；`,
-    `5. 严格套用如下社区博客结构：标题→开篇引言（钩子+背景+预告）→基础铺垫→核心原理拆解→技术演变迭代分析→工具生态（ollama/lmstudio等）→常见问题→进阶趋势→总结展望→作者/版权声明；`,
-    `6. 格式规范：标题层级清晰，重点内容加粗，代码/命令用代码块，控制篇幅2000–5000字。`,
+    `1. 开篇先用小红书风格钩子切入（具体场景 / 常见误区 / 反直觉观点）；`,
+    `2. 主体遵循技术社区长文结构：引言→基础铺垫→核心原理→技术演进→工具生态→常见问题→趋势总结；`,
+    `3. 每个核心章节补充「实操要点 / 避坑提醒 / 复盘指标」中的至少一项；`,
+    `4. 文风通俗但不失专业，避免堆砌术语，适合 AI 开发者和技术爱好者；`,
+    `5. 标题层级清晰，重点内容可加粗，代码/命令使用代码块；`,
+    `6. 只输出 Markdown 正文，不输出额外说明。`,
+    ``,
+    `主题：${templateTopic.value.trim() || `__________`}`,
+  ].join(`\n`),
+)
+
+const xiaohongshuStylePrompt = computed(() =>
+  [
+    `请按「小红书知识类图文」风格，围绕下方主题和素材生成可发布的中文长文稿。`,
+    `写作要求：`,
+    `1. 开头用真实场景或反常识判断做钩子，快速引出核心问题；`,
+    `2. 正文采用「钩子开场 → 4-6 段拆解 → 行动清单 → 互动提问」结构；`,
+    `3. 每段尽量包含一个可执行动作、一个避坑点或一个复盘指标；`,
+    `4. 口吻自然、专业、克制，不制造焦虑，不承诺“必爆”；`,
+    `5. 结尾补充 6-8 个小红书标签；`,
+    `6. 只输出 Markdown 正文，不解释过程。`,
     ``,
     `主题：${templateTopic.value.trim() || `__________`}`,
   ].join(`\n`),
@@ -57,10 +83,12 @@ const techCommunityTemplatePrompt = computed(() =>
 
 const remixPrompt = computed(() => {
   const material = creationDraftMarkdown.value.trim()
-  if (activeFixedTemplate.value !== `none`) {
-    const fixedPrompt = activeFixedTemplate.value === `techCommunity`
-      ? techCommunityTemplatePrompt.value
-      : insightTemplatePrompt.value
+  if (creationMode.value === `xiaohongshu` || creationMode.value === `doubao` || creationMode.value === `gpt`) {
+    let fixedPrompt = gptStylePrompt.value
+    if (creationMode.value === `xiaohongshu`)
+      fixedPrompt = xiaohongshuStylePrompt.value
+    else if (creationMode.value === `doubao`)
+      fixedPrompt = doubaoStylePrompt.value
     return [
       fixedPrompt,
       ``,
@@ -87,10 +115,12 @@ const remixPrompt = computed(() => {
 })
 
 const activeTemplateFooterLabel = computed(() => {
-  if (activeFixedTemplate.value === `techCommunity`)
-    return `豆包 · 技术社区结构化模版`
-  if (activeFixedTemplate.value === `insight`)
-    return `GPT · 通俗深度科普模版`
+  if (creationMode.value === `xiaohongshu`)
+    return `小红书风格提示词`
+  if (creationMode.value === `doubao`)
+    return `豆包风格提示词`
+  if (creationMode.value === `gpt`)
+    return `GPT风格提示词`
   return `通用二创提示词`
 })
 
@@ -102,18 +132,6 @@ async function copyPrompt() {
   catch {
     toast.error(`复制失败`)
   }
-}
-
-function applyFixedTemplate(template: `insight` | `techCommunity`) {
-  activeFixedTemplate.value = template
-  const label = template === `techCommunity` ? `豆包 · 技术社区` : `GPT · 通俗科普`
-  toast.success(`已套用${label}`)
-  templatesExpanded.value = false
-}
-
-function useGenericPrompt() {
-  activeFixedTemplate.value = `none`
-  toast.success(`已改用通用二创提示词`)
 }
 
 function openAssistantWithPrompt() {
@@ -136,7 +154,7 @@ function openAssistantWithPrompt() {
         风格二创
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        承接数据获取页的材料；通用二创用于长文改写，小红书图文用于封面生图、配文和成稿。
+        承接数据获取页的材料；可按通用、小红书、豆包、GPT 四种风格快速生成对应提示词与成稿。
       </p>
       <div class="mt-3 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="风格二创模式">
         <button
@@ -159,14 +177,34 @@ function openAssistantWithPrompt() {
           @click="creationMode = 'xiaohongshu'"
         >
           <NotebookPen class="h-4 w-4" />
-          小红书图文
+          小红书风格
+        </button>
+        <button
+          type="button"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
+          :class="creationMode === 'doubao'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+          @click="creationMode = 'doubao'"
+        >
+          <Bot class="h-4 w-4" />
+          豆包风格
+        </button>
+        <button
+          type="button"
+          class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
+          :class="creationMode === 'gpt'
+            ? 'bg-primary/10 text-primary'
+            : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'"
+          @click="creationMode = 'gpt'"
+        >
+          <Bot class="h-4 w-4" />
+          GPT风格
         </button>
       </div>
     </template>
 
-    <XiaohongshuCampaignPanel v-if="creationMode === 'xiaohongshu'" />
-
-    <div v-else class="grid min-h-0 gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.85fr)]">
+    <div class="grid min-h-0 gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,0.85fr)]">
       <section class="flex min-h-0 flex-col gap-3">
         <WorkflowSectionTitle>
           输入材料
@@ -179,81 +217,21 @@ function openAssistantWithPrompt() {
       </section>
 
       <section class="flex min-h-0 flex-col gap-3">
-        <div class="rounded-[22px] border border-gray-200 bg-white/80 shadow-sm dark:border-border dark:bg-card">
-          <button
-            class="flex w-full items-center justify-between gap-2 rounded-[22px] px-4 py-2.5 text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-background/50"
-            type="button"
-            @click="templatesExpanded = !templatesExpanded"
-          >
-            <div class="flex items-center gap-2 text-xs">
-              <span class="font-semibold text-slate-700 dark:text-foreground">模版预设</span>
-              <span
-                class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                :class="activeFixedTemplate !== 'none'
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
-                  : 'bg-slate-100 text-slate-600 dark:bg-muted dark:text-muted-foreground'"
-              >当前：{{ activeTemplateFooterLabel }}</span>
-            </div>
-            <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="templatesExpanded ? 'rotate-180' : ''" />
-          </button>
-
-          <div v-if="templatesExpanded" class="grid gap-3 border-t border-gray-100 px-4 pb-4 pt-3 dark:border-border">
-            <div class="grid gap-1.5">
-              <Label class="text-xs text-slate-500 dark:text-muted-foreground">模版主题（写入两条长模版里的「主题」占位）</Label>
-              <Input
-                v-model="templateTopic"
-                class="h-9 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
-                placeholder="例如：大模型正在重塑软件开发"
-              />
-            </div>
-
-            <div class="grid gap-2">
-              <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 dark:border-border dark:bg-background">
-                <div>
-                  <div class="text-xs font-semibold text-indigo-800 dark:text-primary">
-                    GPT · 通俗深度科普长文
-                  </div>
-                  <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
-                    适合 ChatGPT 网页端：行业洞察 + 大白话叙事，可按章节配图建议延展。
-                  </p>
-                </div>
-                <Button
-                  class="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
-                  type="button"
-                  @click="applyFixedTemplate('insight')"
-                >
-                  套用
-                </Button>
-              </div>
-
-              <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5 dark:border-border dark:bg-card">
-                <div>
-                  <div class="text-xs font-semibold text-violet-900 dark:text-primary">
-                    豆包 · 技术社区结构化长文
-                  </div>
-                  <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
-                    适合豆包等国内模型：掘金 / CSDN / InfoQ 式章节骨架，含工具链与代码块规范。
-                  </p>
-                </div>
-                <Button
-                  class="h-8 shrink-0 rounded-lg bg-violet-700 px-3 text-xs font-semibold text-white hover:bg-violet-800"
-                  type="button"
-                  @click="applyFixedTemplate('techCommunity')"
-                >
-                  套用
-                </Button>
-              </div>
-            </div>
-
-            <button
-              v-if="activeFixedTemplate !== 'none'"
-              class="text-muted-foreground self-start text-[11px] underline-offset-4 hover:text-foreground hover:underline"
-              type="button"
-              @click="useGenericPrompt"
-            >
-              改用通用二创提示词
-            </button>
-          </div>
+        <div
+          v-if="creationMode !== 'generic'"
+          class="grid gap-2 rounded-[22px] border border-gray-200 bg-white/80 px-4 py-3 shadow-sm dark:border-border dark:bg-card"
+        >
+          <Label class="text-xs text-slate-500 dark:text-muted-foreground">
+            风格主题（写入{{ creationMode === 'xiaohongshu' ? '小红书风格' : creationMode === 'doubao' ? '豆包风格' : 'GPT风格' }}提示词）
+          </Label>
+          <Input
+            v-model="templateTopic"
+            class="h-9 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
+            placeholder="例如：大模型正在重塑软件开发"
+          />
+          <p class="text-[11px] leading-relaxed text-muted-foreground">
+            当前：{{ activeTemplateFooterLabel }}
+          </p>
         </div>
 
         <div class="flex min-h-0 flex-1 flex-col gap-3">

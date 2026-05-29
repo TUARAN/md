@@ -2,7 +2,7 @@
 /**
  * WorkflowDistributionPage —— workflow 第 4 步「宣发活跃」
  *
- * 左侧为可折叠平台侧栏，右侧显示当前平台策略。小红书的生图与配文
+ * 左侧为可折叠平台侧栏，右侧显示当前平台策略。小红书的风格化二创
  * 生产入口在「风格二创」，本页只保留平台策略与跳转入口。
  */
 import { ChevronLeft, ChevronRight, Eye, Megaphone, Target } from 'lucide-vue-next'
@@ -268,11 +268,11 @@ function onMatrixDataSourceToggle(event: Event) {
                 小红书内容生产放在风格二创
               </p>
               <p class="mt-1 text-xs leading-relaxed text-rose-900/75 dark:text-rose-100/70">
-                当前页保留平台节奏、打法和复盘；封面生图、配文和 Markdown 成稿到「风格二创 · 小红书图文」完成。
+                当前页保留平台节奏、打法和复盘；小红书风格提示词生成与 Markdown 成稿到「风格二创 · 小红书风格」完成。
               </p>
             </div>
             <Button type="button" size="sm" class="shrink-0" @click="goXiaohongshuCreation">
-              去生成小红书图文
+              去生成小红书风格
             </Button>
           </section>
 
