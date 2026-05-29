@@ -16,15 +16,15 @@ const SESSION_KEY = `deepseek_unlocked_key_v1`
 
 let cachedKey: string | null = null
 
-function base64ToBytes(b64: string): Uint8Array {
+function base64ToBytes(b64: string): Uint8Array<ArrayBuffer> {
   const binary = atob(b64)
-  const bytes = new Uint8Array(binary.length)
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length))
   for (let i = 0; i < binary.length; i++)
     bytes[i] = binary.charCodeAt(i)
   return bytes
 }
 
-async function deriveAesKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveAesKey(password: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const enc = new TextEncoder()
   const baseKey = await crypto.subtle.importKey(
     `raw`,
