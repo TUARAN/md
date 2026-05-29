@@ -277,6 +277,17 @@ function onMatrixDataSourceToggle(event: Event) {
           </section>
 
           <section class="grid gap-4 sm:grid-cols-2">
+            <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card sm:col-span-2">
+              <WorkflowSectionTitle>
+                平台 Tips
+              </WorkflowSectionTitle>
+              <ul class="mt-2 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
+                <li v-for="item in strategy.tips" :key="item" class="flex gap-1.5">
+                  <span class="text-primary">·</span>
+                  <span>{{ item }}</span>
+                </li>
+              </ul>
+            </div>
             <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
               <WorkflowSectionTitle>
                 打法要点

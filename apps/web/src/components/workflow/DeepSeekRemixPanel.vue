@@ -1,0 +1,371 @@
+<script setup lang="ts">
+import { Copy, KeyRound, Lock, LockOpen, Send, Sparkles, Square } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select'
+import { useEditorStore } from '@/stores/editor'
+import { copyPlain } from '@/utils/clipboard'
+import {
+  DEEPSEEK_ENDPOINT,
+  DEEPSEEK_MODELS,
+  getUnlockedDeepSeekKey,
+  isDeepSeekUnlocked,
+  lockDeepSeek,
+  unlockDeepSeekKey,
+} from '@/utils/deepseekUnlock'
+import { toast } from '@/utils/toast'
+
+const props = defineProps<{
+  prompt: string
+}>()
+
+const editorStore = useEditorStore()
+
+const model = ref<string>(DEEPSEEK_MODELS[0].value)
+const output = ref<string>(``)
+const reasoning = ref<string>(``)
+const generating = ref(false)
+const unlocked = ref(isDeepSeekUnlocked())
+
+const passwordDialogOpen = ref(false)
+const passwordInput = ref(``)
+const passwordError = ref(``)
+const unlocking = ref(false)
+
+let abortController: AbortController | null = null
+
+const activeModelMeta = computed(() => DEEPSEEK_MODELS.find(m => m.value === model.value))
+
+function openPasswordDialog() {
+  passwordInput.value = ``
+  passwordError.value = ``
+  passwordDialogOpen.value = true
+}
+
+async function submitPassword() {
+  if (!passwordInput.value) {
+    passwordError.value = `请输入密码`
+    return
+  }
+  unlocking.value = true
+  passwordError.value = ``
+  try {
+    await unlockDeepSeekKey(passwordInput.value)
+    unlocked.value = true
+    passwordDialogOpen.value = false
+    toast.success(`已解锁 DeepSeek`)
+    void runGenerate()
+  }
+  catch (e) {
+    passwordError.value = (e as Error).message || `解锁失败`
+  }
+  finally {
+    unlocking.value = false
+  }
+}
+
+function handleLock() {
+  lockDeepSeek()
+  unlocked.value = false
+  toast.success(`已锁定 DeepSeek`)
+}
+
+function handleGenerate() {
+  if (!props.prompt || !props.prompt.trim()) {
+    toast.error(`提示词为空，请先准备素材`)
+    return
+  }
+  if (!unlocked.value) {
+    openPasswordDialog()
+    return
+  }
+  void runGenerate()
+}
+
+async function runGenerate() {
+  const apiKey = getUnlockedDeepSeekKey()
+  if (!apiKey) {
+    unlocked.value = false
+    openPasswordDialog()
+    return
+  }
+
+  output.value = ``
+  reasoning.value = ``
+  generating.value = true
+  abortController = new AbortController()
+
+  try {
+    const res = await window.fetch(DEEPSEEK_ENDPOINT, {
+      method: `POST`,
+      headers: {
+        'Content-Type': `application/json`,
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model.value,
+        stream: true,
+        messages: [
+          { role: `user`, content: props.prompt },
+        ],
+      }),
+      signal: abortController.signal,
+    })
+
+    if (!res.ok || !res.body) {
+      const errText = await res.text().catch(() => ``)
+      throw new Error(`DeepSeek 响应错误 ${res.status}：${errText.slice(0, 200) || res.statusText}`)
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder(`utf-8`)
+    let buffer = ``
+
+    while (true) {
+      const { value, done } = await reader.read()
+      if (done)
+        break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split(`\n`)
+      buffer = lines.pop() || ``
+      for (const raw of lines) {
+        const line = raw.trim()
+        if (!line || !line.startsWith(`data:`))
+          continue
+        const data = line.slice(5).trim()
+        if (!data || data === `[DONE]`)
+          continue
+        try {
+          const json = JSON.parse(data)
+          const delta = json.choices?.[0]?.delta || {}
+          if (delta.reasoning_content)
+            reasoning.value += delta.reasoning_content
+          if (delta.content)
+            output.value += delta.content
+        }
+        catch {}
+      }
+    }
+  }
+  catch (e) {
+    if ((e as Error).name === `AbortError`) {
+      toast.success(`已停止生成`)
+    }
+    else {
+      const msg = (e as Error).message || `生成失败`
+      toast.error(msg)
+      if (/401|403/.test(msg)) {
+        lockDeepSeek()
+        unlocked.value = false
+      }
+    }
+  }
+  finally {
+    generating.value = false
+    abortController = null
+  }
+}
+
+function stopGenerate() {
+  abortController?.abort()
+}
+
+async function copyOutput() {
+  if (!output.value.trim()) {
+    toast.error(`暂无可复制的结果`)
+    return
+  }
+  try {
+    await copyPlain(output.value)
+    toast.success(`已复制生成结果`)
+  }
+  catch {
+    toast.error(`复制失败`)
+  }
+}
+
+function insertOutputIntoEditor() {
+  if (!output.value.trim()) {
+    toast.error(`暂无可插入的结果`)
+    return
+  }
+  if (!editorStore.editor) {
+    toast.error(`编辑器尚未就绪`)
+    return
+  }
+  editorStore.insertAtCursor(output.value)
+  toast.success(`已插入到编辑器光标处`)
+}
+</script>
+
+<template>
+  <div class="grid gap-3 rounded-[22px] border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm dark:border-border dark:bg-card">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-primary">
+          <Sparkles class="size-4" />
+          DeepSeek 直接生成
+        </div>
+        <p class="text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
+          内置 DeepSeek 官方接口，密钥已加密内联。首次使用需输入密码解锁，本次浏览器标签页内有效。
+        </p>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span
+          class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
+          :class="unlocked
+            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
+            : 'bg-slate-200 text-slate-700 dark:bg-muted dark:text-muted-foreground'"
+        >
+          <LockOpen v-if="unlocked" class="size-3" />
+          <Lock v-else class="size-3" />
+          {{ unlocked ? `已解锁` : `未解锁` }}
+        </span>
+        <Button
+          v-if="unlocked"
+          class="h-7 rounded-md px-2 text-[11px] text-muted-foreground"
+          type="button"
+          variant="ghost"
+          @click="handleLock"
+        >
+          锁定
+        </Button>
+      </div>
+    </div>
+
+    <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+      <div class="grid gap-1.5">
+        <Label class="text-xs text-slate-500 dark:text-muted-foreground">模型</Label>
+        <Select v-model="model" :disabled="generating">
+          <SelectTrigger class="h-9 rounded-lg border-slate-200 bg-white text-sm dark:border-border dark:bg-background">
+            <span class="truncate">{{ activeModelMeta?.label ?? `选择模型` }}</span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="m in DEEPSEEK_MODELS" :key="m.value" :value="m.value">
+              <div class="flex flex-col gap-0.5">
+                <span class="text-sm font-medium">{{ m.label }}</span>
+                <span class="text-[11px] text-muted-foreground">{{ m.description }}</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <p class="text-[11px] leading-relaxed text-muted-foreground">
+          {{ activeModelMeta?.description }}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <Button
+          v-if="!generating"
+          class="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
+          type="button"
+          @click="handleGenerate"
+        >
+          <component :is="unlocked ? Send : KeyRound" class="mr-1.5 size-3.5" />
+          {{ unlocked ? `用 DeepSeek 生成` : `解锁并生成` }}
+        </Button>
+        <Button
+          v-else
+          class="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-border dark:bg-background dark:text-foreground"
+          type="button"
+          variant="secondary"
+          @click="stopGenerate"
+        >
+          <Square class="mr-1.5 size-3.5" />
+          停止
+        </Button>
+      </div>
+    </div>
+
+    <div class="grid gap-2">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <span class="text-xs font-semibold text-slate-700 dark:text-foreground">
+          生成结果 <span class="ml-1 text-[11px] font-normal text-muted-foreground">{{ activeModelMeta?.label }}</span>
+        </span>
+        <div class="flex items-center gap-2">
+          <Button
+            class="h-8 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] text-slate-700 hover:bg-slate-50 dark:border-border dark:bg-background dark:text-foreground"
+            type="button"
+            variant="secondary"
+            :disabled="!output"
+            @click="copyOutput"
+          >
+            <Copy class="mr-1 size-3" />
+            复制
+          </Button>
+          <Button
+            class="h-8 rounded-md bg-indigo-600 px-2.5 text-[11px] font-semibold text-white hover:bg-indigo-700"
+            type="button"
+            :disabled="!output"
+            @click="insertOutputIntoEditor"
+          >
+            插入编辑器
+          </Button>
+        </div>
+      </div>
+
+      <div
+        v-if="reasoning"
+        class="rounded-xl border border-amber-200/70 bg-amber-50/70 p-3 text-[11px] leading-relaxed text-amber-900 dark:border-border dark:bg-background dark:text-amber-200"
+      >
+        <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700/80">
+          推理过程（reasoning_content）
+        </div>
+        <pre class="max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono">{{ reasoning }}</pre>
+      </div>
+
+      <pre
+        class="min-h-[160px] flex-1 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700 dark:border-border dark:bg-background dark:text-foreground"
+      >{{ output || (generating ? '正在生成…' : '生成结果将在这里以流式输出。') }}</pre>
+    </div>
+
+    <Dialog v-model:open="passwordDialogOpen">
+      <DialogContent class="sm:max-w-[420px]">
+        <DialogHeader>
+          <DialogTitle class="flex items-center gap-2 text-base">
+            <KeyRound class="size-4" />
+            解锁 DeepSeek
+          </DialogTitle>
+          <DialogDescription>
+            为防止密钥被随意调用，DeepSeek 功能需要输入密码解锁。解锁状态仅在当前浏览器标签页内有效。
+          </DialogDescription>
+        </DialogHeader>
+
+        <form class="grid gap-3" @submit.prevent="submitPassword">
+          <div class="grid gap-1.5">
+            <Label class="text-xs text-muted-foreground">密码</Label>
+            <PasswordInput
+              v-model="passwordInput"
+              placeholder="请输入解锁密码"
+              :class="passwordError ? 'border-red-500 focus-visible:ring-red-500' : ''"
+            />
+            <p v-if="passwordError" class="text-xs text-red-600">
+              {{ passwordError }}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="secondary" @click="passwordDialogOpen = false">
+              取消
+            </Button>
+            <Button type="submit" :disabled="unlocking">
+              {{ unlocking ? `解锁中…` : `解锁` }}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  </div>
+</template>

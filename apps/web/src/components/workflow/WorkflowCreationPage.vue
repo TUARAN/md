@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Bot, Copy, NotebookPen, PenLine, SendHorizontal } from 'lucide-vue-next'
+import { Bot, ChevronDown, Copy, NotebookPen, PenLine } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { useRoute } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { APP_NAME } from '@/constants/branding'
 import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
 import { toast } from '@/utils/toast'
+import DeepSeekRemixPanel from './DeepSeekRemixPanel.vue'
 import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
 import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
@@ -23,6 +24,8 @@ const route = useRoute()
 const templateTopic = ref(`XXX`)
 const activeFixedTemplate = ref<`none` | `insight` | `techCommunity`>(`none`)
 const creationMode = ref<`generic` | `xiaohongshu`>(`generic`)
+const templatesExpanded = ref(false)
+const promptPreviewExpanded = ref(false)
 
 watch(
   () => route.query.mode,
@@ -105,6 +108,7 @@ function applyFixedTemplate(template: `insight` | `techCommunity`) {
   activeFixedTemplate.value = template
   const label = template === `techCommunity` ? `豆包 · 技术社区` : `GPT · 通俗科普`
   toast.success(`已套用${label}`)
+  templatesExpanded.value = false
 }
 
 function useGenericPrompt() {
@@ -174,66 +178,85 @@ function openAssistantWithPrompt() {
         />
       </section>
 
-      <section class="flex min-h-0 flex-col gap-4">
-        <div class="grid gap-3 rounded-[22px] border border-gray-200 bg-white/80 p-5 shadow-sm dark:border-border dark:bg-card">
-          <div class="grid gap-1.5">
-            <Label class="text-xs text-slate-500 dark:text-muted-foreground">模版主题（写入两条长模版里的「主题」占位）</Label>
-            <Input
-              v-model="templateTopic"
-              class="h-9 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
-              placeholder="例如：大模型正在重塑软件开发"
-            />
-          </div>
-
-          <div class="grid gap-2">
-            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 dark:border-border dark:bg-background">
-              <div>
-                <div class="text-xs font-semibold text-indigo-800 dark:text-primary">
-                  GPT · 通俗深度科普长文
-                </div>
-                <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
-                  适合 ChatGPT 网页端：行业洞察 + 大白话叙事，可按章节配图建议延展。
-                </p>
-              </div>
-              <Button
-                class="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
-                type="button"
-                @click="applyFixedTemplate('insight')"
-              >
-                套用
-              </Button>
-            </div>
-
-            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5 dark:border-border dark:bg-card">
-              <div>
-                <div class="text-xs font-semibold text-violet-900 dark:text-primary">
-                  豆包 · 技术社区结构化长文
-                </div>
-                <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
-                  适合豆包等国内模型：掘金 / CSDN / InfoQ 式章节骨架，含工具链与代码块规范。
-                </p>
-              </div>
-              <Button
-                class="h-8 shrink-0 rounded-lg bg-violet-700 px-3 text-xs font-semibold text-white hover:bg-violet-800"
-                type="button"
-                @click="applyFixedTemplate('techCommunity')"
-              >
-                套用
-              </Button>
-            </div>
-          </div>
-
+      <section class="flex min-h-0 flex-col gap-3">
+        <div class="rounded-[22px] border border-gray-200 bg-white/80 shadow-sm dark:border-border dark:bg-card">
           <button
-            v-if="activeFixedTemplate !== 'none'"
-            class="text-muted-foreground self-start text-[11px] underline-offset-4 hover:text-foreground hover:underline"
+            class="flex w-full items-center justify-between gap-2 rounded-[22px] px-4 py-2.5 text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-background/50"
             type="button"
-            @click="useGenericPrompt"
+            @click="templatesExpanded = !templatesExpanded"
           >
-            改用通用二创提示词
+            <div class="flex items-center gap-2 text-xs">
+              <span class="font-semibold text-slate-700 dark:text-foreground">模版预设</span>
+              <span
+                class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                :class="activeFixedTemplate !== 'none'
+                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                  : 'bg-slate-100 text-slate-600 dark:bg-muted dark:text-muted-foreground'"
+              >当前：{{ activeTemplateFooterLabel }}</span>
+            </div>
+            <ChevronDown class="size-4 text-muted-foreground transition-transform" :class="templatesExpanded ? 'rotate-180' : ''" />
           </button>
+
+          <div v-if="templatesExpanded" class="grid gap-3 border-t border-gray-100 px-4 pb-4 pt-3 dark:border-border">
+            <div class="grid gap-1.5">
+              <Label class="text-xs text-slate-500 dark:text-muted-foreground">模版主题（写入两条长模版里的「主题」占位）</Label>
+              <Input
+                v-model="templateTopic"
+                class="h-9 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
+                placeholder="例如：大模型正在重塑软件开发"
+              />
+            </div>
+
+            <div class="grid gap-2">
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 p-2.5 dark:border-border dark:bg-background">
+                <div>
+                  <div class="text-xs font-semibold text-indigo-800 dark:text-primary">
+                    GPT · 通俗深度科普长文
+                  </div>
+                  <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
+                    适合 ChatGPT 网页端：行业洞察 + 大白话叙事，可按章节配图建议延展。
+                  </p>
+                </div>
+                <Button
+                  class="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white hover:bg-indigo-700"
+                  type="button"
+                  @click="applyFixedTemplate('insight')"
+                >
+                  套用
+                </Button>
+              </div>
+
+              <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/50 p-2.5 dark:border-border dark:bg-card">
+                <div>
+                  <div class="text-xs font-semibold text-violet-900 dark:text-primary">
+                    豆包 · 技术社区结构化长文
+                  </div>
+                  <p class="mt-1 text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
+                    适合豆包等国内模型：掘金 / CSDN / InfoQ 式章节骨架，含工具链与代码块规范。
+                  </p>
+                </div>
+                <Button
+                  class="h-8 shrink-0 rounded-lg bg-violet-700 px-3 text-xs font-semibold text-white hover:bg-violet-800"
+                  type="button"
+                  @click="applyFixedTemplate('techCommunity')"
+                >
+                  套用
+                </Button>
+              </div>
+            </div>
+
+            <button
+              v-if="activeFixedTemplate !== 'none'"
+              class="text-muted-foreground self-start text-[11px] underline-offset-4 hover:text-foreground hover:underline"
+              type="button"
+              @click="useGenericPrompt"
+            >
+              改用通用二创提示词
+            </button>
+          </div>
         </div>
 
-        <div class="flex min-h-0 flex-1 flex-col gap-2">
+        <div class="flex min-h-0 flex-1 flex-col gap-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <WorkflowSectionTitle>
               二创任务
@@ -259,12 +282,21 @@ function openAssistantWithPrompt() {
             </div>
           </div>
 
-          <pre class="min-h-[220px] flex-1 overflow-auto whitespace-pre-wrap break-words rounded-2xl border border-gray-200 bg-white/80 p-4 text-xs leading-relaxed text-slate-600 shadow-sm dark:border-border dark:bg-background dark:text-muted-foreground">{{ remixPrompt }}</pre>
+          <div class="rounded-2xl border border-gray-200 bg-white/80 shadow-sm dark:border-border dark:bg-background">
+            <button
+              class="flex w-full items-center justify-between gap-2 rounded-2xl px-3.5 py-2 text-left text-[11px] transition-colors hover:bg-slate-50/80 dark:hover:bg-card"
+              type="button"
+              @click="promptPreviewExpanded = !promptPreviewExpanded"
+            >
+              <span class="font-medium text-slate-600 dark:text-muted-foreground">
+                提示词预览 · 约 {{ remixPrompt.length }} 字
+              </span>
+              <ChevronDown class="size-3.5 text-muted-foreground transition-transform" :class="promptPreviewExpanded ? 'rotate-180' : ''" />
+            </button>
+            <pre v-if="promptPreviewExpanded" class="max-h-72 overflow-auto whitespace-pre-wrap break-words border-t border-gray-100 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:border-border dark:text-muted-foreground">{{ remixPrompt }}</pre>
+          </div>
 
-          <p class="flex items-start gap-1.5 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 text-xs leading-relaxed text-slate-600 dark:border-border dark:bg-card dark:text-muted-foreground">
-            <SendHorizontal class="mt-0.5 size-3.5 shrink-0 text-indigo-600" />
-            当前：{{ activeTemplateFooterLabel }}。未点「套用」时为通用二创。生成后可插入编辑器，再到「内容同步」排版核对。
-          </p>
+          <DeepSeekRemixPanel :prompt="remixPrompt" />
         </div>
       </section>
     </div>
