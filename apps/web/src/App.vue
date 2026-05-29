@@ -44,6 +44,16 @@ const TRUSTED_IMPORT_ORIGINS = new Set([
   `https://frontendnext.com`,
 ])
 
+/**
+ * 导入去重窗口：
+ * - requestId: 更长窗口，避免调用方重试导致重复导入
+ * - payload 指纹: 短窗口，兜住无 requestId 或 requestId 每次变化的重复推送
+ */
+const IMPORT_REQUEST_ID_DEDUP_WINDOW_MS = 5 * 60 * 1000
+const IMPORT_PAYLOAD_DEDUP_WINDOW_MS = 15 * 1000
+const processedRequestIds = new Map<string, number>()
+const processedPayloadFingerprints = new Map<string, number>()
+
 function isTrustedImportOrigin(origin: string) {
   if (TRUSTED_IMPORT_ORIGINS.has(origin))
     return true
@@ -74,6 +84,58 @@ function normalizeImportPayload(data: unknown) {
   }
 }
 
+function hashString(value: string) {
+  // FNV-1a 32-bit: 轻量稳定，不引入额外依赖
+  let hash = 0x811C9DC5
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(16)
+}
+
+function getPayloadFingerprint(payload: NormalizedImportPayload) {
+  return hashString(`${payload.title}\u0001${payload.markdown}`)
+}
+
+function isWithinWindow(now: number, ts: number, windowMs: number) {
+  return now - ts <= windowMs
+}
+
+function pruneExpiredEntries(map: Map<string, number>, now: number, windowMs: number) {
+  map.forEach((ts, key) => {
+    if (!isWithinWindow(now, ts, windowMs))
+      map.delete(key)
+  })
+}
+
+function isDuplicateImport(payload: NormalizedImportPayload) {
+  const now = Date.now()
+  pruneExpiredEntries(processedRequestIds, now, IMPORT_REQUEST_ID_DEDUP_WINDOW_MS)
+  pruneExpiredEntries(processedPayloadFingerprints, now, IMPORT_PAYLOAD_DEDUP_WINDOW_MS)
+
+  if (payload.requestId) {
+    const requestIdTs = processedRequestIds.get(payload.requestId)
+    if (requestIdTs && isWithinWindow(now, requestIdTs, IMPORT_REQUEST_ID_DEDUP_WINDOW_MS))
+      return true
+  }
+
+  const fingerprint = getPayloadFingerprint(payload)
+  const payloadTs = processedPayloadFingerprints.get(fingerprint)
+  if (payloadTs && isWithinWindow(now, payloadTs, IMPORT_PAYLOAD_DEDUP_WINDOW_MS))
+    return true
+
+  return false
+}
+
+function markImportProcessed(payload: NormalizedImportPayload) {
+  const now = Date.now()
+  if (payload.requestId)
+    processedRequestIds.set(payload.requestId, now)
+
+  processedPayloadFingerprints.set(getPayloadFingerprint(payload), now)
+}
+
 /** 向调用方回传导入结果回执,targetOrigin 锁定为来源 origin */
 function replyImportResult(event: MessageEvent, requestId: string, ok: boolean, reason?: string) {
   const target = event.source as WindowProxy | null
@@ -89,11 +151,20 @@ function applyImport(payload: NormalizedImportPayload): boolean {
   if (!currentPost)
     return false
 
-  if (payload.title)
+  const hasTitleChange = !!payload.title && payload.title !== currentPost.title
+  const hasContentChange = payload.markdown !== currentPost.content
+
+  // 幂等写入：内容/标题无变化时，不触发编辑器 dispatch，避免滚动位置被重置
+  if (!hasTitleChange && !hasContentChange)
+    return true
+
+  if (hasTitleChange)
     postStore.renamePost(currentPost.id, payload.title)
 
-  postStore.updatePostContent(currentPost.id, payload.markdown)
-  editorStore.importContent(payload.markdown)
+  if (hasContentChange) {
+    postStore.updatePostContent(currentPost.id, payload.markdown)
+    editorStore.importContent(payload.markdown)
+  }
   return true
 }
 
@@ -108,7 +179,15 @@ function handleImportMessage(event: MessageEvent) {
     return
   }
 
+  if (isDuplicateImport(payload)) {
+    replyImportResult(event, payload.requestId, true)
+    return
+  }
+
   const ok = applyImport(payload)
+  if (ok)
+    markImportProcessed(payload)
+
   replyImportResult(event, payload.requestId, ok, ok ? undefined : `no-active-post`)
 }
 
