@@ -114,16 +114,6 @@ const remixPrompt = computed(() => {
   ].join(`\n`)
 })
 
-const activeTemplateFooterLabel = computed(() => {
-  if (creationMode.value === `xiaohongshu`)
-    return `小红书风格提示词`
-  if (creationMode.value === `doubao`)
-    return `豆包风格提示词`
-  if (creationMode.value === `gpt`)
-    return `GPT风格提示词`
-  return `通用二创提示词`
-})
-
 async function copyPrompt() {
   try {
     await copyPlain(remixPrompt.value)
@@ -217,23 +207,6 @@ function openAssistantWithPrompt() {
       </section>
 
       <section class="flex min-h-0 flex-col gap-3">
-        <div
-          v-if="creationMode !== 'generic'"
-          class="grid gap-2 rounded-[22px] border border-gray-200 bg-white/80 px-4 py-3 shadow-sm dark:border-border dark:bg-card"
-        >
-          <Label class="text-xs text-slate-500 dark:text-muted-foreground">
-            风格主题（写入{{ creationMode === 'xiaohongshu' ? '小红书风格' : creationMode === 'doubao' ? '豆包风格' : 'GPT风格' }}提示词）
-          </Label>
-          <Input
-            v-model="templateTopic"
-            class="h-9 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
-            placeholder="例如：大模型正在重塑软件开发"
-          />
-          <p class="text-[11px] leading-relaxed text-muted-foreground">
-            当前：{{ activeTemplateFooterLabel }}
-          </p>
-        </div>
-
         <div class="flex min-h-0 flex-1 flex-col gap-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <WorkflowSectionTitle>
@@ -261,6 +234,19 @@ function openAssistantWithPrompt() {
           </div>
 
           <div class="rounded-2xl border border-gray-200 bg-white/80 shadow-sm dark:border-border dark:bg-background">
+            <div
+              v-if="creationMode !== 'generic'"
+              class="grid gap-1.5 border-b border-gray-100 px-3.5 py-3 dark:border-border"
+            >
+              <Label class="text-[11px] text-slate-500 dark:text-muted-foreground">
+                风格主题（可选，将写入{{ creationMode === 'xiaohongshu' ? '小红书风格' : creationMode === 'doubao' ? '豆包风格' : 'GPT风格' }}提示词）
+              </Label>
+              <Input
+                v-model="templateTopic"
+                class="h-8 rounded-lg border-slate-200 bg-white text-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
+                placeholder="例如：大模型正在重塑软件开发"
+              />
+            </div>
             <button
               class="flex w-full items-center justify-between gap-2 rounded-2xl px-3.5 py-2 text-left text-[11px] transition-colors hover:bg-slate-50/80 dark:hover:bg-card"
               type="button"
