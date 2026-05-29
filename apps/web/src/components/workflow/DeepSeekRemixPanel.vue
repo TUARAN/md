@@ -263,11 +263,8 @@ function insertOutputIntoEditor() {
             </SelectItem>
           </SelectContent>
         </Select>
-        <p class="text-[11px] leading-relaxed text-muted-foreground">
-          {{ activeModelMeta?.description }}
-        </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 sm:self-end">
         <Button
           v-if="!generating"
           class="h-9 rounded-lg bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700"
@@ -288,6 +285,9 @@ function insertOutputIntoEditor() {
           停止
         </Button>
       </div>
+      <p class="text-[11px] leading-relaxed text-muted-foreground sm:col-span-2">
+        {{ activeModelMeta?.description }}
+      </p>
     </div>
 
     <div class="grid gap-2">
@@ -297,21 +297,22 @@ function insertOutputIntoEditor() {
         </span>
         <div class="flex items-center gap-2">
           <Button
-            class="h-8 rounded-md border border-slate-200 bg-white px-2.5 text-[11px] text-slate-700 hover:bg-slate-50 dark:border-border dark:bg-background dark:text-foreground"
+            class="h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-border dark:bg-background dark:text-foreground"
             type="button"
             variant="secondary"
             :disabled="!output"
             @click="copyOutput"
           >
-            <Copy class="mr-1 size-3" />
+            <Copy class="mr-1.5 size-3.5" />
             复制
           </Button>
           <Button
-            class="h-8 rounded-md bg-indigo-600 px-2.5 text-[11px] font-semibold text-white hover:bg-indigo-700"
+            class="h-8 rounded-md bg-indigo-600 px-3 text-xs font-medium text-white hover:bg-indigo-700"
             type="button"
             :disabled="!output"
             @click="insertOutputIntoEditor"
           >
+            <Send class="mr-1.5 size-3.5" />
             插入编辑器
           </Button>
         </div>
