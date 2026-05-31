@@ -3,7 +3,8 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
-import { documentTitle } from '@/constants/branding'
+import { useAppMode } from '@/composables/useAppMode'
+import { APP_NAME, APP_SLOGAN, documentTitle } from '@/constants/branding'
 import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
@@ -13,6 +14,7 @@ const uiStore = useUIStore()
 const postStore = usePostStore()
 const editorStore = useEditorStore()
 const authStore = useAuthStore()
+const { mode, stepLabel } = useAppMode()
 const router = useRouter()
 const route = useRoute()
 const { isDark } = storeToRefs(uiStore)
@@ -199,10 +201,26 @@ function postImportReady() {
   window.opener?.postMessage({ type: `SYNCBLOG_IMPORT_READY`, app: `syncblog.cn` }, `*`)
 }
 
-onMounted(() => {
-  if (route.name !== `creator-offer`)
-    document.title = documentTitle
+/**
+ * Keep `document.title` in sync with the current app mode + step. CreatorOffer
+ * pages own their own title (`{creator} 的创作名片`) so we skip them here.
+ */
+watch(
+  [mode, stepLabel, () => route.name],
+  ([currentMode, currentStep, name]) => {
+    if (name === `creator-offer`)
+      return
+    if (currentMode === `editor`)
+      document.title = `${APP_NAME} · 编辑器 — ${APP_SLOGAN}`
+    else if (currentMode === `workflow` && currentStep)
+      document.title = `${APP_NAME} · ${currentStep}`
+    else
+      document.title = documentTitle
+  },
+  { immediate: true },
+)
 
+onMounted(() => {
   // Best-effort: fetch /api/auth/me on app start. Worker may 503 before secrets
   // land — the auth store treats that as anonymous so the SPA still boots.
   void authStore.refresh()
