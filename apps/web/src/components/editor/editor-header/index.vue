@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw } from 'lucide-vue-next'
+import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw, ScrollText } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserMenu from '@/components/auth/UserMenu.vue'
@@ -69,6 +69,10 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
 
 function openCreatorCard() {
   window.open(CREATOR_CARD_ROUTE, `_blank`, `noopener,noreferrer`)
+}
+
+function openChangelog() {
+  router.push({ name: `changelog` })
 }
 </script>
 
@@ -191,6 +195,16 @@ function openCreatorCard() {
     </div>
 
     <div class="hidden shrink-0 items-center gap-1 md:flex">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="h-8 shrink-0 text-muted-foreground hover:text-foreground"
+        @click="openChangelog"
+      >
+        <ScrollText class="mr-1.5 h-4 w-4" />
+        更新日志
+      </Button>
       <Button
         type="button"
         variant="ghost"

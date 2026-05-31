@@ -17,6 +17,7 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /workflow/distribution       name=distribution  宣发活跃
  *   /workflow/stats              name=stats      闭环汇报
  *   /pricing                     name=pricing    定价
+ *   /changelog                   name=changelog  更新日志
  *   /docs/import                 name=import-docs  站外接入文档
  *   /creator-offer/:creatorId    name=creator-offer  公开创作名片
  *
@@ -51,6 +52,7 @@ const CreatorOfferPage = () => import('@/views/CreatorOfferPage.vue')
 const ImportDocsPage = () => import('@/views/ImportDocsPage.vue')
 const PricingPage = () => import('@/views/PricingPage.vue')
 const SettingsPage = () => import('@/views/SettingsPage.vue')
+const ChangelogPage = () => import('@/views/ChangelogPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
 export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `distribution`, `stats`] as const
@@ -96,6 +98,8 @@ const routes: RouteRecordRaw[] = [
   { path: `/docs/import`, name: `import-docs`, component: ImportDocsPage },
   // 定价 / 升级 Pro(公开页,不挂顶栏)
   { path: `/pricing`, name: `pricing`, component: PricingPage },
+  // 更新日志(公开页,不挂顶栏)
+  { path: `/changelog`, name: `changelog`, component: ChangelogPage },
   // 设置中心 — 单页 + 左侧 section nav(公开页,不挂顶栏)
   { path: `/settings`, name: `settings`, component: SettingsPage },
   {
