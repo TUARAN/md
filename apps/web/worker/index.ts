@@ -1,18 +1,33 @@
+import type { AuthEnv } from './auth/routes'
 import {
   handleDefaultImgbedRequest,
   resolveDefaultImgbedPathname,
 } from '@md/shared/utils/defaultImgbed'
 import { WorkerEntrypoint } from 'cloudflare:workers'
+import { consumeAiQuota } from './auth/quota'
+import { handleAuthApi, resolveCurrentUser } from './auth/routes'
 
 const MP_HOST = `https://api.weixin.qq.com`
+const DEEPSEEK_HOST = `https://api.deepseek.com`
 
-interface Env {
+interface Env extends AuthEnv {
   ASSETS: { fetch: (request: Request) => Promise<Response> }
   IMGBED_GITHUB_TOKENS?: string
   IMGBED_GITHUB_USERNAME?: string
   IMGBED_GITHUB_BRANCH?: string
   IMGBED_GITHUB_REPO_COUNT?: string
   IMGBED_USE_CDN?: string
+  DEEPSEEK_API_KEY?: string
+  DEEPSEEK_ACCESS_PASSWORD?: string
+}
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length)
+    return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++)
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
 }
 
 export default class extends WorkerEntrypoint<Env> {
@@ -21,6 +36,12 @@ export default class extends WorkerEntrypoint<Env> {
 
     if (resolveDefaultImgbedPathname(url.pathname))
       return handleDefaultImgbedRequest(request, this.env)
+
+    if (url.pathname.startsWith(`/api/auth/`))
+      return handleAuthApi(this.env, request, url)
+
+    if (url.pathname.startsWith(`/api/deepseek/`))
+      return this.handleDeepSeekApi(request, url)
 
     if (url.pathname.startsWith(`/api/`))
       return this.handleIPReachApi(request, url)
@@ -68,6 +89,112 @@ export default class extends WorkerEntrypoint<Env> {
       const message = err instanceof Error ? err.message : String(err)
       return Response.json({ error: message }, { status: 500 })
     }
+  }
+
+  private async handleDeepSeekApi(request: Request, url: URL): Promise<Response> {
+    if (request.method === `OPTIONS`)
+      return this.jsonWithCors({})
+
+    if (request.method !== `POST`) {
+      return this.jsonWithCors(
+        { ok: false, error: `Method Not Allowed` },
+        { status: 405 },
+      )
+    }
+
+    const apiKey = this.env.DEEPSEEK_API_KEY
+    if (!apiKey) {
+      return this.jsonWithCors(
+        { ok: false, error: `DeepSeek 代理未配置（缺少 DEEPSEEK_API_KEY）` },
+        { status: 503 },
+      )
+    }
+
+    const expectedPassword = this.env.DEEPSEEK_ACCESS_PASSWORD
+
+    if (url.pathname === `/api/deepseek/unlock`) {
+      // Legacy password gate. Kept while account rollout is in flight; once
+      // every active user has logged in via GitHub we can return 410 here.
+      if (!expectedPassword) {
+        return this.jsonWithCors(
+          { ok: false, error: `密码登录已停用，请使用账号登录` },
+          { status: 410 },
+        )
+      }
+      let body: { password?: string } = {}
+      try {
+        body = await request.json()
+      }
+      catch {}
+      const password = body.password ?? ``
+      if (!password || !timingSafeEqual(password, expectedPassword))
+        return this.jsonWithCors({ ok: false, error: `密码错误` }, { status: 401 })
+      return this.jsonWithCors({ ok: true })
+    }
+
+    if (url.pathname === `/api/deepseek/chat`) {
+      // Auth precedence: signed session > legacy password header.
+      const user = await resolveCurrentUser(this.env, request)
+
+      if (user) {
+        if (!this.env.DB) {
+          return this.jsonWithCors(
+            { ok: false, error: `账号后端未就绪` },
+            { status: 503 },
+          )
+        }
+        const snapshot = await consumeAiQuota(this.env.DB, user)
+        if (!snapshot) {
+          return this.jsonWithCors(
+            {
+              ok: false,
+              error: `今日 AI 配额已用尽，明天 UTC 0 点重置或升级到 Pro`,
+              code: `QUOTA_EXHAUSTED`,
+            },
+            { status: 429 },
+          )
+        }
+      }
+      else {
+        // Legacy fallback: shared password header.
+        if (!expectedPassword) {
+          return this.jsonWithCors(
+            { ok: false, error: `未登录` },
+            { status: 401 },
+          )
+        }
+        const password = request.headers.get(`x-deepseek-password`) ?? ``
+        if (!password || !timingSafeEqual(password, expectedPassword))
+          return this.jsonWithCors({ ok: false, error: `未授权` }, { status: 401 })
+      }
+
+      const upstream = await fetch(`${DEEPSEEK_HOST}/v1/chat/completions`, {
+        method: `POST`,
+        headers: {
+          'Content-Type': request.headers.get(`content-type`) ?? `application/json`,
+          'Authorization': `Bearer ${apiKey}`,
+          'Accept': request.headers.get(`accept`) ?? `text/event-stream`,
+        },
+        body: request.body,
+      })
+
+      const respHeaders = new Headers()
+      const passthrough = [`content-type`, `cache-control`, `transfer-encoding`]
+      for (const h of passthrough) {
+        const v = upstream.headers.get(h)
+        if (v)
+          respHeaders.set(h, v)
+      }
+      respHeaders.set(`Access-Control-Allow-Origin`, `*`)
+      respHeaders.set(`Access-Control-Allow-Headers`, `*`)
+
+      return new Response(upstream.body, {
+        status: upstream.status,
+        headers: respHeaders,
+      })
+    }
+
+    return this.jsonWithCors({ ok: false, error: `Not Found` }, { status: 404 })
   }
 
   private async handleIPReachApi(request: Request, url: URL): Promise<Response> {

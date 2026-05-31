@@ -25,11 +25,20 @@
     "IMGBED_GITHUB_USERNAME": "bucketio",
     "IMGBED_GITHUB_BRANCH": "main",
     "IMGBED_GITHUB_REPO_COUNT": "20",
-    "IMGBED_USE_CDN": "1"
+    "IMGBED_USE_CDN": "1",
+    "OAUTH_REDIRECT_HOST": "https://syncblog.cn"
   },
   "compatibility_flags": [
     "nodejs_compat",
     "nodejs_compat_populate_process_env"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "syncblog",
+      "database_id": "1fe27887-b592-473e-b75f-6763f5e88bc4",
+      "migrations_dir": "migrations"
+    }
   ]
   /**
    * Smart Placement
