@@ -87,6 +87,24 @@ export const useUIStore = defineStore(`ui`, () => {
   const isShowCssEditor = store.reactive(`isShowCssEditor`, false)
   const toggleShowCssEditor = useToggle(isShowCssEditor)
 
+  /**
+   * 右侧栏互斥(Phase 3.4):RightSlider(样式面板)与 CssEditor 都竞争同一块
+   * 右侧空间。同时显示两个会把编辑区挤窄到难以阅读,所以打开任一个时自动关
+   * 闭另一个,行为像 tab 切换。
+   *
+   * 用 watch 实现而不是封装一层 `activeRightPanel` setter,可以让所有现存
+   * 31 处对 `isOpenRightSlider` / `isShowCssEditor` 的直接读写自动获得互
+   * 斥行为,无需在每个调用点改代码。
+   */
+  watch(isOpenRightSlider, (open) => {
+    if (open && isShowCssEditor.value)
+      isShowCssEditor.value = false
+  })
+  watch(isShowCssEditor, (open) => {
+    if (open && isOpenRightSlider.value)
+      isOpenRightSlider.value = false
+  })
+
   // 是否展示插入表格对话框
   const isShowInsertFormDialog = ref(false)
   const toggleShowInsertFormDialog = useToggle(isShowInsertFormDialog)

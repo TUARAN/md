@@ -4,8 +4,14 @@ import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
 
 /**
- * 模板管理 Store
- * 负责管理 Markdown 模板的增删改查
+ * 模板管理 Store ——「模板目录,与文章生命周期解耦」
+ *
+ * 角色边界(Phase 3.3 明确):
+ *   - 持有用户保存的 Markdown 模板列表(`templates`),持久化到 localStorage
+ *   - 提供模板 CRUD;**不**持有当前文章内容,**不**直接修改 `usePostStore`
+ *   - 应用模板时(在 TemplateDialog 里),由调用方决定怎么写回(通常是
+ *     `editorStore.importContent()` 后由 EditorPanel 的双向同步把内容
+ *     刷到 `usePostStore.currentPost.content`)
  */
 export const useTemplateStore = defineStore(`template`, () => {
   // ==================== 状态 ====================

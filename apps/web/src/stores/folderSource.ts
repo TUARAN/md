@@ -19,8 +19,17 @@ interface RuntimeFolderInfo {
 }
 
 /**
- * 本地文件夹源 Store
- * 负责管理本地文件夹的访问、文件树结构和文件读写
+ * 本地文件夹源 Store ——「读侧数据源,不绕过 usePostStore」
+ *
+ * 角色边界(Phase 3.3 明确):
+ *   - 持有通过 File System Access API 拿到的文件夹 handle、文件树和选中
+ *     文件路径(运行时状态,不持久化)
+ *   - 加载文件后,**通过 `usePostStore.updatePostContent` 写入**,文件夹自身
+ *     **不持有"当前内容"**
+ *   - 写文件 (`writeFile`) 用于反向同步:把编辑器修改持久化回磁盘文件
+ *
+ * 不与 `usePostStore` 竞争:文件夹是"内容来自哪里"的可选输入,持久化和
+ * 跨组件读仍统一从 post store 拿。
  */
 export const useFolderSourceStore = defineStore(`folderSource`, () => {
   // 内存中的运行时文件夹信息（不持久化）
