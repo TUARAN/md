@@ -37,27 +37,6 @@ const { mode } = useAppMode()
   height: 100vh;
   min-width: 100%;
   padding: 0;
-
-  /*
-   * Mode accent — a 2px coloured strip at the very top, distinct between
-   * editor and workflow. Subtle enough to ignore on focused work, present
-   * enough to register peripherally when context changes.
-   */
-  &::before {
-    content: '';
-    display: block;
-    height: 2px;
-    flex-shrink: 0;
-    transition: background-color 0.25s ease;
-  }
-
-  &[data-app-mode='editor']::before {
-    background: hsl(var(--primary));
-  }
-
-  &[data-app-mode='workflow']::before {
-    background: hsl(var(--muted-foreground) / 0.35);
-  }
 }
 
 .container-main {
