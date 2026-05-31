@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { PanelShell, SectionHeader, StatusBadge, Toolbar } from '@/components/ui/layout'
 import { PasswordInput } from '@/components/ui/password-input'
 import {
   Select,
@@ -17,16 +18,17 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select'
+import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { copyPlain } from '@/utils/clipboard'
 import {
-  DEEPSEEK_ENDPOINT,
+  DEEPSEEK_CHAT_ENDPOINT,
   DEEPSEEK_MODELS,
-  getUnlockedDeepSeekKey,
+  getDeepSeekPassword,
   isDeepSeekUnlocked,
   lockDeepSeek,
-  unlockDeepSeekKey,
-} from '@/utils/deepseekUnlock'
+  unlockDeepSeek,
+} from '@/utils/deepseekClient'
 import { toast } from '@/utils/toast'
 
 const props = defineProps<{
@@ -34,12 +36,18 @@ const props = defineProps<{
 }>()
 
 const editorStore = useEditorStore()
+const auth = useAuthStore()
 
 const model = ref<string>(DEEPSEEK_MODELS[0].value)
 const output = ref<string>(``)
 const reasoning = ref<string>(``)
 const generating = ref(false)
 const unlocked = ref(isDeepSeekUnlocked())
+
+/** True when the current request can be authenticated by session cookie alone. */
+const useSessionAuth = computed(() => auth.isAuthenticated)
+/** True when we can call DeepSeek right now without prompting the user. */
+const canGenerate = computed(() => useSessionAuth.value || unlocked.value)
 
 const passwordDialogOpen = ref(false)
 const passwordInput = ref(``)
@@ -64,7 +72,7 @@ async function submitPassword() {
   unlocking.value = true
   passwordError.value = ``
   try {
-    await unlockDeepSeekKey(passwordInput.value)
+    await unlockDeepSeek(passwordInput.value)
     unlocked.value = true
     passwordDialogOpen.value = false
     toast.success(`已解锁 DeepSeek`)
@@ -89,7 +97,9 @@ function handleGenerate() {
     toast.error(`提示词为空，请先准备素材`)
     return
   }
-  if (!unlocked.value) {
+  if (!canGenerate.value) {
+    // Anonymous user without a password unlock: prefer login if backend
+    // supports it, otherwise fall back to the legacy password gate.
     openPasswordDialog()
     return
   }
@@ -97,11 +107,21 @@ function handleGenerate() {
 }
 
 async function runGenerate() {
-  const apiKey = getUnlockedDeepSeekKey()
-  if (!apiKey) {
-    unlocked.value = false
-    openPasswordDialog()
-    return
+  const headers: Record<string, string> = {
+    'Content-Type': `application/json`,
+  }
+
+  if (useSessionAuth.value) {
+    // Session cookie handles auth — no header needed.
+  }
+  else {
+    const password = getDeepSeekPassword()
+    if (!password) {
+      unlocked.value = false
+      openPasswordDialog()
+      return
+    }
+    headers[`x-deepseek-password`] = password
   }
 
   output.value = ``
@@ -110,12 +130,10 @@ async function runGenerate() {
   abortController = new AbortController()
 
   try {
-    const res = await window.fetch(DEEPSEEK_ENDPOINT, {
+    const res = await window.fetch(DEEPSEEK_CHAT_ENDPOINT, {
       method: `POST`,
-      headers: {
-        'Content-Type': `application/json`,
-        'Authorization': `Bearer ${apiKey}`,
-      },
+      credentials: `same-origin`,
+      headers,
       body: JSON.stringify({
         model: model.value,
         stream: true,
@@ -125,6 +143,11 @@ async function runGenerate() {
       }),
       signal: abortController.signal,
     })
+
+    if (res.status === 429) {
+      const data = await res.json().catch(() => ({} as { error?: string }))
+      throw new Error(data?.error || `今日 AI 配额已用尽`)
+    }
 
     if (!res.ok || !res.body) {
       const errText = await res.text().catch(() => ``)
@@ -171,12 +194,17 @@ async function runGenerate() {
       if (/401|403/.test(msg)) {
         lockDeepSeek()
         unlocked.value = false
+        // Maybe the session expired — refetch auth state so the UI updates.
+        void auth.refresh()
       }
     }
   }
   finally {
     generating.value = false
     abortController = null
+    // Refresh the quota counter shown in the user menu.
+    if (useSessionAuth.value)
+      void auth.refresh()
   }
 }
 
@@ -213,39 +241,42 @@ function insertOutputIntoEditor() {
 </script>
 
 <template>
-  <div class="grid gap-3 rounded-[22px] border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm dark:border-border dark:bg-card">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-      <div class="space-y-1">
-        <div class="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-primary">
-          <Sparkles class="size-4" />
-          DeepSeek 直接生成
-        </div>
-        <p class="text-xs leading-relaxed text-slate-600 dark:text-muted-foreground">
-          内置 DeepSeek 官方接口，密钥已加密内联。首次使用需输入密码解锁，本次浏览器标签页内有效。
-        </p>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <span
-          class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-          :class="unlocked
-            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300'
-            : 'bg-slate-200 text-slate-700 dark:bg-muted dark:text-muted-foreground'"
-        >
-          <LockOpen v-if="unlocked" class="size-3" />
-          <Lock v-else class="size-3" />
-          {{ unlocked ? `已解锁` : `未解锁` }}
-        </span>
-        <Button
-          v-if="unlocked"
-          class="h-7 rounded-md px-2 text-[11px] text-muted-foreground"
-          type="button"
-          variant="ghost"
-          @click="handleLock"
-        >
-          锁定
-        </Button>
-      </div>
-    </div>
+  <PanelShell tone="success" radius="xl" padding="lg" class="grid gap-3">
+    <SectionHeader :icon="Sparkles" tone="success" title="DeepSeek 直接生成">
+      <template #description>
+        DeepSeek 调用走后端代理，密钥仅保管在服务端。
+        <template v-if="useSessionAuth">
+          已登录 <strong>{{ auth.user?.login }}</strong>，今日剩余
+          <strong>{{ Math.max(0, (auth.aiQuota?.limit ?? 0) - (auth.aiQuota?.used ?? 0)) }}</strong>
+          / {{ auth.aiQuota?.limit }} 次。
+        </template>
+        <template v-else>
+          登录后按账号计配额，或输入共享密码临时解锁（本标签页内有效）。
+        </template>
+      </template>
+      <template #actions>
+        <StatusBadge v-if="useSessionAuth" tone="info" :icon="LockOpen">
+          账号登录
+        </StatusBadge>
+        <template v-else>
+          <StatusBadge
+            :tone="unlocked ? 'success' : 'neutral'"
+            :icon="unlocked ? LockOpen : Lock"
+          >
+            {{ unlocked ? `已解锁` : `未解锁` }}
+          </StatusBadge>
+          <Button
+            v-if="unlocked"
+            class="h-7 rounded-md px-2 text-[11px] text-muted-foreground"
+            type="button"
+            variant="ghost"
+            @click="handleLock"
+          >
+            锁定
+          </Button>
+        </template>
+      </template>
+    </SectionHeader>
 
     <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
       <div class="grid gap-1.5">
@@ -271,8 +302,8 @@ function insertOutputIntoEditor() {
           type="button"
           @click="handleGenerate"
         >
-          <component :is="unlocked ? Send : KeyRound" class="mr-1.5 size-3.5" />
-          {{ unlocked ? `用 DeepSeek 生成` : `解锁并生成` }}
+          <component :is="canGenerate ? Send : KeyRound" class="mr-1.5 size-3.5" />
+          {{ canGenerate ? `用 DeepSeek 生成` : `解锁并生成` }}
         </Button>
         <Button
           v-else
@@ -291,11 +322,11 @@ function insertOutputIntoEditor() {
     </div>
 
     <div class="grid gap-2">
-      <div class="flex flex-wrap items-center justify-between gap-2">
+      <Toolbar>
         <span class="text-xs font-semibold text-slate-700 dark:text-foreground">
           生成结果 <span class="ml-1 text-[11px] font-normal text-muted-foreground">{{ activeModelMeta?.label }}</span>
         </span>
-        <div class="flex items-center gap-2">
+        <template #end>
           <Button
             class="h-8 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-border dark:bg-background dark:text-foreground"
             type="button"
@@ -315,18 +346,22 @@ function insertOutputIntoEditor() {
             <Send class="mr-1.5 size-3.5" />
             插入编辑器
           </Button>
-        </div>
-      </div>
+        </template>
+      </Toolbar>
 
-      <div
+      <PanelShell
         v-if="reasoning"
-        class="rounded-xl border border-amber-200/70 bg-amber-50/70 p-3 text-[11px] leading-relaxed text-amber-900 dark:border-border dark:bg-background dark:text-amber-200"
+        tone="warning"
+        radius="md"
+        padding="sm"
+        flat
+        class="text-[11px] leading-relaxed text-amber-900 dark:text-amber-200"
       >
         <div class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-amber-700/80">
           推理过程（reasoning_content）
         </div>
         <pre class="max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono">{{ reasoning }}</pre>
-      </div>
+      </PanelShell>
 
       <pre
         class="min-h-[160px] flex-1 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700 dark:border-border dark:bg-background dark:text-foreground"
@@ -368,5 +403,5 @@ function insertOutputIntoEditor() {
         </form>
       </DialogContent>
     </Dialog>
-  </div>
+  </PanelShell>
 </template>
