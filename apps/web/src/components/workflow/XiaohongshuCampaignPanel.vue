@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PanelShell } from '@/components/ui/layout'
 import {
   Select,
   SelectContent,
@@ -220,7 +221,7 @@ function insertDraftToEditor() {
 
     <div class="grid min-h-0 gap-4 2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.05fr)_minmax(18rem,0.72fr)]">
       <section class="grid gap-4">
-        <div class="grid gap-3 rounded-[18px] border border-border/80 bg-white/80 p-4 dark:bg-card">
+        <PanelShell tone="neutral" radius="lg" padding="md" flat class="grid gap-3">
           <WorkflowSectionTitle>
             专题策略
           </WorkflowSectionTitle>
@@ -265,9 +266,9 @@ function insertDraftToEditor() {
               <Textarea v-model="takeaway" class="min-h-20 resize-none rounded-lg bg-white text-sm dark:bg-background" />
             </div>
           </div>
-        </div>
+        </PanelShell>
 
-        <div class="grid gap-3 rounded-[18px] border border-border/80 bg-white/80 p-4 dark:bg-card">
+        <PanelShell tone="neutral" radius="lg" padding="md" flat class="grid gap-3">
           <WorkflowSectionTitle>
             质量规则
           </WorkflowSectionTitle>
@@ -277,7 +278,7 @@ function insertDraftToEditor() {
               <span>{{ rule }}</span>
             </li>
           </ul>
-        </div>
+        </PanelShell>
       </section>
 
       <section class="grid min-h-0 gap-4">
@@ -327,7 +328,7 @@ function insertDraftToEditor() {
       </section>
 
       <aside class="grid gap-4">
-        <section class="grid gap-3 rounded-[18px] border border-border/80 bg-white/80 p-4 dark:bg-card">
+        <PanelShell as="section" tone="neutral" radius="lg" padding="md" flat class="grid gap-3">
           <WorkflowSectionTitle>
             图片预览
           </WorkflowSectionTitle>
@@ -341,9 +342,9 @@ function insertDraftToEditor() {
             <Copy class="mr-1.5 size-4" />
             复制图片地址
           </Button>
-        </section>
+        </PanelShell>
 
-        <section class="flex min-h-0 flex-col gap-3 rounded-[18px] border border-border/80 bg-white/80 p-4 dark:bg-card">
+        <PanelShell as="section" tone="neutral" radius="lg" padding="md" flat class="flex min-h-0 flex-col gap-3">
           <WorkflowSectionTitle>
             Markdown 成稿
           </WorkflowSectionTitle>
@@ -358,7 +359,7 @@ function insertDraftToEditor() {
               插入编辑器
             </Button>
           </div>
-        </section>
+        </PanelShell>
       </aside>
     </div>
   </div>

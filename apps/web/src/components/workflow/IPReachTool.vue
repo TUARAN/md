@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { PanelShell } from '@/components/ui/layout'
 
 const MASKED_91HTTP_API_URL = `http://api.91http.com/v1/get-ip?trade_no=B807601331374&secret=********&num=1&protocol=1&format=text&sep=1&filter=1`
 
@@ -404,7 +405,7 @@ onMounted(() => {
 
 <template>
   <section class="space-y-4">
-    <div class="rounded-[18px] border border-primary/25 bg-primary/[0.05] p-4 dark:bg-primary/10">
+    <PanelShell tone="primary" radius="lg" padding="md" flat>
       <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p class="flex items-center gap-1.5 text-xs font-medium text-primary">
@@ -421,33 +422,33 @@ onMounted(() => {
           检测直连 IP
         </Button>
       </div>
-    </div>
+    </PanelShell>
 
     <section class="grid gap-3 sm:grid-cols-3">
-      <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+      <PanelShell tone="neutral" radius="md" padding="md" flat>
         <p class="text-xs font-medium text-muted-foreground">
           当前出口 IP
         </p>
         <p class="mt-1 break-all text-lg font-semibold tabular-nums">
           {{ currentIp }}
         </p>
-      </div>
-      <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+      </PanelShell>
+      <PanelShell tone="neutral" radius="md" padding="md" flat>
         <p class="text-xs font-medium text-muted-foreground">
           当前模式
         </p>
         <p class="mt-1 text-lg font-semibold">
           {{ currentMode }}
         </p>
-      </div>
-      <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+      </PanelShell>
+      <PanelShell tone="neutral" radius="md" padding="md" flat>
         <p class="text-xs font-medium text-muted-foreground">
           最近访问状态
         </p>
         <p class="mt-1 break-all text-lg font-semibold tabular-nums">
           {{ lastStatus }}
         </p>
-      </div>
+      </PanelShell>
     </section>
 
     <section class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
@@ -457,7 +458,7 @@ onMounted(() => {
       或消费 HTTP/SOCKS 代理；完整代理访问需要连接独立 Node/VPS 后端。
     </section>
 
-    <section class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+    <PanelShell as="section" tone="neutral" radius="md" padding="md" flat>
       <label class="grid gap-1.5 text-sm font-medium">
         目标链接
         <input
@@ -484,9 +485,9 @@ onMounted(() => {
           自动轮换
         </Button>
       </div>
-    </section>
+    </PanelShell>
 
-    <section class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+    <PanelShell as="section" tone="neutral" radius="md" padding="md" flat>
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
         <h2 class="text-sm font-semibold">
           91HTTP 接入
@@ -566,10 +567,10 @@ onMounted(() => {
         91HTTP 隧道代理
         <input v-model="http91Tunnel" class="ip-tool-input" type="text" autocomplete="off" placeholder="例如 http://user:pass@host:port 或 host:port">
       </label>
-    </section>
+    </PanelShell>
 
     <section class="grid gap-4 xl:grid-cols-[minmax(20rem,0.95fr)_minmax(24rem,1.05fr)]">
-      <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+      <PanelShell tone="neutral" radius="md" padding="md" flat>
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
           <h2 class="text-sm font-semibold">
             代理池
@@ -598,9 +599,9 @@ user:pass@1.2.3.4:8080"
             清空日志
           </Button>
         </div>
-      </div>
+      </PanelShell>
 
-      <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+      <PanelShell tone="neutral" radius="md" padding="md" flat>
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
           <h2 class="text-sm font-semibold">
             访问结果
@@ -608,10 +609,10 @@ user:pass@1.2.3.4:8080"
           <span class="break-all text-xs text-muted-foreground">{{ activeProxy }}</span>
         </div>
         <pre class="mt-3 max-h-80 min-h-56 overflow-auto whitespace-pre-wrap break-words rounded-md border border-input bg-muted/60 p-3 text-xs leading-relaxed">{{ preview }}</pre>
-      </div>
+      </PanelShell>
     </section>
 
-    <section class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+    <PanelShell as="section" tone="neutral" radius="md" padding="md" flat>
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-3">
         <h2 class="text-sm font-semibold">
           运行日志
@@ -634,7 +635,7 @@ user:pass@1.2.3.4:8080"
           <span v-if="log.detail" class="ml-1">| {{ log.detail }}</span>
         </li>
       </ol>
-    </section>
+    </PanelShell>
   </section>
 </template>
 
