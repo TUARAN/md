@@ -15,6 +15,20 @@ export const AI_QUOTA_LIMITS: Record<UserRecord['plan'], number> = {
   pro: 1000,
 }
 
+/**
+ * Effective plan = stored plan reconciled against `pro_expires_at`.
+ *
+ * Pro flows in via webhook → `pro_expires_at` is set to the end of the
+ * paid period. When that expires (no renewal received) the user silently
+ * drops back to Free without any explicit job — we just compute it.
+ */
+export function effectivePlan(user: UserRecord): UserRecord['plan'] {
+  const nowSec = Math.floor(Date.now() / 1000)
+  if (user.pro_expires_at && user.pro_expires_at >= nowSec)
+    return `pro`
+  return `free`
+}
+
 function nextUtcMidnight(nowMs: number): number {
   const d = new Date(nowMs)
   return Date.UTC(
@@ -46,7 +60,7 @@ export async function consumeAiQuota(
   increment = 1,
 ): Promise<QuotaSnapshot | null> {
   const nowSec = Math.floor(Date.now() / 1000)
-  const limit = AI_QUOTA_LIMITS[user.plan]
+  const limit = AI_QUOTA_LIMITS[effectivePlan(user)]
 
   // Window expired (or never set) → reset counter + window.
   if (!user.ai_quota_reset_at || nowSec >= user.ai_quota_reset_at) {
@@ -79,7 +93,7 @@ export async function consumeAiQuota(
 
 export function quotaSnapshotFor(user: UserRecord): QuotaSnapshot {
   const nowSec = Math.floor(Date.now() / 1000)
-  const limit = AI_QUOTA_LIMITS[user.plan]
+  const limit = AI_QUOTA_LIMITS[effectivePlan(user)]
   if (!user.ai_quota_reset_at || nowSec >= user.ai_quota_reset_at) {
     return { used: 0, limit, resetAt: nextUtcMidnight(Date.now()) }
   }
@@ -93,7 +107,7 @@ export function toPublicUser(u: UserRecord): PublicUser {
     name: u.name,
     email: u.email,
     avatarUrl: u.avatar_url,
-    plan: u.plan,
+    plan: effectivePlan(u),
     aiQuota: quotaSnapshotFor(u),
   }
 }

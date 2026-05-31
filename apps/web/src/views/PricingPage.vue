@@ -1,13 +1,53 @@
 <script setup lang="ts">
-import { ArrowLeft, Check, Crown, Sparkles } from 'lucide-vue-next'
-import { onMounted } from 'vue'
+import { ArrowLeft, Check, Crown, QrCode, Sparkles } from 'lucide-vue-next'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { APP_NAME } from '@/constants/branding'
 import { useAuthStore } from '@/stores/auth'
+import { toast } from '@/utils/toast'
 
 const auth = useAuthStore()
 const router = useRouter()
+
+const billingPeriod = ref<'monthly' | 'yearly'>(`yearly`)
+
+const PRICING = {
+  monthly: { label: `月付`, amount: 39, suffix: `/ 月`, savings: `` },
+  yearly: { label: `年付`, amount: 399, suffix: `/ 年`, savings: `相当于月付 ¥33,省 ¥69` },
+} as const
+
+const activePrice = computed(() => PRICING[billingPeriod.value])
+
+async function handleSubscribe(provider: 'wechat' | 'alipay') {
+  if (!auth.isAuthenticated) {
+    toast.error(`请先登录 GitHub 账号`)
+    auth.startLogin()
+    return
+  }
+  try {
+    const sku = billingPeriod.value === `monthly` ? `pro_monthly` : `pro_yearly`
+    const res = await fetch(`/api/billing/intent`, {
+      method: `POST`,
+      credentials: `same-origin`,
+      headers: { 'Content-Type': `application/json` },
+      body: JSON.stringify({ sku, provider }),
+    })
+    const data = await res.json().catch(() => ({})) as { error?: string, code?: string }
+    if (res.status === 503 || res.status === 501) {
+      toast.error(data.error || `支付通道暂未开放,请联系微信 atar24 开通`)
+      return
+    }
+    if (!res.ok) {
+      toast.error(data.error || `下单失败 (${res.status})`)
+      return
+    }
+    toast.success(`下单成功`)
+  }
+  catch {
+    toast.error(`网络错误,请稍后再试`)
+  }
+}
 
 onMounted(() => {
   document.title = `${APP_NAME} · 升级到 Pro`
@@ -81,12 +121,34 @@ function goHome() {
               Pro
             </h2>
             <span class="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-900 dark:bg-amber-500/20 dark:text-amber-200">
-              内测中
+              {{ auth.isPro ? '已订阅' : '邀请制' }}
             </span>
           </header>
+
+          <!-- 月付 / 年付 切换 -->
+          <div class="inline-flex w-fit rounded-full bg-amber-100/80 p-0.5 text-xs font-medium dark:bg-amber-500/15">
+            <button
+              v-for="(meta, key) in PRICING"
+              :key="key"
+              type="button"
+              class="rounded-full px-3 py-1 transition-colors"
+              :class="billingPeriod === key
+                ? 'bg-white text-amber-900 shadow-sm dark:bg-amber-500/30 dark:text-amber-100'
+                : 'text-amber-800/70 dark:text-amber-200/70'"
+              @click="billingPeriod = key"
+            >
+              {{ meta.label }}
+            </button>
+          </div>
+
           <p class="text-2xl font-semibold text-amber-900 dark:text-amber-200">
-            ¥— <span class="text-sm font-normal text-amber-800/80 dark:text-amber-200/70">/ 月（定价中）</span>
+            ¥{{ activePrice.amount }}
+            <span class="text-sm font-normal text-amber-800/80 dark:text-amber-200/70">{{ activePrice.suffix }}</span>
           </p>
+          <p v-if="activePrice.savings" class="-mt-2 text-xs text-amber-800/80 dark:text-amber-200/70">
+            {{ activePrice.savings }}
+          </p>
+
           <ul class="grid gap-1.5 text-sm text-amber-900/90 dark:text-amber-100/90">
             <li class="flex items-start gap-2">
               <Check class="mt-0.5 size-4" />
@@ -105,15 +167,36 @@ function goHome() {
               专属支持（微信群）
             </li>
           </ul>
+
+          <div class="mt-2 grid gap-2 sm:grid-cols-2">
+            <Button
+              type="button"
+              variant="default"
+              class="bg-emerald-600 text-white hover:bg-emerald-700"
+              @click="handleSubscribe('wechat')"
+            >
+              <QrCode class="mr-1.5 size-4" />
+              微信支付
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              class="bg-sky-600 text-white hover:bg-sky-700"
+              @click="handleSubscribe('alipay')"
+            >
+              <QrCode class="mr-1.5 size-4" />
+              支付宝
+            </Button>
+          </div>
         </article>
       </section>
 
       <section class="rounded-2xl border border-dashed border-border bg-card/50 p-6 text-sm leading-relaxed text-muted-foreground">
         <p class="mb-1 font-medium text-foreground">
-          想加入 Pro 内测？
+          为什么按钮点了说「支付通道暂未开放」？
         </p>
         <p>
-          目前 Pro 定价仍在调研，先以邀请制开放。请通过微信 <code class="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground">atar24</code> 联系我们，注明 GitHub 用户名，我们会手动把账号置为 Pro。
+          微信支付商户号和支付宝商户都在申请中（需要 ICP 备案 + 企业资质,周期数周）。在此期间想用 Pro,请加微信 <code class="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground">atar24</code>,注明 GitHub 用户名,我们手动开通。商户号下来后这两个按钮立即上线。
         </p>
       </section>
     </div>

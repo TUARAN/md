@@ -1,9 +1,11 @@
+import type { BillingEnv } from './auth/billingRoutes'
 import type { AuthEnv } from './auth/routes'
 import {
   handleDefaultImgbedRequest,
   resolveDefaultImgbedPathname,
 } from '@md/shared/utils/defaultImgbed'
 import { WorkerEntrypoint } from 'cloudflare:workers'
+import { handleBillingApi } from './auth/billingRoutes'
 import { consumeAiQuota } from './auth/quota'
 import { consumeRate, getClientIp, rateLimitedResponse } from './auth/rateLimit'
 import { handleAuthApi, resolveCurrentUser } from './auth/routes'
@@ -11,7 +13,7 @@ import { handleAuthApi, resolveCurrentUser } from './auth/routes'
 const MP_HOST = `https://api.weixin.qq.com`
 const DEEPSEEK_HOST = `https://api.deepseek.com`
 
-interface Env extends AuthEnv {
+interface Env extends AuthEnv, BillingEnv {
   ASSETS: { fetch: (request: Request) => Promise<Response> }
   IMGBED_GITHUB_TOKENS?: string
   IMGBED_GITHUB_USERNAME?: string
@@ -62,6 +64,9 @@ export default class extends WorkerEntrypoint<Env> {
 
     if (url.pathname.startsWith(`/api/auth/`))
       return handleAuthApi(this.env, request, url)
+
+    if (url.pathname.startsWith(`/api/billing/`))
+      return handleBillingApi(this.env, request, url)
 
     if (url.pathname.startsWith(`/api/deepseek/`))
       return this.handleDeepSeekApi(request, url)
