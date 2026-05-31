@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { documentTitle } from '@/constants/branding'
+import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
@@ -11,6 +12,7 @@ import { useUIStore } from '@/stores/ui'
 const uiStore = useUIStore()
 const postStore = usePostStore()
 const editorStore = useEditorStore()
+const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const { isDark } = storeToRefs(uiStore)
@@ -200,6 +202,10 @@ function postImportReady() {
 onMounted(() => {
   if (route.name !== `creator-offer`)
     document.title = documentTitle
+
+  // Best-effort: fetch /api/auth/me on app start. Worker may 503 before secrets
+  // land — the auth store treats that as anonymous so the SPA still boots.
+  void authStore.refresh()
 
   window.addEventListener(`message`, handleImportMessage)
   postImportReady()

@@ -28,6 +28,7 @@ const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.
 
 const CreatorOfferPage = () => import('@/views/CreatorOfferPage.vue')
 const ImportDocsPage = () => import('@/views/ImportDocsPage.vue')
+const PricingPage = () => import('@/views/PricingPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
 export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `distribution`, `stats`] as const
@@ -62,6 +63,8 @@ const routes: RouteRecordRaw[] = [
   { path: `/creator-profile`, redirect: `/distribution` },
   // 站外文章接入文档(公开页,不挂顶栏)
   { path: `/docs/import`, name: `import-docs`, component: ImportDocsPage },
+  // 定价 / 升级 Pro(公开页,不挂顶栏)
+  { path: `/pricing`, name: `pricing`, component: PricingPage },
   {
     path: `/creator-offer/:creatorId`,
     name: `creator-offer`,

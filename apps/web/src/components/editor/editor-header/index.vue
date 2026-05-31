@@ -2,6 +2,7 @@
 import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import UserMenu from '@/components/auth/UserMenu.vue'
 import { Button } from '@/components/ui/button'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
@@ -189,7 +190,7 @@ function openCreatorCard() {
       </Menubar>
     </div>
 
-    <div class="hidden shrink-0 items-center gap-2 md:flex">
+    <div class="hidden shrink-0 items-center gap-1 md:flex">
       <Button
         type="button"
         variant="ghost"
@@ -200,6 +201,7 @@ function openCreatorCard() {
         <IdCard class="mr-1.5 h-4 w-4" />
         创作名片
       </Button>
+      <UserMenu />
     </div>
   </header>
 
