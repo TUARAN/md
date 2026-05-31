@@ -4,12 +4,14 @@
  * Routes:
  *   GET  /api/auth/me              — current user (200 { user } | 200 { user: null })
  *   GET  /api/auth/github/start    — 302 to GitHub authorize
- *   GET  /api/auth/github/callback — exchange code → upsert → set session cookie → 302 home
+ *   GET  /api/auth/github/callback — exchange code → upsert → set session cookie → 302 returnTo
  *   POST /api/auth/logout          — clear session cookie
  */
 
+import type { CookieOpts } from './cookies'
 import type { PublicUser, UserRecord } from './types'
 import {
+  OAUTH_RETURN_TO_COOKIE,
   OAUTH_STATE_COOKIE,
   parseCookies,
   serializeCookie,
@@ -61,6 +63,29 @@ function resolveOrigin(env: AuthEnv, request: Request): string {
   return new URL(request.url).origin
 }
 
+function isSecureRequest(request: Request): boolean {
+  const forwardedProto = request.headers.get(`x-forwarded-proto`)
+  return new URL(request.url).protocol === `https:` || forwardedProto === `https`
+}
+
+function cookieOpts(request: Request, maxAge: number): CookieOpts {
+  return { maxAge, secure: isSecureRequest(request) }
+}
+
+function normalizeReturnTo(raw: string | null, origin: string): string {
+  if (!raw)
+    return `/`
+  try {
+    const target = new URL(raw, origin)
+    if (target.origin !== origin)
+      return `/`
+    return `${target.pathname}${target.search}${target.hash}` || `/`
+  }
+  catch {
+    return `/`
+  }
+}
+
 /**
  * Resolve the current authenticated user from cookies. Returns null when
  * unauthenticated or when the backend isn't configured yet.
@@ -109,13 +134,18 @@ export async function handleAuthApi(
     const state = randomToken()
     const origin = resolveOrigin(env, request)
     const redirectUri = `${origin}${CALLBACK_PATH}`
+    const returnTo = normalizeReturnTo(url.searchParams.get(`returnTo`), origin)
     const authorizeUrl = buildAuthorizeUrl(env.GITHUB_CLIENT_ID, redirectUri, state)
 
     const headers = new Headers()
     headers.set(`Location`, authorizeUrl)
     headers.append(
       `Set-Cookie`,
-      serializeCookie(OAUTH_STATE_COOKIE, state, { maxAge: 600 }),
+      serializeCookie(OAUTH_STATE_COOKIE, state, cookieOpts(request, 600)),
+    )
+    headers.append(
+      `Set-Cookie`,
+      serializeCookie(OAUTH_RETURN_TO_COOKIE, returnTo, cookieOpts(request, 600)),
     )
     return new Response(null, { status: 302, headers })
   }
@@ -132,6 +162,8 @@ export async function handleAuthApi(
     const stateParam = url.searchParams.get(`state`)
     const cookies = parseCookies(request.headers.get(`cookie`))
     const stateCookie = cookies[OAUTH_STATE_COOKIE]
+    const origin = resolveOrigin(env, request)
+    const returnTo = normalizeReturnTo(cookies[OAUTH_RETURN_TO_COOKIE] ?? `/`, origin)
 
     if (!code || !stateParam || !stateCookie || stateParam !== stateCookie) {
       return jsonResponse(
@@ -140,7 +172,6 @@ export async function handleAuthApi(
       )
     }
 
-    const origin = resolveOrigin(env, request)
     const redirectUri = `${origin}${CALLBACK_PATH}`
 
     try {
@@ -158,15 +189,19 @@ export async function handleAuthApi(
       })
 
       const headers = new Headers()
-      headers.set(`Location`, `/`)
+      headers.set(`Location`, returnTo)
       headers.append(
         `Set-Cookie`,
-        serializeCookie(SESSION_COOKIE, sessionToken, { maxAge: SESSION_TTL_SEC }),
+        serializeCookie(SESSION_COOKIE, sessionToken, cookieOpts(request, SESSION_TTL_SEC)),
       )
       // Clear the one-shot state cookie.
       headers.append(
         `Set-Cookie`,
-        serializeCookie(OAUTH_STATE_COOKIE, ``, { maxAge: 0 }),
+        serializeCookie(OAUTH_STATE_COOKIE, ``, cookieOpts(request, 0)),
+      )
+      headers.append(
+        `Set-Cookie`,
+        serializeCookie(OAUTH_RETURN_TO_COOKIE, ``, cookieOpts(request, 0)),
       )
       return new Response(null, { status: 302, headers })
     }
@@ -180,7 +215,7 @@ export async function handleAuthApi(
     const headers = new Headers()
     headers.append(
       `Set-Cookie`,
-      serializeCookie(SESSION_COOKIE, ``, { maxAge: 0 }),
+      serializeCookie(SESSION_COOKIE, ``, cookieOpts(request, 0)),
     )
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
