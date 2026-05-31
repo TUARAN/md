@@ -35,9 +35,21 @@ const {
   isOpenPostSlider,
   isOpenFolderPanel,
   isOpenRightSlider,
+  isFocusMode,
   viewMode,
   enableScrollSync,
 } = storeToRefs(uiStore)
+
+/**
+ * Visibility helpers — focus mode collapses every auxiliary panel so the
+ * editor falls back to a clean "left markdown · right preview" canvas.
+ * The underlying `is_open_*` flags are untouched; toggling focus off
+ * restores the user's previous layout exactly.
+ */
+const showPostSlider = computed(() => !isFocusMode.value && isOpenPostSlider.value)
+const showFolderPanel = computed(() => !isFocusMode.value && isOpenFolderPanel.value)
+const showRightSlider = computed(() => !isFocusMode.value && isOpenRightSlider.value)
+const showCssEditor = computed(() => !isFocusMode.value && uiStore.isShowCssEditor)
 
 // --- 子组件引用 ---
 const editorPanelCompRef = ref<InstanceType<typeof EditorPanel> | null>(null)
@@ -86,7 +98,7 @@ function handleUploadImage(file: File, cb?: any, applyUrl?: boolean) {
 }
 
 // --- 面板尺寸配置 ---
-const hasSidePanel = computed(() => !isMobile.value && (isOpenRightSlider.value || uiStore.isShowCssEditor))
+const hasSidePanel = computed(() => !isMobile.value && (showRightSlider.value || showCssEditor.value))
 
 const editorPanelConfig = computed(() => {
   const mode = viewMode.value
@@ -120,8 +132,8 @@ const cssEditorPanelRef = ref<InstanceType<typeof ResizablePanel> | null>(null)
 const rightSliderPanelRef = ref<InstanceType<typeof ResizablePanel> | null>(null)
 
 function redistributePanelSizes() {
-  const cssTarget = !isMobile.value && uiStore.isShowCssEditor ? 25 : 0
-  const rightTarget = !isMobile.value && isOpenRightSlider.value ? 30 : 0
+  const cssTarget = !isMobile.value && showCssEditor.value ? 25 : 0
+  const rightTarget = !isMobile.value && showRightSlider.value ? 30 : 0
   const contentSpace = 100 - cssTarget - rightTarget
 
   const mode = viewMode.value
@@ -147,11 +159,15 @@ watch(viewMode, () => {
   nextTick(redistributePanelSizes)
 })
 
-watch(() => uiStore.isShowCssEditor, () => {
+watch(showCssEditor, () => {
   nextTick(redistributePanelSizes)
 })
 
-watch(isOpenRightSlider, () => {
+watch(showRightSlider, () => {
+  nextTick(redistributePanelSizes)
+})
+
+watch(isFocusMode, () => {
   nextTick(redistributePanelSizes)
 })
 
@@ -231,20 +247,20 @@ onUnmounted(() => {
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel
             :default-size="isMobile ? 0 : 15"
-            :max-size="!isMobile && isOpenPostSlider ? 20 : 0"
-            :min-size="!isMobile && isOpenPostSlider ? 10 : 0"
+            :max-size="!isMobile && showPostSlider ? 20 : 0"
+            :min-size="!isMobile && showPostSlider ? 10 : 0"
           >
-            <PostSlider />
+            <PostSlider v-if="showPostSlider" />
           </ResizablePanel>
-          <ResizableHandle class="hidden md:block" />
+          <ResizableHandle v-if="showPostSlider" class="hidden md:block" />
           <ResizablePanel
-            :default-size="!isMobile && isOpenFolderPanel ? 15 : 0"
-            :max-size="!isMobile && isOpenFolderPanel ? 25 : 0"
-            :min-size="!isMobile && isOpenFolderPanel ? 10 : 0"
+            :default-size="!isMobile && showFolderPanel ? 15 : 0"
+            :max-size="!isMobile && showFolderPanel ? 25 : 0"
+            :min-size="!isMobile && showFolderPanel ? 10 : 0"
           >
-            <FolderSourcePanel />
+            <FolderSourcePanel v-if="showFolderPanel" />
           </ResizablePanel>
-          <ResizableHandle v-if="!isMobile && isOpenFolderPanel" class="hidden md:block" />
+          <ResizableHandle v-if="!isMobile && showFolderPanel" class="hidden md:block" />
 
           <!-- 主内容区域 (嵌套灵动布局) -->
           <ResizablePanel :min-size="30">
@@ -286,28 +302,28 @@ onUnmounted(() => {
               </ResizablePanel>
 
               <!-- CSS 编辑器面板 -->
-              <ResizableHandle v-show="!isMobile && uiStore.isShowCssEditor" class="hidden md:block" />
+              <ResizableHandle v-show="!isMobile && showCssEditor" class="hidden md:block" />
               <ResizablePanel
                 ref="cssEditorPanelRef"
                 :order="3"
                 :default-size="0"
-                :min-size="!isMobile && uiStore.isShowCssEditor ? 10 : 0"
-                :max-size="!isMobile && uiStore.isShowCssEditor ? 60 : 0"
+                :min-size="!isMobile && showCssEditor ? 10 : 0"
+                :max-size="!isMobile && showCssEditor ? 60 : 0"
                 collapsible
                 :collapsed-size="0"
               >
-                <CssEditor v-if="!isMobile" />
+                <CssEditor v-if="!isMobile && showCssEditor" />
               </ResizablePanel>
 
               <!-- 样式面板 -->
-              <ResizableHandle v-show="!isMobile && isOpenRightSlider" class="hidden md:block" />
+              <ResizableHandle v-show="!isMobile && showRightSlider" class="hidden md:block" />
               <ResizablePanel
-                v-if="isOpenRightSlider"
+                v-if="showRightSlider"
                 ref="rightSliderPanelRef"
                 :order="4"
                 :default-size="0"
-                :min-size="!isMobile && isOpenRightSlider ? 25 : 0"
-                :max-size="!isMobile && isOpenRightSlider ? 60 : 0"
+                :min-size="!isMobile && showRightSlider ? 25 : 0"
+                :max-size="!isMobile && showRightSlider ? 60 : 0"
                 collapsible
                 :collapsed-size="0"
               >
@@ -315,8 +331,8 @@ onUnmounted(() => {
               </ResizablePanel>
             </ResizablePanelGroup>
 
-            <!-- 移动端：CssEditor 和 RightSlider 作为浮层 -->
-            <template v-if="isMobile">
+            <!-- 移动端:CssEditor 和 RightSlider 作为浮层(专注模式下隐藏) -->
+            <template v-if="isMobile && !isFocusMode">
               <CssEditor />
               <RightSlider />
             </template>

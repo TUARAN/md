@@ -44,6 +44,15 @@ export const useUIStore = defineStore(`ui`, () => {
   // 是否打开本地文件夹面板
   const isOpenFolderPanel = store.reactive(addPrefix(`is_open_folder_panel`), false)
 
+  /**
+   * 编辑器专注模式 —— 一键回到「左 markdown / 右预览」的最简状态。
+   * 隐藏 PostSlider、FolderSourcePanel、CssEditor、RightSlider 与 SidebarAIToolbar。
+   * 不改变它们各自的 open 状态,退出专注后恢复原样。
+   * 仅在 `/edit` 路由生效;workflow 页面不受影响。
+   */
+  const isFocusMode = store.reactive(addPrefix(`is_focus_mode`), false)
+  const toggleFocusMode = useToggle(isFocusMode)
+
   // 是否为移动端
   const isMobile = store.reactive(`isMobile`, false)
 
@@ -212,6 +221,8 @@ export const useUIStore = defineStore(`ui`, () => {
     viewMode,
     previewDevice,
     isOpenFolderPanel,
+    isFocusMode,
+    toggleFocusMode,
     enableImageReupload,
     enableScrollSync,
 

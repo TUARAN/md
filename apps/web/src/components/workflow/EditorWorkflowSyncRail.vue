@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, MoreHorizontal, Palette } from 'lucide-vue-next'
+import { Copy, Focus, MoreHorizontal, Palette } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { inject } from 'vue'
 import EditDropdown from '@/components/editor/editor-header/EditDropdown.vue'
@@ -17,7 +17,7 @@ import { useUIStore } from '@/stores/ui'
 
 const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 const uiStore = useUIStore()
-const { isOpenRightSlider } = storeToRefs(uiStore)
+const { isOpenRightSlider, isFocusMode } = storeToRefs(uiStore)
 
 const {
   handleOpenAbout,
@@ -71,6 +71,19 @@ function copyToWeChat() {
     >
       <Palette class="mr-2 h-4 w-4" />
       <span>样式</span>
+    </Button>
+
+    <Button
+      variant="outline"
+      size="sm"
+      class="h-9 shrink-0"
+      :class="{ 'bg-accent text-accent-foreground': isFocusMode }"
+      type="button"
+      :title="isFocusMode ? '退出专注模式,恢复原有面板' : '专注模式:仅保留左右编辑/预览'"
+      @click="uiStore.toggleFocusMode()"
+    >
+      <Focus class="mr-2 h-4 w-4" />
+      <span>专注</span>
     </Button>
 
     <Menubar class="menubar menubar--secondary shrink-0 border-0 bg-transparent p-0 shadow-none">
