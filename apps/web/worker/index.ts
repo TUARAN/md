@@ -32,6 +32,28 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 export default class extends WorkerEntrypoint<Env> {
+  /**
+   * Scheduled handler — wired to the daily cron in wrangler.jsonc.
+   * Cleans up `rate_limits` rows whose window has long expired so the table
+   * doesn't grow unbounded. Cheap: indexed scan + DELETE in a single D1
+   * statement; runs once a day.
+   */
+  async scheduled(): Promise<void> {
+    if (!this.env.DB)
+      return
+    const now = Math.floor(Date.now() / 1000)
+    try {
+      const res = await this.env.DB
+        .prepare(`DELETE FROM rate_limits WHERE expires_at < ?`)
+        .bind(now)
+        .run()
+      console.log(`[rate_limits GC] removed ${res.meta?.changes ?? 0} expired rows`)
+    }
+    catch (err) {
+      console.error(`[rate_limits GC] failed`, err)
+    }
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url)
 

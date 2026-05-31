@@ -39,7 +39,11 @@
       "database_id": "1fe27887-b592-473e-b75f-6763f5e88bc4",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "triggers": {
+    // 每天 UTC 04:00(北京 12:00)清一次 rate_limits 表里过期的行
+    "crons": ["0 4 * * *"]
+  }
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
