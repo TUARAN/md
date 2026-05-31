@@ -8,6 +8,7 @@
 import { ChevronLeft, ChevronRight, Eye, Megaphone, Target } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
+import { PanelShell } from '@/components/ui/layout'
 import { getCreatorPlatformMatrix, getWorkflowCreator } from '@/constants/creators'
 import { FAN_GROWTH_MILESTONES } from '@/constants/distributionFocus'
 import {
@@ -277,7 +278,7 @@ function onMatrixDataSourceToggle(event: Event) {
           </section>
 
           <section class="grid gap-4 sm:grid-cols-2">
-            <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card sm:col-span-2">
+            <PanelShell tone="neutral" radius="md" padding="md" flat class="sm:col-span-2">
               <WorkflowSectionTitle>
                 平台 Tips
               </WorkflowSectionTitle>
@@ -287,8 +288,8 @@ function onMatrixDataSourceToggle(event: Event) {
                   <span>{{ item }}</span>
                 </li>
               </ul>
-            </div>
-            <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+            </PanelShell>
+            <PanelShell tone="neutral" radius="md" padding="md" flat>
               <WorkflowSectionTitle>
                 打法要点
               </WorkflowSectionTitle>
@@ -298,8 +299,8 @@ function onMatrixDataSourceToggle(event: Event) {
                   <span>{{ item }}</span>
                 </li>
               </ul>
-            </div>
-            <div class="rounded-xl border border-border/80 bg-white/80 p-4 dark:bg-card">
+            </PanelShell>
+            <PanelShell tone="neutral" radius="md" padding="md" flat>
               <WorkflowSectionTitle>
                 近期动作
               </WorkflowSectionTitle>
@@ -309,7 +310,7 @@ function onMatrixDataSourceToggle(event: Event) {
                   <span>{{ item }}</span>
                 </li>
               </ul>
-            </div>
+            </PanelShell>
           </section>
 
           <section>
