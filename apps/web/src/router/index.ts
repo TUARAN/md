@@ -2,19 +2,40 @@ import type { RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router'
 
 /**
- * 路由架构(2026-05 重构)
+ * 路由架构(2026-05 Phase 3.1: 编辑器与 workflow 分离)
  *
  * - Web / Cloudflare Workers / Netlify: history mode,干净路径,SPA fallback 已在
  *   netlify.toml 和 wrangler.jsonc(`not_found_handling: single-page-application`)中配好
  * - 浏览器扩展(WXT 编译产物运行在 chrome-extension://)和 uTools(file://): hash mode
- * - 主入口 5 个 workflow 步骤(sync/data/creation/distribution/stats)挂在
- *   EditorLayout 下,共享 EditorHeader 顶栏。2026-05 把原「平台矩阵」并入
- *   「宣发活跃」(左列矩阵 + 右列单平台策略),`/matrix` 重定向到 `/distribution`
- * - 创作名片(`/creator-offer/:creatorId`)是独立公开页,不挂顶栏。
- *   原 `/creator-profile` 公开矩阵已废弃,重定向到 `/distribution`
  *
- * 旧版兼容(过渡期):访问 `/#content-sync`、`/#data` 等老书签会被 beforeEach 守卫
- * 重写为 `/sync`、`/data` 等新路径
+ * **新 IA(Phase 3.1, 2026-05):**
+ *
+ *   /                            → 重定向到 /edit
+ *   /edit                        编辑器主页(name=sync) — 写文章 / 预览 / 多平台同步
+ *   /workflow/data               name=data       数据获取
+ *   /workflow/creation           name=creation   风格二创
+ *   /workflow/distribution       name=distribution  宣发活跃
+ *   /workflow/stats              name=stats      闭环汇报
+ *   /pricing                     name=pricing    定价
+ *   /docs/import                 name=import-docs  站外接入文档
+ *   /creator-offer/:creatorId    name=creator-offer  公开创作名片
+ *
+ * 路由 **名字** 维持不变(sync / data / creation / distribution / stats),只有
+ * **路径** 改了。这样所有 `router.push({ name: 'sync' })` 都不用动。
+ *
+ * **老路径兼容:**
+ *   /sync             → /edit
+ *   /data             → /workflow/data
+ *   /creation         → /workflow/creation
+ *   /distribution     → /workflow/distribution
+ *   /stats            → /workflow/stats
+ *   /matrix           → /workflow/distribution(2026-05 并入)
+ *   /creator-profile  → /workflow/distribution(早期公开矩阵页废弃)
+ *
+ * 老 hash 书签(`/#content-sync` / `/#data` …) 仍由 beforeEach 守卫重写为命名路由。
+ *
+ * **Phase 3.2 计划:** 把 4 个 workflow 页从 EditorLayout 拆出来挂到独立的
+ * WorkflowLayout,右侧栏不再混装编辑器与 workflow 内容。
  */
 
 const EditorLayout = () => import('@/layouts/EditorLayout.vue')
@@ -49,18 +70,27 @@ const routes: RouteRecordRaw[] = [
     path: `/`,
     component: EditorLayout,
     children: [
+      // 主入口:编辑器永远在根路径,/edit 是规范 URL
       { path: ``, redirect: { name: `sync` } },
-      { path: `sync`, name: `sync`, component: SyncPage },
-      { path: `data`, name: `data`, component: WorkflowDataPage },
-      { path: `creation`, name: `creation`, component: WorkflowCreationPage },
-      { path: `distribution`, name: `distribution`, component: WorkflowDistributionPage },
-      { path: `stats`, name: `stats`, component: WorkflowStatsPage },
+      { path: `edit`, name: `sync`, component: SyncPage },
+      // 4 个 workflow 步骤搬到 /workflow/*。Phase 3.2 会把它们拆出 EditorLayout。
+      { path: `workflow/data`, name: `data`, component: WorkflowDataPage },
+      { path: `workflow/creation`, name: `creation`, component: WorkflowCreationPage },
+      { path: `workflow/distribution`, name: `distribution`, component: WorkflowDistributionPage },
+      { path: `workflow/stats`, name: `stats`, component: WorkflowStatsPage },
     ],
   },
-  // /matrix 已并入 /distribution(2026-05);保留 redirect 兜住老书签 / 旧外链
-  { path: `/matrix`, redirect: `/distribution` },
-  // /creator-profile 早期公开矩阵页, 一并指向 /distribution
-  { path: `/creator-profile`, redirect: `/distribution` },
+
+  // 老路径兼容(Phase 3.1):保留 1 个月后清掉
+  { path: `/sync`, redirect: `/edit` },
+  { path: `/data`, redirect: `/workflow/data` },
+  { path: `/creation`, redirect: `/workflow/creation` },
+  { path: `/distribution`, redirect: `/workflow/distribution` },
+  { path: `/stats`, redirect: `/workflow/stats` },
+  // /matrix 已并入 distribution(2026-05);/creator-profile 早期公开矩阵页废弃
+  { path: `/matrix`, redirect: `/workflow/distribution` },
+  { path: `/creator-profile`, redirect: `/workflow/distribution` },
+
   // 站外文章接入文档(公开页,不挂顶栏)
   { path: `/docs/import`, name: `import-docs`, component: ImportDocsPage },
   // 定价 / 升级 Pro(公开页,不挂顶栏)
@@ -71,8 +101,9 @@ const routes: RouteRecordRaw[] = [
     component: CreatorOfferPage,
     props: route => ({ creatorId: String(route.params.creatorId).trim().toLowerCase() }),
   },
-  // 兜底:未知路径回主编辑器。redirect 用字符串路径,避免把 pathMatch 参数带过去触发警告
-  { path: `/:pathMatch(.*)*`, redirect: `/sync` },
+
+  // 兜底:未知路径回编辑器主入口。redirect 用字符串路径,避免把 pathMatch 参数带过去触发警告
+  { path: `/:pathMatch(.*)*`, redirect: `/edit` },
 ]
 
 /**
