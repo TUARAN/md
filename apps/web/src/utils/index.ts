@@ -1,3 +1,33 @@
+/**
+ * ## innerHTML 信任链(Phase 6 审计 2026-05)
+ *
+ * 本仓库内 `apps/web/src` 共 16 处 `.innerHTML =` 写入,**全部下游于同一
+ * 个 DOMPurify sanitize 点**,所以不需要在每个写入点重新清洗:
+ *
+ *     用户 Markdown → marked 解析 → packages/core/markdownHelpers.ts:39
+ *                  ↓ DOMPurify.sanitize({ ADD_TAGS: ['mp-common-profile'] })
+ *                  ↓
+ *     renderStore.output (信任的 HTML 字符串)
+ *                  ↓
+ *                  ├── stores/render.ts:49,63        提取标题用,DOM ↔ string round-trip
+ *                  ├── stores/export.ts:27,38,104    导出 PNG/PDF/MD 前注入 #output
+ *                  ├── utils/index.ts:287,322,326,329,364,368,373  复制到剪贴板前的样式
+ *                  │                                  内联 / 结构调整 / Mermaid 兼容
+ *                  ├── composables/useEditorWechatCopy.ts:49,164,174  公众号复制管线
+ *                  └── utils/index.ts:302            createEmptyNode 写入 `&nbsp;` (常量)
+ *
+ * 另两处是静态模板字符串,与用户输入无关:
+ *   - utils/setup-components.ts:14   shadowRoot 用静态字符串初始化
+ *
+ * **维护规则:**
+ *   1. 任何**新**接收 untrusted HTML 字符串(剪贴板粘贴、URL 参数、postMessage
+ *      payload 等)的入口,必须经过 DOMPurify 才能写 innerHTML
+ *   2. 复制管线里 `mergeCss`/`juice` 之类不会再引入新外部内容,可以在
+ *      sanitized 内容上自由变换;若以后引入接受用户 CSS 字符串的扩展点,
+ *      要同步 review
+ *   3. 不要把这条信任链拆掉(例如让某个组件直接读未渲染的 Markdown 当
+ *      HTML 用)
+ */
 import { markedAlert, MDKatex } from '@md/core'
 import { prefix } from '@md/shared/configs'
 // 直接导入供本文件内部使用
