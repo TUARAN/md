@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Crown, Github, LogOut, User as UserIcon } from 'lucide-vue-next'
+import { Crown, Github, LogOut, Settings, User as UserIcon } from 'lucide-vue-next'
 import { computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,6 +39,10 @@ async function handleLogout() {
 
 function handleUpgrade() {
   window.location.assign(`/pricing`)
+}
+
+function handleSettings() {
+  window.location.assign(`/settings`)
 }
 </script>
 
@@ -135,6 +139,11 @@ function handleUpgrade() {
       >
         <Crown class="h-4 w-4" />
         升级到 Pro
+      </DropdownMenuItem>
+
+      <DropdownMenuItem class="gap-2" @select="handleSettings">
+        <Settings class="h-4 w-4" />
+        设置
       </DropdownMenuItem>
 
       <DropdownMenuItem class="gap-2" @select="handleLogout">

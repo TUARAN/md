@@ -16,7 +16,7 @@ export type AppMode = 'editor' | 'workflow' | 'public'
 const EDITOR_ROUTES = new Set([`sync`])
 
 /** Routes that render public pages without the workflow chrome. */
-const PUBLIC_ROUTES = new Set([`pricing`, `import-docs`, `creator-offer`])
+const PUBLIC_ROUTES = new Set([`pricing`, `import-docs`, `creator-offer`, `settings`])
 
 export interface AppModeInfo {
   mode: AppMode
