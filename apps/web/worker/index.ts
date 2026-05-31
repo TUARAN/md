@@ -5,6 +5,7 @@ import {
 } from '@md/shared/utils/defaultImgbed'
 import { WorkerEntrypoint } from 'cloudflare:workers'
 import { consumeAiQuota } from './auth/quota'
+import { consumeRate, getClientIp, rateLimitedResponse } from './auth/rateLimit'
 import { handleAuthApi, resolveCurrentUser } from './auth/routes'
 
 const MP_HOST = `https://api.weixin.qq.com`
@@ -133,6 +134,20 @@ export default class extends WorkerEntrypoint<Env> {
     }
 
     if (url.pathname === `/api/deepseek/chat`) {
+      // Defence-in-depth layer 1: per-IP rate limit. Drops abusive bursts
+      // before the upstream API key or user quota is involved.
+      if (this.env.DB) {
+        const rl = await consumeRate(
+          this.env.DB,
+          `deepseek_chat`,
+          getClientIp(request),
+          30, // 30 requests / minute / IP
+          60,
+        )
+        if (!rl.allowed)
+          return rateLimitedResponse(rl, `deepseek_chat`)
+      }
+
       // Auth precedence: signed session > legacy password header.
       const user = await resolveCurrentUser(this.env, request)
 

@@ -21,6 +21,7 @@ import {
   fetchGitHubProfile,
 } from './github'
 import { toPublicUser } from './quota'
+import { consumeRate, getClientIp, rateLimitedResponse } from './rateLimit'
 import {
   mintSession,
   randomToken,
@@ -95,6 +96,15 @@ export async function handleAuthApi(
   if (path === `/api/auth/github/start` && request.method === `GET`) {
     if (!env.GITHUB_CLIENT_ID)
       return configError(`GITHUB_CLIENT_ID`)
+
+    // Throttle the OAuth flow per IP — prevents a flood that would burn
+    // GitHub's per-IP authorize limit and leave the rest of our users
+    // without a usable login button.
+    if (env.DB) {
+      const rl = await consumeRate(env.DB, `oauth_start`, getClientIp(request), 10, 60)
+      if (!rl.allowed)
+        return rateLimitedResponse(rl, `oauth_start`)
+    }
 
     const state = randomToken()
     const origin = resolveOrigin(env, request)
