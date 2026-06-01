@@ -16,6 +16,24 @@ export interface DistributionStrategy {
   tips: string[]
   tactics: string[]
   nextActions: string[]
+  growthPlan?: {
+    title: string
+    target: string
+    estimate: string
+    rationale: string
+    dailyScore: Array<{
+      label: string
+      value: string
+      detail: string
+    }>
+    checklist: string[]
+    checkinItems?: Array<{
+      id: string
+      label: string
+      detail: string
+    }>
+    guardrails: string[]
+  }
 }
 
 /** 各创作者 × 平台 的宣发策略（无条目时用 default） */
@@ -98,15 +116,83 @@ const STRATEGIES_BY_CREATOR: Record<string, Record<string, Omit<DistributionStra
     },
     juejin: {
       title: `掘金`,
-      summary: `流量与互动高；适合首发或 24h 内同步，标题可更社区化。`,
-      cadence: `每周 1 篇同步或独家短文`,
+      badge: `Lv 冲刺`,
+      summary: `以 Lv 成长为目标的保守冲刺渠道：掘金普通文章流量偏弱，不按爆文估算，靠 2 篇/天、真实互动、专题长尾和每日打卡稳步推进。`,
+      cadence: `连续 9–12 个月：每天 2 篇专栏，日均目标 90–120 掘力值`,
       tips: [
-        `制定固定更文计划（例如每周二/周五更新），让读者形成稳定预期。`,
-        `优先写「面试实战」题材，搜索和收藏更稳定。`,
-        `持续输出「工具/资源推荐」合集，容易形成系列化关注。`,
+        `当前 108534 掘力值，距离下一等级约 31466；按日均 110 估算约 286 天，按波动预留后是 9–12 个月。`,
+        `不再假设两篇文章能拿到 10000 阅读；日常模型按 1500–4000 阅读、少量赞藏评计算，爆文只作为缩短周期的额外收益。`,
+        `优先追求收藏和评论：1 收藏/1 赞/1 个一级评论用户都 +1，阅读需要 500 才 +1，不能只看浏览量。`,
+        `每篇文章都按「可收藏清单 + 真实项目复盘 + 可复现代码」设计，提升高质量 +15 的概率。`,
       ],
       tactics: [`标签 3–5 个精准技术词`, `首图统一品牌风格`],
-      nextActions: [`对比 CSDN 同题数据`],
+      nextActions: [`建立 30 天掘力值台账`, `准备 8 篇专题库存`, `发布后 24h 内完成两轮真实宣发与评论回复`],
+      growthPlan: {
+        title: `掘金 Lv 冲刺模型`,
+        target: `日均 90–120 掘力值`,
+        estimate: `31466 / 110 ≈ 286 天；按平台流量波动、内容审核和断更风险，执行周期按 9–12 个月规划。`,
+        rationale: `这个模型不把爆文当常态：50 左右来自 2 篇文章和质量分，30–45 来自新文真实互动，10–20 来自历史文章长尾。出现爆文时只会提前，不影响日常计划成立。`,
+        dailyScore: [
+          {
+            label: `创作行为`,
+            value: `+20`,
+            detail: `每天 2 篇文章，吃满每日计分上限。`,
+          },
+          {
+            label: `质量判定`,
+            value: `+15–30`,
+            detail: `至少 1 篇命中高质量，理想状态 2 篇各 +15。`,
+          },
+          {
+            label: `新文互动`,
+            value: `+30–45`,
+            detail: `两篇合计约 8–15 赞、5–10 收藏、3–8 个一级评论用户、1500–4000 阅读。`,
+          },
+          {
+            label: `长尾回流`,
+            value: `+10–20`,
+            detail: `专题互链、外部分发和旧文推荐带来的持续真实互动。`,
+          },
+        ],
+        checklist: [
+          `上午发主文：深度教程、工程实践或真实踩坑复盘。`,
+          `下午发副文：清单、工具链、源码笔记或专题续篇。`,
+          `发布后 30 分钟内完成第一轮宣发，晚上二次分发并回复评论。`,
+          `每天记录新增掘力值、赞、收藏、评论、阅读和是否高质量。`,
+        ],
+        checkinItems: [
+          {
+            id: `main-post`,
+            label: `主文已发布`,
+            detail: `深度教程、工程实践或真实踩坑复盘，优先争取高质量。`,
+          },
+          {
+            id: `side-post`,
+            label: `副文已发布`,
+            detail: `清单、工具链、源码笔记或专题续篇，吃满每日 2 篇行为分。`,
+          },
+          {
+            id: `first-share`,
+            label: `首轮宣发已完成`,
+            detail: `发布后 30 分钟内分发到真实社群、朋友圈、X 或技术群。`,
+          },
+          {
+            id: `reply-comments`,
+            label: `评论已回复`,
+            detail: `当天回复所有一级评论，尽量形成真实讨论。`,
+          },
+          {
+            id: `ledger`,
+            label: `掘力值台账已记录`,
+            detail: `记录新增掘力值、阅读、赞、收藏、评论和高质量判定。`,
+          },
+        ],
+        guardrails: [
+          `不使用机器刷赞、刷阅读、刷评论；违规扣分会抵消全部增长。`,
+          `不同平台同步时改写标题和导语，避免低质量搬运感。`,
+          `连续 7 天低于 70/天时，优先调整选题和标题，而不是增加发布量。`,
+        ],
+      },
     },
     zhihu: {
       title: `知乎`,
@@ -222,6 +308,7 @@ export function getDistributionStrategy(creatorId: string, platformType: string)
     tips: row.tips ?? [],
     tactics: row.tactics,
     nextActions: row.nextActions,
+    growthPlan: row.growthPlan,
   }
 }
 

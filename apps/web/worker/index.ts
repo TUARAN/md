@@ -9,6 +9,7 @@ import { handleBillingApi } from './auth/billingRoutes'
 import { consumeAiQuota } from './auth/quota'
 import { consumeRate, getClientIp, rateLimitedResponse } from './auth/rateLimit'
 import { handleAuthApi, resolveCurrentUser } from './auth/routes'
+import { handleDistributionCheckinsApi } from './distributionCheckins'
 
 const MP_HOST = `https://api.weixin.qq.com`
 const DEEPSEEK_HOST = `https://api.deepseek.com`
@@ -70,6 +71,9 @@ export default class extends WorkerEntrypoint<Env> {
 
     if (url.pathname.startsWith(`/api/deepseek/`))
       return this.handleDeepSeekApi(request, url)
+
+    if (url.pathname === `/api/distribution/checkins`)
+      return handleDistributionCheckinsApi(this.env, request, url)
 
     if (url.pathname.startsWith(`/api/`))
       return this.handleIPReachApi(request, url)

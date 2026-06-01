@@ -16,6 +16,7 @@ import {
   getPlatformGrowthSnapshot,
   listDistributionPlatformTypes,
 } from '@/constants/distributionStrategies'
+import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
 import IPReachTool from './IPReachTool.vue'
@@ -25,6 +26,7 @@ import WorkflowPageTitle from './WorkflowPageTitle.vue'
 import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
 
 const uiStore = useUIStore()
+const authStore = useAuthStore()
 const {
   workflowCreatorId,
   workflowDistributionPlatform,
@@ -64,6 +66,121 @@ const growth = computed(() =>
 
 const platformLabel = computed(() => getPlatformProfileTitle(workflowDistributionPlatform.value))
 const isXiaohongshuSelected = computed(() => workflowDistributionPlatform.value === `xiaohongshu`)
+const checkinDone = ref<Record<string, boolean>>({})
+const checkinSyncMode = ref<`local` | `d1`>(`local`)
+
+function todayLocalDate(): string {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, `0`)
+  const day = String(d.getDate()).padStart(2, `0`)
+  return `${year}-${month}-${day}`
+}
+
+const checkinDate = computed(() => todayLocalDate())
+
+const checkinParams = computed(() => {
+  const params = new URLSearchParams({
+    creatorId: workflowCreatorId.value,
+    platformType: workflowDistributionPlatform.value,
+    date: checkinDate.value,
+  })
+  return params.toString()
+})
+
+const checkinStorageKey = computed(() =>
+  `workflow.distribution.checkin.${workflowCreatorId.value}.${workflowDistributionPlatform.value}.${checkinDate.value}`,
+)
+
+const checkinItems = computed(() => strategy.value.growthPlan?.checkinItems ?? [])
+const checkinProgress = computed(() => {
+  const total = checkinItems.value.length
+  if (!total)
+    return { done: 0, total, percent: 0 }
+  const done = checkinItems.value.filter(item => checkinDone.value[item.id]).length
+  return { done, total, percent: Math.round((done / total) * 100) }
+})
+
+function loadLocalCheckinState() {
+  if (typeof window === `undefined`) {
+    checkinDone.value = {}
+    return
+  }
+  try {
+    const raw = window.localStorage.getItem(checkinStorageKey.value)
+    checkinDone.value = raw ? JSON.parse(raw) : {}
+  }
+  catch {
+    checkinDone.value = {}
+  }
+}
+
+function saveLocalCheckinState() {
+  if (typeof window === `undefined`)
+    return
+  window.localStorage.setItem(checkinStorageKey.value, JSON.stringify(checkinDone.value))
+}
+
+async function loadCheckinState() {
+  if (!authStore.isAuthenticated) {
+    checkinSyncMode.value = `local`
+    loadLocalCheckinState()
+    return
+  }
+
+  try {
+    const res = await fetch(`/api/distribution/checkins?${checkinParams.value}`, {
+      method: `GET`,
+      credentials: `same-origin`,
+      headers: { Accept: `application/json` },
+    })
+    if (!res.ok)
+      throw new Error(`checkins ${res.status}`)
+    const data = await res.json() as { checkins?: Record<string, boolean> }
+    checkinDone.value = data.checkins ?? {}
+    checkinSyncMode.value = `d1`
+  }
+  catch {
+    checkinSyncMode.value = `local`
+    loadLocalCheckinState()
+  }
+}
+
+async function toggleCheckin(id: string) {
+  const nextDone = !checkinDone.value[id]
+  checkinDone.value = {
+    ...checkinDone.value,
+    [id]: nextDone,
+  }
+
+  if (authStore.isAuthenticated) {
+    try {
+      const res = await fetch(`/api/distribution/checkins?${checkinParams.value}`, {
+        method: `PUT`,
+        credentials: `same-origin`,
+        headers: {
+          'Accept': `application/json`,
+          'Content-Type': `application/json`,
+        },
+        body: JSON.stringify({ itemId: id, done: nextDone }),
+      })
+      if (res.ok) {
+        checkinSyncMode.value = `d1`
+        return
+      }
+    }
+    catch {}
+  }
+
+  checkinSyncMode.value = `local`
+  saveLocalCheckinState()
+}
+
+watch(
+  [checkinStorageKey, () => authStore.isAuthenticated],
+  () => void loadCheckinState(),
+  { immediate: true },
+)
 
 function onSelectDistribution(platformType: string) {
   setWorkflowDistributionPlatform(platformType)
@@ -256,6 +373,122 @@ function onMatrixDataSourceToggle(event: Event) {
                 <p class="text-xs text-muted-foreground">
                   {{ growth.milestone.title }}
                 </p>
+              </div>
+            </div>
+          </section>
+
+          <section
+            v-if="strategy.growthPlan"
+            class="rounded-[18px] border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-amber-950 dark:text-amber-100">
+                  {{ strategy.growthPlan.title }}
+                </p>
+                <p class="mt-1 text-xs leading-relaxed text-amber-900/75 dark:text-amber-100/70">
+                  {{ strategy.growthPlan.rationale }}
+                </p>
+              </div>
+              <div class="shrink-0 rounded-xl border border-amber-300/70 bg-white/70 px-3 py-2 text-right dark:border-amber-800/70 dark:bg-background/30">
+                <p class="text-[11px] text-amber-900/70 dark:text-amber-100/65">
+                  目标
+                </p>
+                <p class="mt-0.5 text-base font-semibold tabular-nums text-amber-950 dark:text-amber-100">
+                  {{ strategy.growthPlan.target }}
+                </p>
+              </div>
+            </div>
+
+            <p class="mt-3 rounded-xl border border-amber-200/80 bg-white/60 px-3 py-2 text-xs leading-relaxed text-amber-900/80 dark:border-amber-900/50 dark:bg-background/25 dark:text-amber-100/75">
+              {{ strategy.growthPlan.estimate }}
+            </p>
+
+            <div class="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <div
+                v-for="item in strategy.growthPlan.dailyScore"
+                :key="item.label"
+                class="rounded-xl border border-amber-200/80 bg-white/70 p-3 dark:border-amber-900/50 dark:bg-background/25"
+              >
+                <p class="text-[11px] font-medium text-amber-900/70 dark:text-amber-100/65">
+                  {{ item.label }}
+                </p>
+                <p class="mt-1 text-lg font-semibold tabular-nums text-amber-950 dark:text-amber-100">
+                  {{ item.value }}
+                </p>
+                <p class="mt-1 text-[11px] leading-snug text-amber-900/70 dark:text-amber-100/65">
+                  {{ item.detail }}
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-3 grid gap-3 lg:grid-cols-2">
+              <div>
+                <p class="text-xs font-semibold text-amber-950 dark:text-amber-100">
+                  每日打卡
+                </p>
+                <ul class="mt-2 space-y-1.5 text-xs leading-relaxed text-amber-900/75 dark:text-amber-100/70">
+                  <li v-for="item in strategy.growthPlan.checklist" :key="item" class="flex gap-1.5">
+                    <span>·</span>
+                    <span>{{ item }}</span>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-amber-950 dark:text-amber-100">
+                  合规边界
+                </p>
+                <ul class="mt-2 space-y-1.5 text-xs leading-relaxed text-amber-900/75 dark:text-amber-100/70">
+                  <li v-for="item in strategy.growthPlan.guardrails" :key="item" class="flex gap-1.5">
+                    <span>·</span>
+                    <span>{{ item }}</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div v-if="checkinItems.length" class="mt-4 rounded-xl border border-amber-200/80 bg-white/65 p-3 dark:border-amber-900/50 dark:bg-background/25">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-xs font-semibold text-amber-950 dark:text-amber-100">
+                  今日执行打卡
+                </p>
+                <p class="text-[11px] tabular-nums text-amber-900/70 dark:text-amber-100/65">
+                  {{ checkinProgress.done }} / {{ checkinProgress.total }} · {{ checkinProgress.percent }}%
+                  · {{ checkinSyncMode === 'd1' ? '已同步 D1' : '本地保存' }}
+                </p>
+              </div>
+              <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-amber-200/70 dark:bg-amber-900/50">
+                <div
+                  class="h-full rounded-full bg-amber-500 transition-all"
+                  :style="{ width: `${checkinProgress.percent}%` }"
+                />
+              </div>
+              <div class="mt-3 grid gap-2">
+                <button
+                  v-for="item in checkinItems"
+                  :key="item.id"
+                  type="button"
+                  class="flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-left transition-colors"
+                  :class="checkinDone[item.id]
+                    ? 'border-amber-300 bg-amber-100/70 text-amber-950 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-50'
+                    : 'border-amber-200/80 bg-white/70 text-amber-950 hover:border-amber-300 dark:border-amber-900/50 dark:bg-background/20 dark:text-amber-100'"
+                  @click="toggleCheckin(item.id)"
+                >
+                  <span
+                    class="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-semibold"
+                    :class="checkinDone[item.id]
+                      ? 'border-amber-600 bg-amber-500 text-white'
+                      : 'border-amber-400/80 bg-white/60 text-transparent dark:bg-background/30'"
+                  >
+                    ✓
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block text-xs font-medium">{{ item.label }}</span>
+                    <span class="mt-0.5 block text-[11px] leading-snug text-amber-900/70 dark:text-amber-100/65">
+                      {{ item.detail }}
+                    </span>
+                  </span>
+                </button>
               </div>
             </div>
           </section>

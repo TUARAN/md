@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Crown, Github, LogOut, Settings, User as UserIcon } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -29,6 +29,14 @@ const quotaLabel = computed(() => {
   return `AI 配额 ${q.used} / ${q.limit}`
 })
 
+const avatarSrc = computed(() => {
+  const url = auth.user?.avatarUrl
+  if (!url)
+    return ``
+  const separator = url.includes(`?`) ? `&` : `?`
+  return `${url}${separator}syncblog_user=${encodeURIComponent(auth.user?.id ?? auth.user?.login ?? ``)}`
+})
+
 function handleLogin() {
   auth.startLogin()
 }
@@ -44,6 +52,23 @@ function handleUpgrade() {
 function handleSettings() {
   window.location.assign(`/settings`)
 }
+
+function refreshAuthOnReturn() {
+  if (document.visibilityState === `visible`)
+    void auth.refresh()
+}
+
+onMounted(() => {
+  if (auth.status !== `loading`)
+    void auth.refresh()
+  window.addEventListener(`focus`, refreshAuthOnReturn)
+  document.addEventListener(`visibilitychange`, refreshAuthOnReturn)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(`focus`, refreshAuthOnReturn)
+  document.removeEventListener(`visibilitychange`, refreshAuthOnReturn)
+})
 </script>
 
 <template>
@@ -74,9 +99,10 @@ function handleSettings() {
           class="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-muted text-[10px] font-semibold uppercase ring-1 ring-border"
         >
           <img
-            v-if="auth.user?.avatarUrl"
-            :src="auth.user.avatarUrl"
-            :alt="auth.user.login"
+            v-if="avatarSrc"
+            :key="avatarSrc"
+            :src="avatarSrc"
+            :alt="auth.user?.login ?? 'GitHub avatar'"
             class="h-full w-full object-cover"
           >
           <UserIcon v-else class="h-3.5 w-3.5" />
@@ -100,9 +126,10 @@ function handleSettings() {
           class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold uppercase ring-1 ring-border"
         >
           <img
-            v-if="auth.user?.avatarUrl"
-            :src="auth.user.avatarUrl"
-            :alt="auth.user.login"
+            v-if="avatarSrc"
+            :key="avatarSrc"
+            :src="avatarSrc"
+            :alt="auth.user?.login ?? 'GitHub avatar'"
             class="h-full w-full object-cover"
           >
           <template v-else>
