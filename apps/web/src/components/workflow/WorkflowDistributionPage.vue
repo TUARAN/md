@@ -111,7 +111,7 @@ function onMatrixDataSourceToggle(event: Event) {
           <p>
             <span class="font-medium text-foreground">常规路径：</span>
             在浏览器安装
-            <span class="font-medium">COSE</span>
+            <span class="font-medium">SyncBlog 发布插件</span>
             并登录目标平台后，扩展会把主页 / 粉丝 / 阅读写入本地缓存。
           </p>
           <p>

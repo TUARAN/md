@@ -2,7 +2,7 @@
 
 感谢你对 **Syncblog**（[TUARAN/md](https://github.com/TUARAN/md)）的兴趣！我们欢迎任何形式的贡献，包括但不限于报告缺陷、改进文档、提交新特性或修复 Bug。本指南旨在帮助你快速地为项目做出贡献。
 
-> 编辑器内核源自 [doocs/md](https://github.com/doocs/md)。若变更仅涉及通用 Markdown 排版、图床等上游能力，也可向上游提交 PR；与本站工作流、COSE 接入、创作名片等相关的改动请在本仓库进行。
+> 编辑器内核源自 [doocs/md](https://github.com/doocs/md)。若变更仅涉及通用 Markdown 排版、图床等上游能力，也可向上游提交 PR；与本站工作流、SyncBlog 发布插件接入、创作名片等相关的改动请在本仓库进行。
 
 ## 目录
 
@@ -109,7 +109,7 @@ pnpm web dev
 > VITE_LAUNCH_EDITOR=cursor
 > ```
 >
-> 多平台同步功能需在 Chrome 中安装 [COSE 官方版](https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk)，或下载 [TUARAN/cose 改造版](https://github.com/TUARAN/cose/releases/latest)。
+> 多平台同步功能需在 Chrome 中安装 [SyncBlog Plugin](https://github.com/TUARAN/syncblog-plugin/releases/latest)。
 
 ## 代码规范
 
@@ -151,7 +151,7 @@ feat(editor): 支持自定义快捷键
 
 1. **描述清晰**：在 PR 模板中说明变更动机、相关 Issue、实现方案及影响范围。
 2. **保持小而聚焦**：一个 PR 只做一件事，方便审阅。
-3. **确保测试**：新增/变更功能需自测，涉及同步时请验证 COSE 场景。
+3. **确保测试**：新增/变更功能需自测，涉及同步时请验证 SyncBlog 发布插件场景。
 4. **更新文档**：公共 API 或行为变更必须同步更新 README / 相关 docs。
 5. **CI 通过**：PR 必须通过 CI（类型检查、构建）。
 6. **等待审核**：维护者会在 1 ～ 3 个工作日内回复。请耐心等待并根据建议进行修订。

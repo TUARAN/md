@@ -62,7 +62,13 @@ export const useAuthStore = defineStore(`auth`, () => {
 
   function startLogin(): void {
     // Preserve current path so we can deep-link the user back after callback.
-    const returnTo = window.location.pathname + window.location.search
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.delete(`returnTo`)
+    currentUrl.searchParams.delete(`code`)
+    currentUrl.searchParams.delete(`state`)
+    currentUrl.searchParams.delete(`error`)
+    currentUrl.searchParams.delete(`error_description`)
+    const returnTo = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
     const params = new URLSearchParams({ returnTo })
     window.location.assign(`/api/auth/github/start?${params.toString()}`)
   }

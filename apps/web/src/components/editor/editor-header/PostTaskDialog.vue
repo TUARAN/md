@@ -2,6 +2,7 @@
 import type { Post, PostAccount } from '@md/shared/types'
 import { RotateCw } from 'lucide-vue-next'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { getPublishExtension } from '@/utils/publishExtensions'
 
 const props = defineProps<{
   post: Post
@@ -52,19 +53,19 @@ async function startPost(targetAccounts?: PostAccount[]) {
     accounts: accountsToPost.map(a => ({
       ...a,
       status: `uploading`,
-      msg: `COSE…`,
+      msg: `SyncBlog Plugin…`,
     })),
   }
 
   submitting.value = true
 
   try {
-    const coseApi = window.$cose
-    if (typeof coseApi?.addTask !== `function`) {
-      markAccountsFailed(accountsToPost, `未安装 COSE 扩展，无法同步所选平台。`)
+    const publishExtension = getPublishExtension()
+    if (typeof publishExtension?.addTask !== `function`) {
+      markAccountsFailed(accountsToPost, `未安装 SyncBlog 发布插件，无法同步所选平台。`)
     }
     else {
-      const addTask = coseApi.addTask.bind(coseApi)
+      const addTask = publishExtension.addTask.bind(publishExtension)
       const taskData = {
         post: {
           title: props.post.title,
@@ -99,7 +100,7 @@ async function startPost(targetAccounts?: PostAccount[]) {
           reject(e)
         }
       }).catch((e: unknown) => {
-        markAccountsFailed(accountsToPost, e instanceof Error ? e.message : `COSE 发布失败`)
+        markAccountsFailed(accountsToPost, e instanceof Error ? e.message : `SyncBlog Plugin 发布失败`)
       })
     }
   }
@@ -139,7 +140,7 @@ watch(() => props.open, (newVal) => {
       <DialogHeader>
         <DialogTitle>提交发布任务</DialogTitle>
         <DialogDescription>
-          任务会通过 COSE 扩展写入各平台草稿。进度与草稿链接按平台单独展示；失败可单条重试。
+          任务会通过 SyncBlog 发布插件写入各平台草稿。进度与草稿链接按平台单独展示；失败可单条重试。
         </DialogDescription>
       </DialogHeader>
 

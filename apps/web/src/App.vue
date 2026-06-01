@@ -201,6 +201,26 @@ function postImportReady() {
   window.opener?.postMessage({ type: `SYNCBLOG_IMPORT_READY`, app: `syncblog.cn` }, `*`)
 }
 
+function relayGitHubOAuthCallback(): boolean {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get(`code`)
+  const state = url.searchParams.get(`state`)
+
+  if (!code || !state)
+    return false
+
+  const params = new URLSearchParams({ code, state })
+  const error = url.searchParams.get(`error`)
+  const errorDescription = url.searchParams.get(`error_description`)
+  if (error)
+    params.set(`error`, error)
+  if (errorDescription)
+    params.set(`error_description`, errorDescription)
+
+  window.location.replace(`/api/auth/github/callback?${params.toString()}`)
+  return true
+}
+
 /**
  * Keep `document.title` in sync with the current app mode + step. CreatorOffer
  * pages own their own title (`{creator} 的创作名片`) so we skip them here.
@@ -221,6 +241,9 @@ watch(
 )
 
 onMounted(() => {
+  if (relayGitHubOAuthCallback())
+    return
+
   // Best-effort: fetch /api/auth/me on app start. Worker may 503 before secrets
   // land — the auth store treats that as anonymous so the SPA still boots.
   void authStore.refresh()

@@ -5,13 +5,13 @@
  * 发布弹窗、登录链接、名片矩阵、宣发策略等全部从这里派生，避免多份清单各自漂移。
  *
  * canonical type 取 `x`：X（原 Twitter）全站统一用 `x`。
- * 历史遗留的 `twitter`（旧 COSE key / 旧本地缓存）通过 normalizePlatformType 收敛到 `x`。
+ * 历史遗留的 `twitter`（旧扩展 key / 旧本地缓存）通过 normalizePlatformType 收敛到 `x`。
  */
 
 export type PlatformCategoryId = `media` | `blog` | `cloud`
 
 export interface PlatformDef {
-  /** canonical 平台 key（与 COSE 扩展上报一致） */
+  /** canonical 平台 key（与发布插件上报一致） */
   type: string
   /** 展示名（发布弹窗、矩阵、宣发页共用） */
   title: string

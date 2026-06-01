@@ -199,33 +199,30 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
         <div class="flex-1 overflow-y-auto p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex flex-col gap-4">
           <div class="rounded-lg border border-border/80 bg-muted/25 px-4 py-3 text-sm leading-relaxed text-muted-foreground dark:bg-muted/15">
             <p class="font-medium text-foreground">
-              发布前请安装 COSE 浏览器扩展
+              发布前请安装 SyncBlog 发布插件
             </p>
             <ol class="mt-2 list-decimal space-y-2 pl-5">
               <li>
-                <strong class="text-foreground">推荐：Chrome 应用商店官方版</strong>：
+                <strong class="text-foreground">推荐：SyncBlog Plugin</strong>：
                 <a
-                  href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk"
+                  href="https://github.com/TUARAN/syncblog-plugin/releases/latest"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="font-medium text-primary underline underline-offset-2"
-                >安装 COSE（cose 文章同步助手）</a>，覆盖知乎 / 公众号 / 微博 / 思否等主流平台的草稿写入。
+                >下载 SyncBlog Plugin</a>，覆盖知乎 / 公众号 / 微博 / CSDN / 掘金等主流平台的草稿写入。
               </li>
               <li>
-                <strong class="text-foreground">改造版（覆盖更多平台 / 修过的版本）</strong>：从
-                <a
-                  href="https://github.com/TUARAN/cose/releases/latest"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="font-medium text-primary underline underline-offset-2"
-                >TUARAN/cose releases</a>
-                下载最新 zip，解压后在
+                <strong class="text-foreground">安装方式</strong>：下载最新 zip，解压后在
                 <code class="rounded bg-background px-1 py-0.5 text-xs dark:bg-muted">chrome://extensions</code>
-                开启「开发者模式」→「加载已解压的扩展程序」。仅在官方版漏写入或字段对不上时再用。
+                开启「开发者模式」→「加载已解压的扩展程序」，然后刷新本页并重新检测账号。
               </li>
             </ol>
             <p class="mt-2 text-xs">
-              标题或正文写错？多为目标平台后台改版所致，先升级 COSE 到最新；仍异常请到对应仓库反馈。
+              标题或正文写错？多为目标平台后台改版所致，先升级 SyncBlog Plugin 到最新；仍异常请到插件仓库反馈。批量队列、数据回流等高级能力会放到
+              <RouterLink to="/pricing" class="font-medium text-primary underline underline-offset-2">
+                Pro
+              </RouterLink>
+              中迭代。
             </p>
           </div>
 
@@ -234,9 +231,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <AlertTitle>未检测到可用发布扩展</AlertTitle>
             <AlertDescription>
               请安装
-              <a href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk" target="_blank" rel="noopener noreferrer" class="underline text-primary">COSE 官方版</a>
-              或下载
-              <a href="https://github.com/TUARAN/cose/releases/latest" target="_blank" rel="noopener noreferrer" class="underline text-primary">改造版（TUARAN/cose）</a>，安装后回到本页点「重新检测账号」。
+              <a href="https://github.com/TUARAN/syncblog-plugin/releases/latest" target="_blank" rel="noopener noreferrer" class="underline text-primary">SyncBlog Plugin</a>，安装后刷新页面并点「重新检测账号」。
             </AlertDescription>
           </Alert>
 

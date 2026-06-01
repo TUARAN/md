@@ -218,18 +218,18 @@ onUnmounted(() => {
                 <p class="mt-2">
                   各站编辑页差异大，发布走
                   <a
-                    href="https://chromewebstore.google.com/detail/ilhikcdphhpjofhlnbojifbihhfmmhfk"
+                    href="https://github.com/TUARAN/syncblog-plugin/releases/latest"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="font-medium text-foreground underline underline-offset-2"
-                  >COSE 扩展</a>
-                  把内容写到知乎 / 公众号 / 微博 / 思否 / 掘金等各站草稿。覆盖范围不够时改装
+                  >SyncBlog 发布插件</a>
+                  把内容写到知乎 / 公众号 / 微博 / 思否 / 掘金等各站草稿。遇到平台适配异常时，请升级到最新版本，或到
                   <a
-                    href="https://github.com/TUARAN/cose/releases/latest"
+                    href="https://github.com/TUARAN/syncblog-plugin/issues"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="font-medium text-foreground underline underline-offset-2"
-                  >TUARAN/cose 改造版</a>。
+                  >插件仓库反馈适配问题</a>。
                 </p>
               </PopoverContent>
             </Popover>
