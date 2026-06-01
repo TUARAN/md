@@ -72,18 +72,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <!-- Anonymous: single login button -->
+  <!-- Anonymous: primary login CTA — the one action that matters in this state -->
   <Button
     v-if="!auth.isAuthenticated"
     type="button"
-    variant="ghost"
+    variant="default"
     size="sm"
-    class="h-8 shrink-0 gap-1.5 text-muted-foreground hover:text-foreground"
+    class="h-8 shrink-0 gap-1.5 font-medium"
     :disabled="auth.status === 'loading'"
     @click="handleLogin"
   >
     <Github class="h-4 w-4" />
-    <span class="hidden sm:inline">登录</span>
+    <span class="hidden sm:inline">GitHub 登录</span>
+    <span class="sm:hidden">登录</span>
   </Button>
 
   <!-- Authenticated: avatar + dropdown -->

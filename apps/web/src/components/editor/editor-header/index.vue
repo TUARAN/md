@@ -4,6 +4,12 @@ import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserMenu from '@/components/auth/UserMenu.vue'
 import { Button } from '@/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { getDataAcquisitionNavUrl } from '@/constants/branding'
@@ -194,27 +200,52 @@ function openChangelog() {
       </Menubar>
     </div>
 
+    <!-- 右侧：账户 + 次级工具。视觉权重 登录(primary) >> 工具(icon-only ghost) -->
     <div class="hidden shrink-0 items-center gap-1 md:flex">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="h-8 shrink-0 text-muted-foreground hover:text-foreground"
-        @click="openChangelog"
-      >
-        <ScrollText class="mr-1.5 h-4 w-4" />
-        更新日志
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        class="h-8 shrink-0 text-muted-foreground hover:text-foreground"
-        @click="openCreatorCard"
-      >
-        <IdCard class="mr-1.5 h-4 w-4" />
-        创作名片
-      </Button>
+      <TooltipProvider :delay-duration="200">
+        <!-- 次级工具组：icon-only,弱化到几乎只是装饰 -->
+        <div class="flex items-center gap-0.5 text-muted-foreground/70">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 shrink-0 hover:text-foreground"
+                aria-label="更新日志"
+                @click="openChangelog"
+              >
+                <ScrollText class="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+              更新日志
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 shrink-0 hover:text-foreground"
+                aria-label="创作名片"
+                @click="openCreatorCard"
+              >
+                <IdCard class="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+              创作名片
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+
+      <!-- 工作区 ↔ 账户区分隔线,把两块物理切开 -->
+      <span class="header-divider mx-1.5 h-5 w-px bg-border" aria-hidden="true" />
+
       <UserMenu />
     </div>
   </header>

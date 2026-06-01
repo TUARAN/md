@@ -109,8 +109,11 @@ const routes: RouteRecordRaw[] = [
     props: route => ({ creatorId: String(route.params.creatorId).trim().toLowerCase() }),
   },
 
-  // 兜底:未知路径回编辑器主入口。redirect 用字符串路径,避免把 pathMatch 参数带过去触发警告
-  { path: `/:pathMatch(.*)*`, redirect: `/edit` },
+  // 兜底:未知路径回编辑器主入口。用函数式 redirect 强制丢掉 query/hash —
+  // 字符串形式会保留原 query,导致 `/api/auth/github/start?returnTo=/edit` 在
+  // Worker 未生效时被 SPA fallback 接住后,catch-all 把 returnTo 带到 `/edit`,
+  // 复现 `/edit?returnTo=/edit` 这条死链。
+  { path: `/:pathMatch(.*)*`, redirect: () => ({ path: `/edit`, query: {}, hash: `` }) },
 ]
 
 /**
