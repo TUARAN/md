@@ -5,10 +5,11 @@
  * 左侧为可折叠平台侧栏，右侧显示当前平台策略。小红书的风格化二创
  * 生产入口在「AI 创作」，本页只保留平台策略与跳转入口。
  */
-import { ChevronLeft, ChevronRight, Eye, Megaphone, Target } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Copy, ExternalLink, Eye, IdCard, Megaphone, Target } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { PanelShell } from '@/components/ui/layout'
+import { getCreatorOffer } from '@/constants/creatorOffer'
 import { getCreatorPlatformMatrix, getWorkflowCreator } from '@/constants/creators'
 import { FAN_GROWTH_MILESTONES } from '@/constants/distributionFocus'
 import {
@@ -18,7 +19,10 @@ import {
 } from '@/constants/distributionStrategies'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
+import { copyPlain } from '@/utils/clipboard'
+import { creatorCardRoute } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
+import { toast } from '@/utils/toast'
 import IPReachTool from './IPReachTool.vue'
 import WorkflowCreatorPicker from './WorkflowCreatorPicker.vue'
 import WorkflowPageShell from './WorkflowPageShell.vue'
@@ -39,6 +43,7 @@ const isPlatformRailCollapsed = ref(false)
 const distributionModule = ref<`strategy` | `ipReach`>(`strategy`)
 
 const creator = computed(() => getWorkflowCreator(workflowCreatorId.value))
+const creatorOffer = computed(() => getCreatorOffer(workflowCreatorId.value))
 
 const platformRows = computed(() => {
   const matrix = getCreatorPlatformMatrix(workflowCreatorId.value)
@@ -66,6 +71,25 @@ const growth = computed(() =>
 
 const platformLabel = computed(() => getPlatformProfileTitle(workflowDistributionPlatform.value))
 const isXiaohongshuSelected = computed(() => workflowDistributionPlatform.value === `xiaohongshu`)
+const creatorCardSharePath = computed(() => creatorCardRoute(workflowCreatorId.value))
+const creatorCardShareUrl = computed(() => {
+  if (typeof window === `undefined`)
+    return creatorCardSharePath.value
+  return new URL(creatorCardSharePath.value, window.location.origin).toString()
+})
+const creatorCardCopy = computed(() => {
+  const offer = creatorOffer.value
+  if (!creator.value || !offer)
+    return ``
+
+  return [
+    `${creator.value.displayName} · 创作名片`,
+    offer.tagline,
+    `全平台粉丝 ${offer.reachSummary.followers}，历史阅读 ${offer.reachSummary.reads}，覆盖 ${offer.reachSummary.platformCount} 个主要内容平台。`,
+    `适合：${offer.brandFit.good.slice(0, 3).join(` / `)}`,
+    `合作入口：${creatorCardShareUrl.value}`,
+  ].join(`\n`)
+})
 const checkinDone = ref<Record<string, boolean>>({})
 const checkinSyncMode = ref<`local` | `d1`>(`local`)
 
@@ -194,6 +218,32 @@ function goXiaohongshuCreation() {
   router.push({ name: `creation`, query: { mode: `xiaohongshu` } })
 }
 
+async function copyCreatorCardLink() {
+  try {
+    await copyPlain(creatorCardShareUrl.value)
+    toast.success(`创作名片链接已复制`)
+  }
+  catch {
+    toast.error(`复制失败，请手动复制链接`)
+  }
+}
+
+async function copyCreatorCardPitch() {
+  if (!creatorCardCopy.value)
+    return
+  try {
+    await copyPlain(creatorCardCopy.value)
+    toast.success(`宣传文案已复制`)
+  }
+  catch {
+    toast.error(`复制失败，请手动复制文案`)
+  }
+}
+
+function openCreatorCard() {
+  window.open(creatorCardShareUrl.value, `_blank`, `noopener,noreferrer`)
+}
+
 function onMatrixDataSourceToggle(event: Event) {
   const details = event.target as HTMLDetailsElement
   workflowMatrixDataSourceExpanded.value = details.open
@@ -240,6 +290,70 @@ function onMatrixDataSourceToggle(event: Event) {
       <div class="mt-3">
         <WorkflowCreatorPicker />
       </div>
+      <section
+        v-if="creator && creatorOffer"
+        class="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-3 py-3 dark:bg-primary/10"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="flex size-10 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-background/80 text-sm font-semibold text-primary">
+              {{ creator.displayName.slice(0, 1) }}
+            </div>
+            <div class="min-w-0">
+              <p class="flex items-center gap-1.5 text-xs font-medium text-primary">
+                <IdCard class="h-3.5 w-3.5" />
+                创作名片
+              </p>
+              <p class="mt-0.5 truncate text-sm font-semibold">
+                {{ creatorOffer.pageTitle }}
+              </p>
+              <p class="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                {{ creatorOffer.tagline }}
+              </p>
+            </div>
+          </div>
+          <div class="grid w-full grid-cols-3 gap-2 text-xs sm:w-auto sm:min-w-[18rem]">
+            <div class="rounded-lg border border-primary/15 bg-background/70 px-2.5 py-1.5">
+              <p class="text-[10px] text-muted-foreground">
+                粉丝
+              </p>
+              <p class="mt-0.5 font-semibold tabular-nums">
+                {{ creatorOffer.reachSummary.followers }}
+              </p>
+            </div>
+            <div class="rounded-lg border border-primary/15 bg-background/70 px-2.5 py-1.5">
+              <p class="text-[10px] text-muted-foreground">
+                阅读
+              </p>
+              <p class="mt-0.5 font-semibold tabular-nums">
+                {{ creatorOffer.reachSummary.reads }}
+              </p>
+            </div>
+            <div class="rounded-lg border border-primary/15 bg-background/70 px-2.5 py-1.5">
+              <p class="text-[10px] text-muted-foreground">
+                平台
+              </p>
+              <p class="mt-0.5 font-semibold tabular-nums">
+                {{ creatorOffer.reachSummary.platformCount }}
+              </p>
+            </div>
+          </div>
+          <div class="flex shrink-0 flex-wrap gap-2">
+            <Button type="button" variant="outline" size="sm" @click="copyCreatorCardPitch">
+              <Copy class="mr-1.5 h-3.5 w-3.5" />
+              复制文案
+            </Button>
+            <Button type="button" variant="outline" size="sm" @click="copyCreatorCardLink">
+              <Copy class="mr-1.5 h-3.5 w-3.5" />
+              复制链接
+            </Button>
+            <Button type="button" size="sm" @click="openCreatorCard">
+              <ExternalLink class="mr-1.5 h-3.5 w-3.5" />
+              打开名片
+            </Button>
+          </div>
+        </div>
+      </section>
     </template>
 
     <div
