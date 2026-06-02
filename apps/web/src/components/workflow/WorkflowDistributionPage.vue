@@ -3,7 +3,7 @@
  * WorkflowDistributionPage —— workflow「分发控制台」
  *
  * 左侧为可折叠平台侧栏，右侧显示当前平台策略。小红书的风格化二创
- * 生产入口在「AI 改写」，本页只保留平台策略与跳转入口。
+ * 生产入口在「AI 创作」，本页只保留平台策略与跳转入口。
  */
 import { ChevronLeft, ChevronRight, Eye, Megaphone, Target } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
@@ -499,10 +499,10 @@ function onMatrixDataSourceToggle(event: Event) {
           >
             <div class="min-w-0">
               <p class="font-semibold text-rose-950 dark:text-rose-100">
-                小红书内容生产放在 AI 改写
+                小红书内容生产放在 AI 创作
               </p>
               <p class="mt-1 text-xs leading-relaxed text-rose-900/75 dark:text-rose-100/70">
-                当前页保留平台节奏、打法和复盘；小红书风格提示词生成与 Markdown 成稿到「AI 改写 · 小红书风格」完成。
+                当前页保留平台节奏、打法和复盘；小红书风格提示词生成与 Markdown 成稿到「AI 创作 · 小红书风格」完成。
               </p>
             </div>
             <Button type="button" size="sm" class="shrink-0" @click="goXiaohongshuCreation">

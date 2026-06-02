@@ -12,8 +12,8 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *
  *   /                            → 重定向到 /edit
  *   /edit                        编辑器主页(name=sync) — 排版分发 / 预览 / 发布准备
- *   /workflow/data               name=data       选题素材
- *   /workflow/creation           name=creation   AI 改写
+ *   /workflow/data               name=data       选择素材
+ *   /workflow/creation           name=creation   AI 创作
  *   /workflow/distribution       name=distribution  分发控制台
  *   /workflow/stats              name=stats      增长运营
  *   /pricing                     name=pricing    定价

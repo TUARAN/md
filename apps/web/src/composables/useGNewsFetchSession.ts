@@ -204,7 +204,7 @@ function createGNewsFetchSession() {
     }
     setCreationDraftMarkdown(formatted.value)
     router.push({ name: `creation` })
-    toast.success(`已送入 AI 改写`)
+    toast.success(`已送入 AI 创作`)
   }
 
   return {

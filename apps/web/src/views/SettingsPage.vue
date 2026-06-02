@@ -255,7 +255,7 @@ function goPricing() {
           <div class="flex flex-wrap gap-2">
             <Button type="button" variant="outline" @click="router.push({ name: 'creation' })">
               <Wand2 class="mr-1.5 size-4" />
-              去 AI 改写
+              去 AI 创作
             </Button>
             <Button v-if="!auth.isPro" type="button" variant="default" @click="goPricing">
               <Crown class="mr-1.5 size-4" />

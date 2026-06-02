@@ -25,8 +25,8 @@ const editorOrigin = computed(() => (typeof window !== `undefined` ? window.loca
 
 /** 工作流定位:外站完成选题/改写后,内容从「排版分发」接入,再进入增长运营 */
 const workflowSteps = [
-  { key: `data`, label: `选题素材`, icon: Database, state: `done` },
-  { key: `creation`, label: `AI 改写`, icon: PenLine, state: `done` },
+  { key: `data`, label: `选择素材`, icon: Database, state: `done` },
+  { key: `creation`, label: `AI 创作`, icon: PenLine, state: `done` },
   { key: `sync`, label: `排版分发`, icon: FileText, state: `enter` },
   { key: `distribution`, label: `分发控制台`, icon: Megaphone, state: `next` },
   { key: `stats`, label: `增长运营`, icon: BarChart3, state: `next` },

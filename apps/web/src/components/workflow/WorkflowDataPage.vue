@@ -12,7 +12,7 @@ import WorkflowPageTitle from './WorkflowPageTitle.vue'
         <template #icon>
           <Database />
         </template>
-        选题素材
+        选择素材
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         按关键词检索最新内容，先找到值得写的选题和素材，再进入写作、改写与发布。

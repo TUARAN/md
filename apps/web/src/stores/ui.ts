@@ -180,7 +180,7 @@ export const useUIStore = defineStore(`ui`, () => {
     return v
   }
 
-  /** AI 改写工作台的输入材料（可由选题素材页写入） */
+  /** AI 创作工作台的输入材料（可由选择素材页写入） */
   const creationDraftMarkdown = ref(``)
 
   function setCreationDraftMarkdown(md: string) {

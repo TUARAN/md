@@ -21,7 +21,6 @@ import HelpDropdown from './HelpDropdown.vue'
 import InsertDropdown from './InsertDropdown.vue'
 import MarkdownHelpDialog from './MarkdownHelpDialog.vue'
 import StyleDropdown from './StyleDropdown.vue'
-import WorkflowNavStep from './WorkflowNavStep.vue'
 
 const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 
@@ -48,18 +47,29 @@ function handleCopy(mode: string) {
   wechatCopy?.handleCopy(mode)
 }
 
-const workflowSteps = [
-  { id: `sync` as const, label: `排版分发`, icon: FileText, phase: `核心工作`, comingSoon: false },
-  { id: `stats` as const, label: `增长运营`, icon: BarChart3, phase: `Pro 增值`, comingSoon: false },
-  { id: `distribution` as const, label: `分发控制台`, icon: Megaphone, phase: `执行面板`, comingSoon: false },
-  { id: `creation` as const, label: `AI 改写`, icon: Sparkles, phase: `辅助工具`, comingSoon: false },
-  { id: `data` as const, label: `选题素材`, icon: Database, phase: `内容准备`, comingSoon: false },
-]
+const primaryDomains = [
+  { id: `distribution` as const, label: `排版分发`, icon: FileText, routeName: `sync`, summary: `素材、创作、排版、发布` },
+  { id: `growth` as const, label: `增长运营`, icon: BarChart3, routeName: `stats`, summary: `复盘、策略、运营动作` },
+] as const
 
-const primarySteps = workflowSteps.slice(0, 2)
-const helperSteps = workflowSteps.slice(2)
+const distributionSteps = [
+  { id: `data` as const, label: `选择素材`, icon: Database, routeName: `data` },
+  { id: `creation` as const, label: `AI 创作`, icon: Sparkles, routeName: `creation` },
+  { id: `sync` as const, label: `排版编辑`, icon: FileText, routeName: `sync` },
+] as const
 
-function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
+const growthSteps = [
+  { id: `distribution` as const, label: `分发控制台`, icon: Megaphone, routeName: `distribution` },
+  { id: `stats` as const, label: `数据复盘`, icon: BarChart3, routeName: `stats` },
+] as const
+
+const activeDomain = computed(() => {
+  return workflowAppPage.value === `stats` || workflowAppPage.value === `distribution` ? `growth` : `distribution`
+})
+
+const secondarySteps = computed(() => activeDomain.value === `growth` ? growthSteps : distributionSteps)
+
+function openWorkflowStep(stepId: (typeof distributionSteps)[number]['routeName'] | (typeof growthSteps)[number]['routeName']) {
   if (stepId === `data`) {
     const url = getDataAcquisitionNavUrl()
     if (url) {
@@ -68,6 +78,10 @@ function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
     }
   }
   router.push({ name: stepId })
+}
+
+function openPrimaryDomain(routeName: (typeof primaryDomains)[number]['routeName']) {
+  router.push({ name: routeName })
 }
 
 function openCreatorCard() {
@@ -84,57 +98,116 @@ function openSettings() {
 </script>
 
 <template>
-  <header
-    class="header-container relative flex min-h-14 items-center justify-between gap-3 px-4 md:px-5"
-  >
+  <header class="header-container relative flex min-h-[5.75rem] items-center justify-between gap-3 px-4 py-2 md:px-5">
     <div class="brand-lockup hidden min-w-[14rem] shrink-0 flex-col leading-tight xl:flex">
       <span class="text-sm font-semibold text-foreground">Syncblog 创作工作台</span>
       <span class="mt-0.5 text-[11px] text-muted-foreground">排版分发，再做增长运营</span>
     </div>
 
-    <!-- 桌面主导航：用用户成果命名，而不是内部流程词 -->
+    <!-- 桌面两级导航：一级业务域足够抢眼，二级入口明确归属 -->
     <nav
-      class="workflow-nav hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap md:flex"
+      class="workflow-nav hidden min-w-0 flex-1 flex-col gap-1.5 md:flex"
       aria-label="创作工作台"
     >
       <div
-        class="workflow-primary inline-flex shrink-0 items-center gap-1 rounded-lg border border-border/70 bg-muted/35 p-1"
+        class="grid w-full grid-cols-2 gap-1 rounded-lg border border-border/70 bg-muted/35 p-1"
         title="排版分发与增长运营"
       >
-        <template v-for="step in primarySteps" :key="step.id">
-          <WorkflowNavStep
-            :label="step.label"
-            :icon="step.icon"
-            :phase="step.phase"
-            :coming-soon="step.comingSoon"
-            :current="workflowAppPage === step.id"
-            @select="openWorkflowStep(step.id)"
-          />
+        <button
+          v-for="domain in primaryDomains"
+          :key="domain.id"
+          type="button"
+          class="group flex min-w-0 items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors"
+          :class="activeDomain === domain.id ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:bg-background hover:text-foreground'"
+          :aria-current="activeDomain === domain.id ? 'page' : undefined"
+          @click="openPrimaryDomain(domain.routeName)"
+        >
+          <component :is="domain.icon" class="size-4 shrink-0" aria-hidden="true" />
+          <span class="truncate">{{ domain.label }}</span>
+          <span
+            class="hidden truncate text-[11px] font-normal lg:inline"
+            :class="activeDomain === domain.id ? 'text-background/70' : 'text-muted-foreground/70 group-hover:text-foreground/70'"
+          >
+            {{ domain.summary }}
+          </span>
+        </button>
+      </div>
+
+      <div class="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap">
+        <template v-for="step in secondarySteps" :key="step.id">
+          <button
+            type="button"
+            class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-colors"
+            :class="workflowAppPage === step.routeName ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
+            :aria-current="workflowAppPage === step.routeName ? 'step' : undefined"
+            @click="openWorkflowStep(step.routeName)"
+          >
+            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+
+          <RouterLink
+            v-if="step.id === 'creation'"
+            to="/docs/import"
+            target="_blank"
+            class="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            aria-label="外站接入：从其他站点直接分发"
+            title="外站接入：从其他站点直接分发"
+          >
+            <Plug class="size-3.5 shrink-0" aria-hidden="true" />
+            <span>外站接入</span>
+          </RouterLink>
         </template>
       </div>
     </nav>
 
     <!-- 移动端：工作流横向滚 + 汉堡菜单 -->
-    <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5 md:hidden">
       <nav
-        class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
+        class="workflow-nav-mobile flex min-w-0 flex-col gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
         aria-label="创作工作台"
       >
-        <div class="workflow-group inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border/60 bg-muted/30 px-0.5">
-          <template v-for="step in primarySteps" :key="step.id">
-            <WorkflowNavStep
-              dense
-              :label="step.label"
-              :icon="step.icon"
-              :phase="step.phase"
-              :coming-soon="step.comingSoon"
-              :current="workflowAppPage === step.id"
-              @select="openWorkflowStep(step.id)"
-            />
+        <div class="grid w-full grid-cols-2 gap-1 rounded-md border border-border/60 bg-muted/30 p-0.5">
+          <button
+            v-for="domain in primaryDomains"
+            :key="domain.id"
+            type="button"
+            class="inline-flex min-w-0 items-center justify-center gap-1 rounded px-2 py-1 text-xs font-semibold transition-colors"
+            :class="activeDomain === domain.id ? 'bg-foreground text-background shadow-sm' : 'text-muted-foreground hover:bg-background hover:text-foreground'"
+            @click="openPrimaryDomain(domain.routeName)"
+          >
+            <component :is="domain.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+            <span class="truncate">{{ domain.label }}</span>
+          </button>
+        </div>
+
+        <div class="flex min-w-0 items-center gap-1 overflow-x-auto">
+          <template v-for="step in secondarySteps" :key="step.id">
+            <button
+              type="button"
+              class="inline-flex min-h-7 shrink-0 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors"
+              :class="workflowAppPage === step.routeName ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'"
+              @click="openWorkflowStep(step.routeName)"
+            >
+              <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+              <span>{{ step.label }}</span>
+            </button>
+
+            <RouterLink
+              v-if="step.id === 'creation'"
+              to="/docs/import"
+              target="_blank"
+              class="inline-flex min-h-7 shrink-0 items-center gap-1 rounded px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              aria-label="外站接入：从其他站点直接分发"
+              title="外站接入：从其他站点直接分发"
+            >
+              <Plug class="size-3 shrink-0" aria-hidden="true" />
+              <span>外站接入</span>
+            </RouterLink>
           </template>
         </div>
       </nav>
-      <Menubar class="menubar shrink-0 border-0 p-0">
+      <Menubar class="absolute right-4 top-2 shrink-0 border-0 p-0">
         <MenubarMenu>
           <MenubarTrigger
             class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
@@ -153,29 +226,10 @@ function openSettings() {
       </Menubar>
     </div>
 
-    <!-- 右侧：账户 + 次级工具。视觉权重 登录(primary) >> 工具(icon-only ghost) -->
+    <!-- 右侧：非主业务入口 -->
     <div class="hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
-        <!-- 次级工具组：icon-only,弱化到几乎只是装饰 -->
         <div class="flex items-center gap-0.5 text-muted-foreground/70">
-          <Tooltip v-for="step in helperSteps" :key="step.id">
-            <TooltipTrigger as-child>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                class="h-8 w-8 shrink-0 hover:text-foreground"
-                :aria-label="step.label"
-                @click="openWorkflowStep(step.id)"
-              >
-                <component :is="step.icon" class="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" :side-offset="6" class="text-xs">
-              {{ step.label }}
-            </TooltipContent>
-          </Tooltip>
-
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -209,22 +263,6 @@ function openSettings() {
             </TooltipTrigger>
             <TooltipContent side="bottom" :side-offset="6" class="text-xs">
               创作名片
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <RouterLink
-                to="/docs/import"
-                target="_blank"
-                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                aria-label="开发者接入文档"
-              >
-                <Plug class="h-4 w-4" />
-              </RouterLink>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" :side-offset="6" class="text-xs">
-              开发者接入
             </TooltipContent>
           </Tooltip>
         </div>
