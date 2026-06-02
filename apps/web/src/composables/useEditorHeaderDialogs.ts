@@ -1,17 +1,12 @@
 import { ref } from 'vue'
 
 const aboutDialogVisible = ref(false)
-const fundDialogVisible = ref(false)
 const editorStateDialogVisible = ref(false)
 const markdownHelpDialogVisible = ref(false)
 
 export function useEditorHeaderDialogs() {
   function handleOpenAbout() {
     aboutDialogVisible.value = true
-  }
-
-  function handleOpenFund() {
-    fundDialogVisible.value = true
   }
 
   function handleOpenEditorState() {
@@ -24,11 +19,9 @@ export function useEditorHeaderDialogs() {
 
   return {
     aboutDialogVisible,
-    fundDialogVisible,
     editorStateDialogVisible,
     markdownHelpDialogVisible,
     handleOpenAbout,
-    handleOpenFund,
     handleOpenEditorState,
     handleOpenMarkdownHelp,
   }

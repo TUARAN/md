@@ -1,5 +1,5 @@
 import type { PostAccount } from '@md/shared/types'
-import { getPlatformLoginUrl, normalizePlatformType } from '@/constants/platforms'
+import { getPlatformLoginUrl, getPlatformTitle, normalizePlatformType } from '@/constants/platforms'
 import { useSocialAccountsStore } from '@/stores/socialAccounts'
 import { getPublishExtension } from '@/utils/publishExtensions'
 import { toast } from '@/utils/toast'
@@ -14,9 +14,16 @@ const PUBLISH_EXTENSION_DETECTION_TIMEOUT_MS = 15000
 let extensionProbeStarted = false
 let cacheWatchStarted = false
 
-/** 扩展可能上报旧 key（如 twitter）；统一收敛成 canonical type */
+/**
+ * 收敛扩展回传的账号字段：
+ * 1. type → canonical key（旧别名 twitter → x 等）
+ * 2. title → 一律以本地 `platforms.ts` 为准。
+ *    扩展回传的 `title` 在某些版本里编码错乱（UTF-8 当 Latin-1 解），导致弹窗里出现
+ *    "å¾®ä¿¡å…¬ä¼—å" 之类的乱码；平台显示名是 web 端 UI 字符串，本就不该交给扩展定义。
+ */
 function withCanonicalType(account: PostAccount): PostAccount {
-  return { ...account, type: normalizePlatformType(account.type) }
+  const type = normalizePlatformType(account.type)
+  return { ...account, type, title: getPlatformTitle(type) }
 }
 
 function getInitialPlatforms(): PostAccount[] {

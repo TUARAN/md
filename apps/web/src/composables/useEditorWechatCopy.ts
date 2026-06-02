@@ -18,7 +18,6 @@ export interface EditorWechatCopyCallbacks {
 export interface EditorWechatCopyApi {
   copyMode: { value: string }
   handleCopy: (mode: string) => void
-  copyToWeChat: () => void
 }
 
 export const EDITOR_WECHAT_COPY_KEY: InjectionKey<EditorWechatCopyApi> = Symbol(`editor-wechat-copy`)
@@ -206,14 +205,8 @@ export function useEditorWechatCopy(callbacks: EditorWechatCopyCallbacks): Edito
     copy()
   }
 
-  function copyToWeChat() {
-    copyMode.value = `txt`
-    copy()
-  }
-
   return {
     copyMode,
     handleCopy,
-    copyToWeChat,
   }
 }

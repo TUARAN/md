@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BookText, Heart, HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
+import { BookText, HelpCircle, MessageSquare, Tag } from 'lucide-vue-next'
 
 const props = withDefaults(defineProps<{
   asSub?: boolean
@@ -7,16 +7,12 @@ const props = withDefaults(defineProps<{
   asSub: false,
 })
 
-const emit = defineEmits(['openAbout', 'openFund', 'openMarkdownHelp'])
+const emit = defineEmits(['openAbout', 'openMarkdownHelp'])
 
 const { asSub } = toRefs(props)
 
 function openAboutDialog() {
   emit('openAbout')
-}
-
-function openFundDialog() {
-  emit('openFund')
 }
 
 function openMarkdownHelp() {
@@ -55,10 +51,6 @@ function openReleases() {
         <HelpCircle class="mr-2 h-4 w-4" />
         关于
       </MenubarItem>
-      <MenubarItem @click="openFundDialog()">
-        <Heart class="mr-2 h-4 w-4" />
-        赞赏
-      </MenubarItem>
     </MenubarSubContent>
   </MenubarSub>
 
@@ -81,10 +73,6 @@ function openReleases() {
       <MenubarItem @click="openAboutDialog()">
         <HelpCircle class="mr-2 h-4 w-4" />
         关于
-      </MenubarItem>
-      <MenubarItem @click="openFundDialog()">
-        <Heart class="mr-2 h-4 w-4" />
-        赞赏
       </MenubarItem>
     </MenubarContent>
   </MenubarMenu>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, FileText, IdCard, Megaphone, Menu, Plug, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
+import { BarChart3, Bot, ChevronRight, Database, FileText, Megaphone, Menu, Plug, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,6 @@ import {
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { getDataAcquisitionNavUrl } from '@/constants/branding'
-import { CREATOR_CARD_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
@@ -34,11 +33,9 @@ const workflowAppPage = computed(() => String(route.name ?? `sync`))
 
 const {
   aboutDialogVisible,
-  fundDialogVisible,
   editorStateDialogVisible,
   markdownHelpDialogVisible,
   handleOpenAbout,
-  handleOpenFund,
   handleOpenEditorState,
   handleOpenMarkdownHelp,
 } = useEditorHeaderDialogs()
@@ -60,14 +57,13 @@ const distributionSteps = [
 ] as const
 
 const growthSteps = [
-  { id: `creator` as const, label: `创作名片`, icon: IdCard, action: `creator` },
   { id: `distribution` as const, label: `数据策略`, icon: Megaphone, routeName: `distribution` },
   { id: `stats` as const, label: `数据复盘`, icon: BarChart3, routeName: `stats` },
 ] as const
 
 type DistributionStep = (typeof distributionSteps)[number]
 type GrowthStep = (typeof growthSteps)[number]
-type RouteStep = DistributionStep | Extract<GrowthStep, { routeName: string }>
+type RouteStep = DistributionStep | GrowthStep
 
 const activeDomain = computed(() => {
   return workflowAppPage.value === `stats` || workflowAppPage.value === `distribution` ? `growth` : `distribution`
@@ -87,28 +83,15 @@ function openWorkflowStep(stepId: RouteStep['routeName']) {
 }
 
 function isSecondaryStepActive(step: DistributionStep | GrowthStep) {
-  if (`action` in step)
-    return false
-
   return workflowAppPage.value === step.routeName
 }
 
 function openSecondaryStep(step: DistributionStep | GrowthStep) {
-  if (`action` in step) {
-    if (step.action === `creator`)
-      openCreatorCard()
-    return
-  }
-
   openWorkflowStep(step.routeName)
 }
 
 function openPrimaryDomain(routeName: (typeof primaryDomains)[number]['routeName']) {
   router.push({ name: routeName })
-}
-
-function openCreatorCard() {
-  window.open(CREATOR_CARD_ROUTE, `_blank`, `noopener,noreferrer`)
 }
 
 function openChangelog() {
@@ -118,12 +101,16 @@ function openChangelog() {
 function openSettings() {
   router.push({ name: `settings` })
 }
+
+function openAIAssistant() {
+  uiStore.toggleAIDialog(true)
+}
 </script>
 
 <template>
   <header class="header-container relative flex h-14 items-center gap-3 px-4 md:gap-4 md:px-5">
-    <!-- 桌面：一级 Pill 切换 + 二级 Tab，单行紧凑 -->
-    <div class="hidden min-w-0 flex-1 items-center gap-3 md:flex md:gap-4">
+    <!-- 桌面：一级"上下文徽章" + 面包屑箭头 + 二级 Tab 主导航 -->
+    <div class="hidden min-w-0 flex-1 items-center gap-2 md:flex">
       <div
         class="domain-switcher relative inline-flex shrink-0 items-center gap-0.5 rounded-full p-0.5"
         role="tablist"
@@ -135,8 +122,8 @@ function openSettings() {
           type="button"
           role="tab"
           :aria-selected="activeDomain === domain.id"
-          class="domain-pill relative inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all duration-200"
-          :class="activeDomain === domain.id ? 'domain-pill--active' : 'text-muted-foreground hover:text-foreground'"
+          class="domain-pill relative inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] transition-all duration-200"
+          :class="activeDomain === domain.id ? 'domain-pill--active' : 'text-muted-foreground/80 hover:text-foreground'"
           @click="openPrimaryDomain(domain.routeName)"
         >
           <component :is="domain.icon" class="size-3.5 shrink-0" aria-hidden="true" />
@@ -144,18 +131,18 @@ function openSettings() {
         </button>
       </div>
 
-      <div class="h-5 w-px shrink-0 bg-border/60" aria-hidden="true" />
+      <ChevronRight class="size-3.5 shrink-0 text-muted-foreground/40" aria-hidden="true" />
 
       <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
         aria-label="工作流步骤"
       >
         <button
           v-for="step in secondarySteps"
           :key="step.id"
           type="button"
-          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-all duration-200"
-          :class="isSecondaryStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-200"
+          :class="isSecondaryStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
           :aria-current="isSecondaryStepActive(step) ? 'step' : undefined"
           @click="openSecondaryStep(step)"
         >
@@ -201,7 +188,7 @@ function openSettings() {
               <FormatDropdown :as-sub="true" />
               <InsertDropdown :as-sub="true" />
               <StyleDropdown :as-sub="true" />
-              <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-fund="handleOpenFund" @open-markdown-help="handleOpenMarkdownHelp" />
+              <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-help="handleOpenMarkdownHelp" />
             </MenubarContent>
           </MenubarMenu>
         </Menubar>
@@ -226,8 +213,28 @@ function openSettings() {
     </div>
 
     <!-- 右侧：辅助入口 -->
-    <div class="hidden shrink-0 items-center gap-0.5 md:flex">
+    <div class="hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
+        <!-- AI 助手：用渐变色与其他灰阶辅助按钮区隔，提示这是 AI 功能 -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              type="button"
+              class="ai-assistant-pill inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-white transition-all"
+              aria-label="AI 助手"
+              @click="openAIAssistant"
+            >
+              <Bot class="size-3.5" />
+              <span>助手</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+            打开 AI 助手
+          </TooltipContent>
+        </Tooltip>
+
+        <div class="mx-1 h-4 w-px bg-border/60" aria-hidden="true" />
+
         <Tooltip>
           <TooltipTrigger as-child>
             <Button
@@ -269,7 +276,6 @@ function openSettings() {
 
   <!-- 对话框组件，嵌套菜单无法正常挂载，需要提取层级 -->
   <AboutDialog :visible="aboutDialogVisible" @close="aboutDialogVisible = false" />
-  <FundDialog :visible="fundDialogVisible" @close="fundDialogVisible = false" />
   <EditorStateDialog :visible="editorStateDialogVisible" @close="editorStateDialogVisible = false" />
   <MarkdownHelpDialog :visible="markdownHelpDialogVisible" @close="markdownHelpDialogVisible = false" />
   <AIImageGeneratorPanel v-model:open="uiStore.aiImageDialogVisible" />
@@ -297,11 +303,11 @@ function openSettings() {
   }
 }
 
-/* —— 一级 Pill 切换：玻璃质感容器 + 渐变填充态 —— */
+/* —— 一级"上下文徽章"：低对比，不与二级 Tab 抢主角 —— */
 .domain-switcher {
-  background: linear-gradient(180deg, hsl(var(--muted) / 0.6) 0%, hsl(var(--muted) / 0.35) 100%);
-  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.55), inset 0 1px 0 0 hsl(var(--background) / 0.6);
-  backdrop-filter: blur(8px) saturate(140%);
+  background: hsl(var(--muted) / 0.45);
+  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.5);
+  backdrop-filter: blur(6px);
 }
 
 .domain-pill {
@@ -313,10 +319,32 @@ function openSettings() {
 }
 
 .domain-pill--active {
-  color: hsl(var(--background));
-  background: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--foreground) / 0.82) 100%);
-  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.25), 0 4px 12px -2px hsl(var(--foreground) / 0.18),
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.12);
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.08), inset 0 0 0 1px hsl(var(--border) / 0.5);
+}
+
+/* —— AI 助手按钮：蓝紫渐变 + 软投影，提示这是 AI 功能 —— */
+.ai-assistant-pill {
+  background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(262 83% 65%) 100%);
+  box-shadow: 0 1px 2px 0 hsl(217 91% 50% / 0.25), 0 4px 10px -2px hsl(217 91% 50% / 0.2),
+    inset 0 1px 0 0 hsl(0 0% 100% / 0.18);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-0.5px);
+    box-shadow: 0 2px 4px 0 hsl(217 91% 50% / 0.3), 0 6px 14px -2px hsl(217 91% 50% / 0.28),
+      inset 0 1px 0 0 hsl(0 0% 100% / 0.22);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 /* —— 二级 Tab：玻璃高亮 + 渐变下划线 —— */

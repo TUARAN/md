@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Copy, Focus, MoreHorizontal, Palette } from 'lucide-vue-next'
+import { Focus, Image as ImageIcon, MoreHorizontal, Palette } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { inject } from 'vue'
 import EditDropdown from '@/components/editor/editor-header/EditDropdown.vue'
@@ -9,8 +9,8 @@ import HelpDropdown from '@/components/editor/editor-header/HelpDropdown.vue'
 import InsertDropdown from '@/components/editor/editor-header/InsertDropdown.vue'
 import PostInfo from '@/components/editor/editor-header/PostInfo.vue'
 import StyleDropdown from '@/components/editor/editor-header/StyleDropdown.vue'
-import { Button } from '@/components/ui/button'
 import { Menubar, MenubarContent, MenubarMenu, MenubarTrigger } from '@/components/ui/menubar'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
 import { useUIStore } from '@/stores/ui'
@@ -19,143 +19,208 @@ const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 const uiStore = useUIStore()
 const { isOpenRightSlider, isFocusMode } = storeToRefs(uiStore)
 
+function openAIImage() {
+  uiStore.toggleAIImageDialog(true)
+}
+
 const {
   handleOpenAbout,
-  handleOpenFund,
   handleOpenEditorState,
   handleOpenMarkdownHelp,
 } = useEditorHeaderDialogs()
 
+// 「复制到微信」CTA 已移除，但编辑菜单内的复制子项仍透传 mode
 function handleCopy(mode: string) {
   wechatCopy?.handleCopy(mode)
-}
-
-function copyToWeChat() {
-  wechatCopy?.copyToWeChat()
 }
 </script>
 
 <template>
   <!--
-    /sync 页面右侧操作区:
-    - 主操作:复制 / 发布(PostInfo) / 样式面板切换
-    - 次级菜单:6 个 dropdown(文件/编辑/格式/插入/样式/帮助)收进单个「⋯」入口,
-      节省顶部纵向空间;键盘和鼠标都能照常逐项展开,只是少一行视觉重量
+    /sync 操作区：「玻璃 Dock」
+    - 玻璃胶囊容器，悬浮感
+    - 内部装：发布（次 CTA chip）/ 样式 / 专注 / 菜单（图标按钮）
   -->
-  <div
-    class="editor-workflow-sync-rail flex w-full min-w-0 flex-wrap items-center justify-end gap-2"
-  >
-    <Button
-      variant="outline"
-      size="sm"
-      class="h-9 shrink-0"
-      type="button"
-      @click="copyToWeChat"
-    >
-      <Copy class="mr-2 h-4 w-4" />
-      <span>复制</span>
-    </Button>
+  <TooltipProvider :delay-duration="180">
+    <div class="rail-wrap flex w-full min-w-0 flex-wrap items-center justify-end gap-2">
+      <!-- 工具 Dock：玻璃质感容器 + 内部图标按钮 -->
+      <div class="rail-dock shrink-0">
+        <!-- 发布：第二动作，作为 dock 内首位且着色 -->
+        <div class="dock-publish">
+          <PostInfo />
+        </div>
 
-    <div class="shrink-0">
-      <PostInfo />
+        <div class="dock-divider" aria-hidden="true" />
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              class="dock-icon-btn"
+              :class="{ 'dock-icon-btn--active': isOpenRightSlider }"
+              type="button"
+              :aria-label="isOpenRightSlider ? '隐藏样式面板' : '显示样式面板'"
+              :aria-pressed="isOpenRightSlider"
+              @click="isOpenRightSlider = !isOpenRightSlider"
+            >
+              <Palette class="size-[15px]" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="8" class="text-xs">
+            {{ isOpenRightSlider ? '隐藏样式面板' : '样式面板' }}
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              class="dock-icon-btn"
+              :class="{ 'dock-icon-btn--active': isFocusMode }"
+              type="button"
+              :aria-label="isFocusMode ? '退出专注模式' : '进入专注模式'"
+              :aria-pressed="isFocusMode"
+              @click="uiStore.toggleFocusMode()"
+            >
+              <Focus class="size-[15px]" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="8" class="text-xs">
+            {{ isFocusMode ? '退出专注模式' : '专注模式' }}
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              class="dock-icon-btn"
+              type="button"
+              aria-label="AI 文生图"
+              @click="openAIImage"
+            >
+              <ImageIcon class="size-[15px]" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="8" class="text-xs">
+            AI 文生图
+          </TooltipContent>
+        </Tooltip>
+
+        <Menubar class="menubar shrink-0 border-0 bg-transparent p-0 shadow-none">
+          <MenubarMenu>
+            <MenubarTrigger
+              class="dock-icon-btn dock-icon-btn--menu"
+              aria-label="更多编辑菜单"
+            >
+              <MoreHorizontal class="size-[15px]" />
+            </MenubarTrigger>
+            <MenubarContent align="end" :side-offset="8" class="min-w-[10rem]">
+              <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
+              <EditDropdown :as-sub="true" @copy="handleCopy" />
+              <FormatDropdown :as-sub="true" />
+              <InsertDropdown :as-sub="true" />
+              <StyleDropdown :as-sub="true" />
+              <HelpDropdown
+                :as-sub="true"
+                @open-about="handleOpenAbout"
+                @open-markdown-help="handleOpenMarkdownHelp"
+              />
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
+      </div>
     </div>
-
-    <Button
-      variant="outline"
-      size="sm"
-      class="h-9 shrink-0"
-      :class="{ 'bg-accent text-accent-foreground': isOpenRightSlider }"
-      type="button"
-      :title="isOpenRightSlider ? '隐藏样式面板' : '显示样式面板'"
-      @click="isOpenRightSlider = !isOpenRightSlider"
-    >
-      <Palette class="mr-2 h-4 w-4" />
-      <span>样式</span>
-    </Button>
-
-    <Button
-      variant="outline"
-      size="sm"
-      class="h-9 shrink-0"
-      :class="{ 'bg-accent text-accent-foreground': isFocusMode }"
-      type="button"
-      :title="isFocusMode ? '退出专注模式,恢复原有面板' : '专注模式:仅保留左右编辑/预览'"
-      @click="uiStore.toggleFocusMode()"
-    >
-      <Focus class="mr-2 h-4 w-4" />
-      <span>专注</span>
-    </Button>
-
-    <Menubar class="menubar menubar--secondary shrink-0 border-0 bg-transparent p-0 shadow-none">
-      <MenubarMenu>
-        <MenubarTrigger
-          class="more-menu-trigger inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
-          aria-label="更多编辑菜单"
-        >
-          <MoreHorizontal class="size-4" />
-          <span>菜单</span>
-        </MenubarTrigger>
-        <MenubarContent align="end" class="min-w-[10rem]">
-          <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
-          <EditDropdown :as-sub="true" @copy="handleCopy" />
-          <FormatDropdown :as-sub="true" />
-          <InsertDropdown :as-sub="true" />
-          <StyleDropdown :as-sub="true" />
-          <HelpDropdown
-            :as-sub="true"
-            @open-about="handleOpenAbout"
-            @open-fund="handleOpenFund"
-            @open-markdown-help="handleOpenMarkdownHelp"
-          />
-        </MenubarContent>
-      </MenubarMenu>
-    </Menubar>
-  </div>
+  </TooltipProvider>
 </template>
 
 <style lang="less" scoped>
-/* 与 editor-header 中 menubar--secondary 对齐（略收窄以适应侧栏） */
+/* ====================================================================
+   工具 Dock：玻璃胶囊容器
+   ==================================================================== */
+.rail-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 9999px;
+  background: hsl(var(--background) / 0.7);
+  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.04), 0 8px 28px -10px hsl(var(--foreground) / 0.14),
+    inset 0 0 0 1px hsl(var(--border) / 0.55), inset 0 1px 0 0 hsl(var(--background) / 0.6);
+  backdrop-filter: blur(16px) saturate(160%);
+}
+
+.dock-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: hsl(var(--border) / 0.7);
+  flex-shrink: 0;
+}
+
+/* —— Dock 内的「发布」按钮：覆盖 PostInfo 里的 Button outline 样式，使其融入 dock —— */
+.dock-publish :deep(button) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  background: hsl(var(--foreground) / 0.06);
+  border: none;
+  box-shadow: none;
+  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    background: hsl(var(--foreground) / 0.1);
+    color: hsl(var(--foreground));
+  }
+
+  & > svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* —— 图标按钮：32×32 圆形，ghost 风格 —— */
+.dock-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    background: hsl(var(--foreground) / 0.06);
+    color: hsl(var(--foreground));
+  }
+
+  &:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
+
+.dock-icon-btn--active {
+  background: hsl(var(--foreground) / 0.1);
+  color: hsl(var(--foreground));
+  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.6);
+}
+
+.dock-icon-btn--menu[data-state='open'] {
+  background: hsl(var(--foreground) / 0.1);
+  color: hsl(var(--foreground));
+}
+
+/* —— Menubar 内容入场动画保留 —— */
 .menubar {
   user-select: none;
-
-  &.menubar--secondary :deep([data-radix-menubar-trigger]) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: auto;
-    min-width: 2.25rem;
-    height: 2.25rem;
-    min-height: 2.25rem;
-    padding: 0 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    line-height: 1.25;
-    letter-spacing: normal;
-    text-transform: none;
-    border-radius: calc(var(--radius) - 2px);
-    border: 1px solid hsl(var(--border));
-    background: hsl(var(--background));
-    color: hsl(var(--foreground));
-    box-shadow: none;
-    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    &:hover {
-      background: hsl(var(--accent));
-      color: hsl(var(--accent-foreground));
-    }
-
-    &[data-state='open'] {
-      background: hsl(var(--accent));
-      color: hsl(var(--accent-foreground));
-    }
-
-    &:focus-visible {
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-      box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
-    }
-  }
 
   :deep([data-radix-menubar-content]) {
     animation: slideDownAndFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
