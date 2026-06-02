@@ -42,6 +42,7 @@ export interface AuthEnv {
 }
 
 const CALLBACK_PATH = `/api/auth/github/callback`
+const DEFAULT_AUTH_RETURN_TO = `/edit`
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers)
@@ -74,16 +75,22 @@ function cookieOpts(request: Request, maxAge: number): CookieOpts {
 
 function normalizeReturnTo(raw: string | null, origin: string): string {
   if (!raw)
-    return `/`
+    return DEFAULT_AUTH_RETURN_TO
   try {
     const target = new URL(raw, origin)
     if (target.origin !== origin)
-      return `/`
+      return DEFAULT_AUTH_RETURN_TO
     return `${target.pathname}${target.search}${target.hash}` || `/`
   }
   catch {
-    return `/`
+    return DEFAULT_AUTH_RETURN_TO
   }
+}
+
+function withAuthError(returnTo: string, error: string): string {
+  const target = new URL(returnTo, `https://syncblog.cn`)
+  target.searchParams.set(`auth_error`, error)
+  return `${target.pathname}${target.search}${target.hash}`
 }
 
 /**
@@ -151,6 +158,12 @@ export async function handleAuthApi(
   }
 
   if (path === CALLBACK_PATH && request.method === `GET`) {
+    console.log(`[auth callback] received`, {
+      hasCode: url.searchParams.has(`code`),
+      hasState: url.searchParams.has(`state`),
+      hasError: url.searchParams.has(`error`),
+    })
+
     if (!env.DB)
       return configError(`DB`)
     if (!env.SESSION_SECRET)
@@ -163,13 +176,26 @@ export async function handleAuthApi(
     const cookies = parseCookies(request.headers.get(`cookie`))
     const stateCookie = cookies[OAUTH_STATE_COOKIE]
     const origin = resolveOrigin(env, request)
-    const returnTo = normalizeReturnTo(cookies[OAUTH_RETURN_TO_COOKIE] ?? `/`, origin)
+    const returnTo = normalizeReturnTo(cookies[OAUTH_RETURN_TO_COOKIE] ?? DEFAULT_AUTH_RETURN_TO, origin)
+
+    const oauthError = url.searchParams.get(`error`)
+    if (oauthError) {
+      console.warn(`[auth callback] github returned error`, {
+        error: oauthError,
+        description: url.searchParams.get(`error_description`) ?? ``,
+      })
+      const headers = new Headers()
+      headers.set(`Location`, withAuthError(returnTo, oauthError))
+      return new Response(null, { status: 302, headers })
+    }
 
     if (!code || !stateParam || !stateCookie || stateParam !== stateCookie) {
-      return jsonResponse(
-        { ok: false, error: `Invalid OAuth state` },
-        { status: 400 },
-      )
+      console.warn(`[auth callback] invalid state`, {
+        hasCode: !!code,
+        hasStateParam: !!stateParam,
+        hasStateCookie: !!stateCookie,
+      })
+      return jsonResponse({ ok: false, error: `Invalid OAuth state` }, { status: 400 })
     }
 
     const redirectUri = `${origin}${CALLBACK_PATH}`
@@ -183,6 +209,10 @@ export async function handleAuthApi(
       )
       const profile = await fetchGitHubProfile(accessToken)
       const user = await upsertUserFromGitHub(env.DB, profile)
+      console.log(`[auth callback] authenticated`, {
+        userId: user.id,
+        githubLogin: user.github_login,
+      })
       const sessionToken = await mintSession(env.SESSION_SECRET, {
         sub: user.id,
         ghi: user.github_id,
@@ -207,6 +237,7 @@ export async function handleAuthApi(
     }
     catch (err) {
       const message = err instanceof Error ? err.message : String(err)
+      console.error(`[auth callback] failed`, { message })
       return jsonResponse({ ok: false, error: message }, { status: 502 })
     }
   }
