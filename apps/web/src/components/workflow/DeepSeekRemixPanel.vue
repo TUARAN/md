@@ -1,17 +1,8 @@
 <script setup lang="ts">
-import { Copy, KeyRound, Lock, LockOpen, Send, Sparkles, Square } from 'lucide-vue-next'
+import { Copy, Crown, LogIn, Send, Sparkles, Square } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { PanelShell, SectionHeader, StatusBadge, Toolbar } from '@/components/ui/layout'
-import { PasswordInput } from '@/components/ui/password-input'
 import {
   Select,
   SelectContent,
@@ -24,10 +15,6 @@ import { copyPlain } from '@/utils/clipboard'
 import {
   DEEPSEEK_CHAT_ENDPOINT,
   DEEPSEEK_MODELS,
-  getDeepSeekPassword,
-  isDeepSeekUnlocked,
-  lockDeepSeek,
-  unlockDeepSeek,
 } from '@/utils/deepseekClient'
 import { toast } from '@/utils/toast'
 
@@ -42,86 +29,30 @@ const model = ref<string>(DEEPSEEK_MODELS[0].value)
 const output = ref<string>(``)
 const reasoning = ref<string>(``)
 const generating = ref(false)
-const unlocked = ref(isDeepSeekUnlocked())
 
 /** True when the current request can be authenticated by session cookie alone. */
 const useSessionAuth = computed(() => auth.isAuthenticated)
-/** True when we can call DeepSeek right now without prompting the user. */
-const canGenerate = computed(() => useSessionAuth.value || unlocked.value)
-
-const passwordDialogOpen = ref(false)
-const passwordInput = ref(``)
-const passwordError = ref(``)
-const unlocking = ref(false)
+const quotaRemaining = computed(() => Math.max(0, (auth.aiQuota?.limit ?? 0) - (auth.aiQuota?.used ?? 0)))
 
 let abortController: AbortController | null = null
 
 const activeModelMeta = computed(() => DEEPSEEK_MODELS.find(m => m.value === model.value))
-
-function openPasswordDialog() {
-  passwordInput.value = ``
-  passwordError.value = ``
-  passwordDialogOpen.value = true
-}
-
-async function submitPassword() {
-  if (!passwordInput.value) {
-    passwordError.value = `请输入密码`
-    return
-  }
-  unlocking.value = true
-  passwordError.value = ``
-  try {
-    await unlockDeepSeek(passwordInput.value)
-    unlocked.value = true
-    passwordDialogOpen.value = false
-    toast.success(`已解锁 DeepSeek`)
-    void runGenerate()
-  }
-  catch (e) {
-    passwordError.value = (e as Error).message || `解锁失败`
-  }
-  finally {
-    unlocking.value = false
-  }
-}
-
-function handleLock() {
-  lockDeepSeek()
-  unlocked.value = false
-  toast.success(`已锁定 DeepSeek`)
-}
 
 function handleGenerate() {
   if (!props.prompt || !props.prompt.trim()) {
     toast.error(`提示词为空，请先准备素材`)
     return
   }
-  if (!canGenerate.value) {
-    // Anonymous user without a password unlock: prefer login if backend
-    // supports it, otherwise fall back to the legacy password gate.
-    openPasswordDialog()
-    return
-  }
   void runGenerate()
+}
+
+function goPricing() {
+  window.location.assign(`/pricing`)
 }
 
 async function runGenerate() {
   const headers: Record<string, string> = {
     'Content-Type': `application/json`,
-  }
-
-  if (useSessionAuth.value) {
-    // Session cookie handles auth — no header needed.
-  }
-  else {
-    const password = getDeepSeekPassword()
-    if (!password) {
-      unlocked.value = false
-      openPasswordDialog()
-      return
-    }
-    headers[`x-deepseek-password`] = password
   }
 
   output.value = ``
@@ -144,8 +75,28 @@ async function runGenerate() {
       signal: abortController.signal,
     })
 
+    if (res.status === 401) {
+      const data = await res.json().catch(() => ({} as { error?: string, code?: string }))
+      if (data?.code === `LOGIN_REQUIRED`) {
+        toast.error(`请登录后继续使用 AI 生成`)
+        auth.startLogin()
+        return
+      }
+      throw new Error(data?.error || `未授权`)
+    }
+
     if (res.status === 429) {
-      const data = await res.json().catch(() => ({} as { error?: string }))
+      const data = await res.json().catch(() => ({} as { error?: string, code?: string }))
+      if (data?.code === `ANON_QUOTA_EXHAUSTED`) {
+        toast.error(`免费试用次数已用完，登录后可继续免费使用`)
+        auth.startLogin()
+        return
+      }
+      if (data?.code === `QUOTA_EXHAUSTED`) {
+        toast.error(`今日账号配额已用完，可升级 Pro 提高配额`)
+        window.location.assign(`/pricing`)
+        return
+      }
       throw new Error(data?.error || `今日 AI 配额已用尽`)
     }
 
@@ -192,8 +143,6 @@ async function runGenerate() {
       const msg = (e as Error).message || `生成失败`
       toast.error(msg)
       if (/401|403/.test(msg)) {
-        lockDeepSeek()
-        unlocked.value = false
         // Maybe the session expired — refetch auth state so the UI updates.
         void auth.refresh()
       }
@@ -244,37 +193,23 @@ function insertOutputIntoEditor() {
   <PanelShell tone="success" radius="xl" padding="lg" class="grid gap-3">
     <SectionHeader :icon="Sparkles" tone="success" title="DeepSeek 直接生成">
       <template #description>
-        DeepSeek 调用走后端代理，密钥仅保管在服务端。
+        免费试用不需要登录；用到一定次数后，再登录继续使用。
         <template v-if="useSessionAuth">
-          已登录 <strong>{{ auth.user?.login }}</strong>，今日剩余
-          <strong>{{ Math.max(0, (auth.aiQuota?.limit ?? 0) - (auth.aiQuota?.used ?? 0)) }}</strong>
+          当前账号 <strong>{{ auth.user?.login }}</strong> 今日剩余
+          <strong>{{ quotaRemaining }}</strong>
           / {{ auth.aiQuota?.limit }} 次。
         </template>
         <template v-else>
-          登录后按账号计配额，或输入共享密码临时解锁（本标签页内有效）。
+          前 3 次直接体验；需要更多时再登录，编辑器本身永久免费。
         </template>
       </template>
       <template #actions>
-        <StatusBadge v-if="useSessionAuth" tone="info" :icon="LockOpen">
-          账号登录
+        <StatusBadge v-if="useSessionAuth" tone="info" :icon="Sparkles">
+          Free {{ quotaRemaining }} / {{ auth.aiQuota?.limit }}
         </StatusBadge>
-        <template v-else>
-          <StatusBadge
-            :tone="unlocked ? 'success' : 'neutral'"
-            :icon="unlocked ? LockOpen : Lock"
-          >
-            {{ unlocked ? `已解锁` : `未解锁` }}
-          </StatusBadge>
-          <Button
-            v-if="unlocked"
-            class="h-7 rounded-md px-2 text-[11px] text-muted-foreground"
-            type="button"
-            variant="ghost"
-            @click="handleLock"
-          >
-            锁定
-          </Button>
-        </template>
+        <StatusBadge v-else tone="success" :icon="Sparkles">
+          免费试用
+        </StatusBadge>
       </template>
     </SectionHeader>
 
@@ -302,8 +237,8 @@ function insertOutputIntoEditor() {
           type="button"
           @click="handleGenerate"
         >
-          <component :is="canGenerate ? Send : KeyRound" class="mr-1.5 size-3.5" />
-          {{ canGenerate ? `用 DeepSeek 生成` : `解锁并生成` }}
+          <Send class="mr-1.5 size-3.5" />
+          用 DeepSeek 生成
         </Button>
         <Button
           v-else
@@ -318,6 +253,18 @@ function insertOutputIntoEditor() {
       </div>
       <p class="text-[11px] leading-relaxed text-muted-foreground sm:col-span-2">
         {{ activeModelMeta?.description }}
+        <template v-if="!useSessionAuth">
+          <button type="button" class="ml-2 inline-flex items-center gap-1 font-medium text-primary underline underline-offset-2" @click="auth.startLogin()">
+            <LogIn class="size-3" />
+            登录后获得更多免费额度
+          </button>
+        </template>
+        <template v-else-if="!auth.isPro">
+          <button type="button" class="ml-2 inline-flex items-center gap-1 font-medium text-amber-700 underline underline-offset-2 dark:text-amber-300" @click="goPricing">
+            <Crown class="size-3" />
+            升级 Pro 提高配额
+          </button>
+        </template>
       </p>
     </div>
 
@@ -367,41 +314,5 @@ function insertOutputIntoEditor() {
         class="min-h-[160px] flex-1 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700 dark:border-border dark:bg-background dark:text-foreground"
       >{{ output || (generating ? '正在生成…' : '生成结果将在这里以流式输出。') }}</pre>
     </div>
-
-    <Dialog v-model:open="passwordDialogOpen">
-      <DialogContent class="sm:max-w-[420px]">
-        <DialogHeader>
-          <DialogTitle class="flex items-center gap-2 text-base">
-            <KeyRound class="size-4" />
-            解锁 DeepSeek
-          </DialogTitle>
-          <DialogDescription>
-            为防止密钥被随意调用，DeepSeek 功能需要输入密码解锁。解锁状态仅在当前浏览器标签页内有效。
-          </DialogDescription>
-        </DialogHeader>
-
-        <form class="grid gap-3" @submit.prevent="submitPassword">
-          <div class="grid gap-1.5">
-            <Label class="text-xs text-muted-foreground">密码</Label>
-            <PasswordInput
-              v-model="passwordInput"
-              placeholder="请输入解锁密码"
-              :class="passwordError ? 'border-red-500 focus-visible:ring-red-500' : ''"
-            />
-            <p v-if="passwordError" class="text-xs text-red-600">
-              {{ passwordError }}
-            </p>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="secondary" @click="passwordDialogOpen = false">
-              取消
-            </Button>
-            <Button type="submit" :disabled="unlocking">
-              {{ unlocking ? `解锁中…` : `解锁` }}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   </PanelShell>
 </template>

@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw, ScrollText } from 'lucide-vue-next'
+import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw, ScrollText, Settings } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import UserMenu from '@/components/auth/UserMenu.vue'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -79,6 +78,10 @@ function openCreatorCard() {
 
 function openChangelog() {
   router.push({ name: `changelog` })
+}
+
+function openSettings() {
+  router.push({ name: `settings` })
 }
 </script>
 
@@ -243,10 +246,25 @@ function openChangelog() {
         </div>
       </TooltipProvider>
 
-      <!-- 工作区 ↔ 账户区分隔线,把两块物理切开 -->
-      <span class="header-divider mx-1.5 h-5 w-px bg-border" aria-hidden="true" />
-
-      <UserMenu />
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="设置"
+              @click="openSettings"
+            >
+              <Settings class="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+            设置
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   </header>
 

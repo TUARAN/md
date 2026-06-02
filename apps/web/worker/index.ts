@@ -13,6 +13,7 @@ import { handleDistributionCheckinsApi } from './distributionCheckins'
 
 const MP_HOST = `https://api.weixin.qq.com`
 const DEEPSEEK_HOST = `https://api.deepseek.com`
+const ANONYMOUS_AI_DAILY_LIMIT = 3
 
 interface Env extends AuthEnv, BillingEnv {
   ASSETS: { fetch: (request: Request) => Promise<Response> }
@@ -202,16 +203,39 @@ export default class extends WorkerEntrypoint<Env> {
         }
       }
       else {
-        // Legacy fallback: shared password header.
-        if (!expectedPassword) {
-          return this.jsonWithCors(
-            { ok: false, error: `未登录` },
-            { status: 401 },
+        if (this.env.DB) {
+          const anonQuota = await consumeRate(
+            this.env.DB,
+            `deepseek_chat_anon_daily`,
+            getClientIp(request),
+            ANONYMOUS_AI_DAILY_LIMIT,
+            24 * 60 * 60,
           )
+          if (!anonQuota.allowed) {
+            return this.jsonWithCors(
+              {
+                ok: false,
+                error: `今日免费试用次数已用完，登录后可继续免费使用`,
+                code: `ANON_QUOTA_EXHAUSTED`,
+                limit: ANONYMOUS_AI_DAILY_LIMIT,
+                retryAfter: anonQuota.retryAfter,
+              },
+              { status: 429 },
+            )
+          }
         }
-        const password = request.headers.get(`x-deepseek-password`) ?? ``
-        if (!password || !timingSafeEqual(password, expectedPassword))
-          return this.jsonWithCors({ ok: false, error: `未授权` }, { status: 401 })
+        else {
+          // Legacy fallback for non-D1 deployments.
+          if (!expectedPassword) {
+            return this.jsonWithCors(
+              { ok: false, error: `未登录`, code: `LOGIN_REQUIRED` },
+              { status: 401 },
+            )
+          }
+          const password = request.headers.get(`x-deepseek-password`) ?? ``
+          if (!password || !timingSafeEqual(password, expectedPassword))
+            return this.jsonWithCors({ ok: false, error: `未授权` }, { status: 401 })
+        }
       }
 
       const upstream = await fetch(`${DEEPSEEK_HOST}/v1/chat/completions`, {

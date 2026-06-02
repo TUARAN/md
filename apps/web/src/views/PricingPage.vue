@@ -21,7 +21,7 @@ const activePrice = computed(() => PRICING[billingPeriod.value])
 
 async function handleSubscribe(provider: 'wechat' | 'alipay') {
   if (!auth.isAuthenticated) {
-    toast.error(`请先登录 GitHub 账号`)
+    toast.error(`登录后即可继续开通 Pro`)
     auth.startLogin()
     return
   }
@@ -78,10 +78,10 @@ function goHome() {
           {{ APP_NAME }} Pro
         </span>
         <h1 class="text-3xl font-semibold tracking-tight">
-          AI 配额管够，工作流不打断
+          免费先用，真正需要时再升级
         </h1>
         <p class="mx-auto max-w-xl text-sm leading-relaxed text-muted-foreground">
-          编辑器、主题、导出永远免费。Pro 解锁更高的 AI 调用配额、批量多平台同步与即将上线的运营数据回流。
+          编辑器、主题、导出永久免费；AI 提供匿名试用和登录后的基础免费额度。Pro 只在高频二创、批量同步和团队运营时需要。
         </p>
       </header>
 
@@ -105,7 +105,7 @@ function goHome() {
             </li>
             <li class="flex items-start gap-2">
               <Check class="mt-0.5 size-4 text-emerald-600" />
-              每日 10 次 DeepSeek 二创
+              匿名即可试用 DeepSeek，登录后每日 10 次
             </li>
             <li class="flex items-start gap-2">
               <Check class="mt-0.5 size-4 text-emerald-600" />
@@ -176,7 +176,7 @@ function goHome() {
               @click="handleSubscribe('wechat')"
             >
               <QrCode class="mr-1.5 size-4" />
-              微信支付
+              登录并微信支付
             </Button>
             <Button
               type="button"
