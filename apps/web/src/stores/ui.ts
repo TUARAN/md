@@ -12,7 +12,7 @@ import { store } from '@/utils/storage'
  * 描述「目标步骤」。新代码应使用 `router.push({ name })` 进行导航,不再依赖
  * 任何 ui store 内部的 workflowAppPage 状态(已移除)。
  */
-export type WorkflowAppPage = `data` | `creation` | `sync` | `distribution` | `stats`
+export type WorkflowAppPage = `data` | `creation` | `import` | `sync` | `distribution` | `stats`
 
 /**
  * UI 状态 Store
@@ -139,10 +139,10 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
-  /** 工作流当前创作者（平台矩阵、分发控制台共用） */
+  /** 工作流当前创作者（平台矩阵、数据策略共用） */
   const workflowCreatorId = store.reactive(`workflow_creator_id`, TUARAN_CREATOR_ID)
 
-  /** 分发控制台当前选中的平台 type（canonical key，详见 constants/platforms.ts） */
+  /** 数据策略当前选中的平台 type（canonical key，详见 constants/platforms.ts） */
   const workflowDistributionPlatform = store.reactive(`workflow_distribution_platform`, `csdn`)
   // 收敛历史持久化值（如旧的 `twitter` → `x`）
   workflowDistributionPlatform.value = normalizePlatformType(workflowDistributionPlatform.value)

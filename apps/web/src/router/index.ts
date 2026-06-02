@@ -14,14 +14,15 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /edit                        编辑器主页(name=sync) — 排版分发 / 预览 / 发布准备
  *   /workflow/data               name=data       选择素材
  *   /workflow/creation           name=creation   AI 创作
- *   /workflow/distribution       name=distribution  分发控制台
+ *   /workflow/import             name=import     外站接入
+ *   /workflow/distribution       name=distribution  数据策略
  *   /workflow/stats              name=stats      增长运营
  *   /pricing                     name=pricing    定价
  *   /changelog                   name=changelog  更新日志
  *   /docs/import                 name=import-docs  站外接入文档
  *   /creator-offer/:creatorId    name=creator-offer  公开创作名片
  *
- * 路由 **名字** 维持不变(sync / data / creation / distribution / stats),只有
+ * 路由 **名字** 维持不变(sync / data / creation / import / distribution / stats),只有
  * **路径** 改了。这样所有 `router.push({ name: 'sync' })` 都不用动。
  *
  * **老路径兼容:**
@@ -45,6 +46,7 @@ const SyncPage = () => import('@/views/SyncPage.vue')
 // 非默认 workflow 页一律懒加载,首屏只装编辑器
 const WorkflowDataPage = () => import('@/components/workflow/WorkflowDataPage.vue')
 const WorkflowCreationPage = () => import('@/components/workflow/WorkflowCreationPage.vue')
+const WorkflowImportPage = () => import('@/components/workflow/WorkflowImportPage.vue')
 const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDistributionPage.vue')
 const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.vue')
 
@@ -55,7 +57,7 @@ const SettingsPage = () => import('@/views/SettingsPage.vue')
 const ChangelogPage = () => import('@/views/ChangelogPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
-export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `distribution`, `stats`] as const
+export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `import`, `distribution`, `stats`] as const
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
 /** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
@@ -63,6 +65,7 @@ const LEGACY_HASH_TO_ROUTE: Record<string, WorkflowRouteName> = {
   'content-sync': `sync`,
   'data': `data`,
   'creation': `creation`,
+  'import': `import`,
   'matrix': `distribution`,
   'distribution': `distribution`,
   'stats': `stats`,
@@ -79,6 +82,7 @@ const routes: RouteRecordRaw[] = [
       // 4 个 workflow 步骤搬到 /workflow/*。Phase 3.2 会把它们拆出 EditorLayout。
       { path: `workflow/data`, name: `data`, component: WorkflowDataPage },
       { path: `workflow/creation`, name: `creation`, component: WorkflowCreationPage },
+      { path: `workflow/import`, name: `import`, component: WorkflowImportPage },
       { path: `workflow/distribution`, name: `distribution`, component: WorkflowDistributionPage },
       { path: `workflow/stats`, name: `stats`, component: WorkflowStatsPage },
     ],
@@ -88,6 +92,7 @@ const routes: RouteRecordRaw[] = [
   { path: `/sync`, redirect: `/edit` },
   { path: `/data`, redirect: `/workflow/data` },
   { path: `/creation`, redirect: `/workflow/creation` },
+  { path: `/import`, redirect: `/workflow/import` },
   { path: `/distribution`, redirect: `/workflow/distribution` },
   { path: `/stats`, redirect: `/workflow/stats` },
   // /matrix 已并入 distribution(2026-05);/creator-profile 早期公开矩阵页废弃

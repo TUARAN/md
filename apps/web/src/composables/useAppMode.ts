@@ -28,7 +28,8 @@ export interface AppModeInfo {
 const WORKFLOW_STEP_LABELS: Record<string, string> = {
   data: `选择素材`,
   creation: `AI 创作`,
-  distribution: `分发控制台`,
+  import: `外站接入`,
+  distribution: `数据策略`,
   stats: `增长运营`,
 }
 

@@ -40,7 +40,7 @@ watch(offer, (value) => {
 }, { immediate: true })
 
 function goPlatformMatrix() {
-  // 让「分发控制台」用 creator-offer 页的 creatorId 加载,而不是上次缓存的
+  // 让「数据策略」用 creator-offer 页的 creatorId 加载,而不是上次缓存的
   // (2026-05 起平台矩阵并入 /distribution 左列)
   uiStore.setWorkflowCreatorId(props.creatorId)
   router.push({ name: `distribution` })

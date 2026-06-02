@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * WorkflowDistributionPage —— workflow「分发控制台」
+ * WorkflowDistributionPage —— workflow「数据策略」
  *
  * 左侧为可折叠平台侧栏，右侧显示当前平台策略。小红书的风格化二创
  * 生产入口在「AI 创作」，本页只保留平台策略与跳转入口。
@@ -207,7 +207,7 @@ function onMatrixDataSourceToggle(event: Event) {
         <template #icon>
           <Megaphone />
         </template>
-        分发控制台
+        数据策略
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         围绕当前文章管理发布平台、账号动作、访问检测和增长运营；当前
@@ -299,7 +299,7 @@ function onMatrixDataSourceToggle(event: Event) {
       </aside>
 
       <main class="min-w-0">
-        <div class="mb-4 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="分发控制台模块">
+        <div class="mb-4 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="数据策略模块">
           <button
             type="button"
             class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"

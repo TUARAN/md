@@ -27,8 +27,9 @@ const editorOrigin = computed(() => (typeof window !== `undefined` ? window.loca
 const workflowSteps = [
   { key: `data`, label: `选择素材`, icon: Database, state: `done` },
   { key: `creation`, label: `AI 创作`, icon: PenLine, state: `done` },
-  { key: `sync`, label: `排版分发`, icon: FileText, state: `enter` },
-  { key: `distribution`, label: `分发控制台`, icon: Megaphone, state: `next` },
+  { key: `import`, label: `外站接入`, icon: Plug, state: `enter` },
+  { key: `sync`, label: `排版分发`, icon: FileText, state: `next` },
+  { key: `distribution`, label: `数据策略`, icon: Megaphone, state: `next` },
   { key: `stats`, label: `增长运营`, icon: BarChart3, state: `next` },
 ] as const
 
@@ -128,9 +129,9 @@ function goBack() {
           在工作流里的位置
         </h2>
         <p class="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-          对外站而言,选题和改写可以在站外完成。内容直接从
-          <span class="font-medium text-foreground">排版分发</span>
-          接入,之后进入分发控制台,再沉淀为增长运营。
+          对外站而言,选题和改写可以在站外完成。内容通过
+          <span class="font-medium text-foreground">外站接入</span>
+          进入排版分发,之后进入数据策略,再沉淀为增长运营。
         </p>
 
         <div class="mt-4 flex flex-wrap items-center gap-2">
