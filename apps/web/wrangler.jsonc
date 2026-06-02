@@ -26,6 +26,7 @@
     "IMGBED_GITHUB_BRANCH": "main",
     "IMGBED_GITHUB_REPO_COUNT": "20",
     "IMGBED_USE_CDN": "1",
+    "GITHUB_CLIENT_ID": "Ov23liSAHSfsjDKe0Nqd",
     "OAUTH_REDIRECT_HOST": "https://syncblog.cn"
   },
   "compatibility_flags": [

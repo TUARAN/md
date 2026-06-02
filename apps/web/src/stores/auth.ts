@@ -16,24 +16,6 @@ interface MeResponse {
   user: PublicUser | null
 }
 
-const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || `Ov23liSAHSfsjDKe0Nqd`
-const OAUTH_STATE_COOKIE = `sb_oauth_state`
-const OAUTH_RETURN_TO_COOKIE = `sb_oauth_return_to`
-
-function randomState(): string {
-  const bytes = new Uint8Array(24)
-  crypto.getRandomValues(bytes)
-  let bin = ``
-  for (const b of bytes)
-    bin += String.fromCharCode(b)
-  return btoa(bin).replace(/\+/g, `-`).replace(/\//g, `_`).replace(/=+$/, ``)
-}
-
-function setOAuthCookie(name: string, value: string): void {
-  const secure = window.location.protocol === `https:` ? `; Secure` : ``
-  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=600; SameSite=Lax${secure}`
-}
-
 export const useAuthStore = defineStore(`auth`, () => {
   const user = ref<PublicUser | null>(null)
   /** `'idle'` before first refresh; `'loading'` while in flight; `'ready'` after. */
@@ -87,27 +69,7 @@ export const useAuthStore = defineStore(`auth`, () => {
     currentUrl.searchParams.delete(`error`)
     currentUrl.searchParams.delete(`error_description`)
     const returnTo = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
-    const origin = window.location.origin
-
-    // Production fallback: start OAuth directly from the SPA and let the
-    // Worker callback do the private code exchange. This avoids losing the
-    // login click when `/api/auth/github/start` is accidentally swallowed by
-    // the SPA asset fallback, while keeping GITHUB_CLIENT_SECRET server-side.
-    if (window.location.hostname === `syncblog.cn` && GITHUB_CLIENT_ID) {
-      const state = randomState()
-      setOAuthCookie(OAUTH_STATE_COOKIE, state)
-      setOAuthCookie(OAUTH_RETURN_TO_COOKIE, returnTo)
-
-      const authorizeUrl = new URL(`https://github.com/login/oauth/authorize`)
-      authorizeUrl.searchParams.set(`client_id`, GITHUB_CLIENT_ID)
-      authorizeUrl.searchParams.set(`redirect_uri`, `${origin}/api/auth/github/callback`)
-      authorizeUrl.searchParams.set(`scope`, `read:user user:email`)
-      authorizeUrl.searchParams.set(`state`, state)
-      window.location.assign(authorizeUrl.toString())
-      return
-    }
-
-    const startUrl = new URL(`/api/auth/github/start`, origin)
+    const startUrl = new URL(`/api/auth/github/start`, window.location.origin)
     startUrl.searchParams.set(`returnTo`, returnTo)
     window.location.assign(startUrl.toString())
   }
