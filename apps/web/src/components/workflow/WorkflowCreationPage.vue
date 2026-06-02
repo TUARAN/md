@@ -126,7 +126,7 @@ async function copyPrompt() {
 
 function openAssistantWithPrompt() {
   if (!creationDraftMarkdown.value.trim()) {
-    toast.error(`请先粘贴素材，或从数据获取页送入材料`)
+    toast.error(`请先粘贴素材，或从选题素材页送入材料`)
     return
   }
   queueAiAssistantDraftMarkdown(remixPrompt.value)
@@ -141,12 +141,12 @@ function openAssistantWithPrompt() {
         <template #icon>
           <PenLine />
         </template>
-        风格二创
+        AI 改写
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        承接数据获取页的材料；可按通用、小红书、豆包、GPT 四种风格快速生成对应提示词与成稿。
+        把素材或初稿改成不同平台需要的表达风格，快速生成提示词与可继续编辑的成稿。
       </p>
-      <div class="mt-3 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="风格二创模式">
+      <div class="mt-3 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="AI 改写模式">
         <button
           type="button"
           class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
@@ -156,7 +156,7 @@ function openAssistantWithPrompt() {
           @click="creationMode = 'generic'"
         >
           <PenLine class="h-4 w-4" />
-          通用二创
+          通用改写
         </button>
         <button
           type="button"
@@ -202,7 +202,7 @@ function openAssistantWithPrompt() {
         <Textarea
           v-model="creationDraftMarkdown"
           class="min-h-[320px] flex-1 resize-none rounded-2xl border-gray-200 bg-white/90 font-mono text-sm leading-relaxed shadow-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
-          placeholder="从「数据获取」页点击「去风格二创」会自动带入资讯材料；也可以在这里粘贴原文、提纲或参考资料。"
+          placeholder="从「选题素材」页送入资讯材料；也可以在这里粘贴原文、提纲或参考资料。"
         />
       </section>
 

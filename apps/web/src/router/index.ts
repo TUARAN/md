@@ -11,11 +11,11 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  * **新 IA(Phase 3.1, 2026-05):**
  *
  *   /                            → 重定向到 /edit
- *   /edit                        编辑器主页(name=sync) — 写文章 / 预览 / 多平台同步
- *   /workflow/data               name=data       数据获取
- *   /workflow/creation           name=creation   风格二创
- *   /workflow/distribution       name=distribution  宣发活跃
- *   /workflow/stats              name=stats      闭环汇报
+ *   /edit                        编辑器主页(name=sync) — 排版分发 / 预览 / 发布准备
+ *   /workflow/data               name=data       选题素材
+ *   /workflow/creation           name=creation   AI 改写
+ *   /workflow/distribution       name=distribution  分发控制台
+ *   /workflow/stats              name=stats      增长运营
  *   /pricing                     name=pricing    定价
  *   /changelog                   name=changelog  更新日志
  *   /docs/import                 name=import-docs  站外接入文档

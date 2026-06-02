@@ -12,10 +12,10 @@ import WorkflowPageTitle from './WorkflowPageTitle.vue'
         <template #icon>
           <Database />
         </template>
-        数据获取
+        选题素材
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        已接入 7 个资讯源，可按关键词批量检索最新内容，筛选高价值素材后进入理解、二创与传播流程。
+        按关键词检索最新内容，先找到值得写的选题和素材，再进入写作、改写与发布。
       </p>
       <div class="mt-3">
         <GNewsFetchRail />

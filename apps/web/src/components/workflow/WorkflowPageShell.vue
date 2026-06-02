@@ -3,7 +3,7 @@ import { computed, useSlots } from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    /** false：主体纵向铺满（如内容同步页的编辑器区），不在壳层滚动 */
+    /** false：主体纵向铺满（如排版分发页的编辑器区），不在壳层滚动 */
     scrollBody?: boolean
   }>(),
   { scrollBody: true },

@@ -135,7 +135,7 @@ const reportMarkdown = computed(() => {
     : `暂无可评估链接。`
 
   return [
-    `# ${activeTemplate.value.name} · 闭环汇报`,
+    `# ${activeTemplate.value.name} · 数据复盘`,
     ``,
     `## 1. 数据来源`,
     `已发布链接 ${publishedLinks.value.length} 条，覆盖 ${publishedLinks.value.map(item => item.platform).join(`、`) || `未选择平台`}。`,
@@ -163,7 +163,7 @@ const reportMarkdown = computed(() => {
     `## 5. 下一步动作`,
     `- 对评分最高的平台保留同类选题，继续观察 24h / 72h 数据变化。`,
     `- 对低互动平台重写标题与首段，把结论前置，并补充评论区引导。`,
-    `- 将表现最好的长文拆成 3–5 条短内容，回流到宣发活跃页继续分发。`,
+    `- 将表现最好的长文拆成 3–5 条短内容，回流到分发控制台继续分发。`,
     ``,
     `## 6. 备注`,
     reportNote.value.trim() || `无`,
@@ -258,7 +258,7 @@ async function refreshMetrics() {
 async function copyReport() {
   try {
     await copyPlain(reportMarkdown.value)
-    toast.success(`已复制闭环汇报`)
+    toast.success(`已复制数据复盘`)
   }
   catch {
     toast.error(`复制失败`)
@@ -273,10 +273,10 @@ async function copyReport() {
         <template #icon>
           <BarChart3 />
         </template>
-        闭环汇报
+        增长运营
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        面向已发布内容：收集链接，抓取阅读与互动数据，按模版生成复盘报告，并给出平台表现评价与下一步动作。
+        汇总发布数据、平台表现和下一步动作；数据复盘是增长运营里的 Pro 能力之一。
       </p>
     </template>
 

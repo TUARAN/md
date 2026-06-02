@@ -33,7 +33,7 @@ export const documentTitle = `${APP_NAME} · ${APP_SLOGAN}`
 // 不再走 Vue 组件,因此 APP_SPLASH_* 常量已删除。如需改 splash 文案直接编辑
 // index.html。
 
-/** 可选：配置后顶部「数据获取」将新开此外链，覆盖默认的 GNews 资讯面板（Vite：`VITE_DATA_NAV_URL`） */
+/** 可选：配置后顶部「选题素材」将新开此外链，覆盖默认的 GNews 资讯面板（Vite：`VITE_DATA_NAV_URL`） */
 export function getDataAcquisitionNavUrl(): string {
   const raw = import.meta.env.VITE_DATA_NAV_URL as string | undefined
   return typeof raw === `string` && /^https?:\/\//i.test(raw.trim()) ? raw.trim() : ``

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * WorkflowDistributionPage —— workflow 第 4 步「宣发活跃」
+ * WorkflowDistributionPage —— workflow「分发控制台」
  *
  * 左侧为可折叠平台侧栏，右侧显示当前平台策略。小红书的风格化二创
- * 生产入口在「风格二创」，本页只保留平台策略与跳转入口。
+ * 生产入口在「AI 改写」，本页只保留平台策略与跳转入口。
  */
 import { ChevronLeft, ChevronRight, Eye, Megaphone, Target } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
@@ -207,14 +207,14 @@ function onMatrixDataSourceToggle(event: Event) {
         <template #icon>
           <Megaphone />
         </template>
-        宣发活跃
+        分发控制台
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        左侧切换分发平台，右侧可在平台策略与 IP 访达工具之间切换；当前
+        围绕当前文章管理发布平台、账号动作、访问检测和增长运营；当前
         <span class="font-mono text-foreground">{{ workflowCreatorId }}</span>
         ·
         <span class="font-medium text-foreground">{{ platformLabel }}</span>
-        的策略会在下方展示。
+        的分发动作会在下方展示。
       </p>
       <details
         class="mt-2 rounded-lg border border-border/50 bg-muted/10 text-xs leading-relaxed text-muted-foreground"
@@ -299,7 +299,7 @@ function onMatrixDataSourceToggle(event: Event) {
       </aside>
 
       <main class="min-w-0">
-        <div class="mb-4 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="宣发活跃模块">
+        <div class="mb-4 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="分发控制台模块">
           <button
             type="button"
             class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
@@ -499,10 +499,10 @@ function onMatrixDataSourceToggle(event: Event) {
           >
             <div class="min-w-0">
               <p class="font-semibold text-rose-950 dark:text-rose-100">
-                小红书内容生产放在风格二创
+                小红书内容生产放在 AI 改写
               </p>
               <p class="mt-1 text-xs leading-relaxed text-rose-900/75 dark:text-rose-100/70">
-                当前页保留平台节奏、打法和复盘；小红书风格提示词生成与 Markdown 成稿到「风格二创 · 小红书风格」完成。
+                当前页保留平台节奏、打法和复盘；小红书风格提示词生成与 Markdown 成稿到「AI 改写 · 小红书风格」完成。
               </p>
             </div>
             <Button type="button" size="sm" class="shrink-0" @click="goXiaohongshuCreation">
@@ -580,7 +580,7 @@ function onMatrixDataSourceToggle(event: Event) {
 
           <section class="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
             <Button variant="outline" size="sm" @click="goContentSync">
-              上一步：内容同步
+              上一步：排版分发
             </Button>
           </section>
         </div>

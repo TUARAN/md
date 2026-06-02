@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, IdCard, Megaphone, Menu, PenLine, Plug, RefreshCw, ScrollText, Settings } from 'lucide-vue-next'
+import { BarChart3, Database, FileText, IdCard, Megaphone, Menu, Plug, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -49,17 +49,15 @@ function handleCopy(mode: string) {
 }
 
 const workflowSteps = [
-  { id: `data` as const, label: `数据获取`, icon: Database, phase: `主链路`, comingSoon: false },
-  { id: `creation` as const, label: `风格二创`, icon: PenLine, phase: `主链路`, comingSoon: false },
-  { id: `sync` as const, label: `内容同步`, icon: RefreshCw, phase: `主链路`, comingSoon: false },
-  { id: `distribution` as const, label: `宣发活跃`, icon: Megaphone, phase: `主链路`, comingSoon: false },
-  { id: `stats` as const, label: `闭环汇报`, icon: BarChart3, phase: `主链路`, comingSoon: false },
+  { id: `sync` as const, label: `排版分发`, icon: FileText, phase: `核心工作`, comingSoon: false },
+  { id: `stats` as const, label: `增长运营`, icon: BarChart3, phase: `Pro 增值`, comingSoon: false },
+  { id: `distribution` as const, label: `分发控制台`, icon: Megaphone, phase: `执行面板`, comingSoon: false },
+  { id: `creation` as const, label: `AI 改写`, icon: Sparkles, phase: `辅助工具`, comingSoon: false },
+  { id: `data` as const, label: `选题素材`, icon: Database, phase: `内容准备`, comingSoon: false },
 ]
 
-/** 「数据获取 + 风格二创」是本站生产的一组,站外接入可整体替代它 */
-const productionSteps = workflowSteps.slice(0, 2)
-/** 「内容同步」起的后续链路,两条入口都汇入这里 */
-const pipelineSteps = workflowSteps.slice(2)
+const primarySteps = workflowSteps.slice(0, 2)
+const helperSteps = workflowSteps.slice(2)
 
 function openWorkflowStep(stepId: (typeof workflowSteps)[number]['id']) {
   if (stepId === `data`) {
@@ -87,32 +85,23 @@ function openSettings() {
 
 <template>
   <header
-    class="header-container h-12 flex items-center justify-between gap-3 px-4 md:px-5 relative"
+    class="header-container relative flex min-h-14 items-center justify-between gap-3 px-4 md:px-5"
   >
-    <!-- 桌面工作流导航：直接 6 个 step,无前缀,无装饰 -->
-    <nav
-      class="workflow-nav hidden min-w-0 flex-1 md:flex items-center gap-1 overflow-x-auto whitespace-nowrap"
-      aria-label="工作流"
-    >
-      <!-- 站外接入:替代「数据获取 + 风格二创」的外部入口,同样汇入「内容同步」 -->
-      <RouterLink
-        to="/docs/import"
-        target="_blank"
-        class="workflow-extern inline-flex shrink-0 items-center gap-1.5 rounded-md border border-dashed border-primary/45 px-2.5 py-1.5 text-sm font-medium text-primary/90 transition-colors hover:bg-primary/10"
-        title="站外接入：站外应用把已做好的内容直接推进来,替代「数据获取 + 风格二创」两步"
-      >
-        <Plug class="size-4 shrink-0" aria-hidden="true" />
-        <span>站外接入</span>
-      </RouterLink>
-      <span class="nav-or shrink-0 px-1 text-xs text-muted-foreground/60" aria-hidden="true">或</span>
+    <div class="brand-lockup hidden min-w-[14rem] shrink-0 flex-col leading-tight xl:flex">
+      <span class="text-sm font-semibold text-foreground">Syncblog 创作工作台</span>
+      <span class="mt-0.5 text-[11px] text-muted-foreground">排版分发，再做增长运营</span>
+    </div>
 
-      <!-- 本站生产组:数据获取 + 风格二创,与站外接入二选一 -->
+    <!-- 桌面主导航：用用户成果命名，而不是内部流程词 -->
+    <nav
+      class="workflow-nav hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap md:flex"
+      aria-label="创作工作台"
+    >
       <div
-        class="workflow-group inline-flex shrink-0 items-center gap-0.5 rounded-lg border border-border/60 bg-muted/30 px-1 py-0.5"
-        title="本站生产：数据获取 + 风格二创"
+        class="workflow-primary inline-flex shrink-0 items-center gap-1 rounded-lg border border-border/70 bg-muted/35 p-1"
+        title="排版分发与增长运营"
       >
-        <template v-for="(step, i) in productionSteps" :key="step.id">
-          <span v-if="i > 0" class="nav-arrow shrink-0 text-muted-foreground/40" aria-hidden="true">→</span>
+        <template v-for="step in primarySteps" :key="step.id">
           <WorkflowNavStep
             :label="step.label"
             :icon="step.icon"
@@ -123,42 +112,16 @@ function openSettings() {
           />
         </template>
       </div>
-
-      <!-- 后续链路:内容同步 → 宣发活跃 → 闭环汇报 -->
-      <template v-for="step in pipelineSteps" :key="step.id">
-        <span class="nav-arrow shrink-0 px-0.5 text-muted-foreground/45" aria-hidden="true">→</span>
-        <WorkflowNavStep
-          :label="step.label"
-          :icon="step.icon"
-          :phase="step.phase"
-          :coming-soon="step.comingSoon"
-          :current="workflowAppPage === step.id"
-          @select="openWorkflowStep(step.id)"
-        />
-      </template>
     </nav>
 
     <!-- 移动端：工作流横向滚 + 汉堡菜单 -->
     <div class="flex min-w-0 flex-1 items-center gap-2 md:hidden">
       <nav
         class="workflow-nav-mobile flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap [-ms-overflow-style:none]"
-        aria-label="工作流"
+        aria-label="创作工作台"
       >
-        <RouterLink
-          to="/docs/import"
-          target="_blank"
-          class="workflow-extern inline-flex shrink-0 items-center gap-1 rounded-md border border-dashed border-primary/45 px-2 py-1 text-xs font-medium text-primary/90"
-          title="站外接入：替代「数据获取 + 风格二创」"
-        >
-          <Plug class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>站外接入</span>
-        </RouterLink>
-        <span class="nav-or shrink-0 px-0.5 text-[10px] text-muted-foreground/60" aria-hidden="true">或</span>
-
-        <!-- 本站生产组 -->
         <div class="workflow-group inline-flex shrink-0 items-center gap-0.5 rounded-md border border-border/60 bg-muted/30 px-0.5">
-          <template v-for="(step, i) in productionSteps" :key="step.id">
-            <span v-if="i > 0" class="nav-arrow shrink-0 text-[10px] text-muted-foreground/40" aria-hidden="true">→</span>
+          <template v-for="step in primarySteps" :key="step.id">
             <WorkflowNavStep
               dense
               :label="step.label"
@@ -170,19 +133,6 @@ function openSettings() {
             />
           </template>
         </div>
-
-        <template v-for="step in pipelineSteps" :key="step.id">
-          <span class="nav-arrow shrink-0 px-0.5 text-[10px] text-muted-foreground/45" aria-hidden="true">→</span>
-          <WorkflowNavStep
-            dense
-            :label="step.label"
-            :icon="step.icon"
-            :phase="step.phase"
-            :coming-soon="step.comingSoon"
-            :current="workflowAppPage === step.id"
-            @select="openWorkflowStep(step.id)"
-          />
-        </template>
       </nav>
       <Menubar class="menubar shrink-0 border-0 p-0">
         <MenubarMenu>
@@ -208,6 +158,24 @@ function openSettings() {
       <TooltipProvider :delay-duration="200">
         <!-- 次级工具组：icon-only,弱化到几乎只是装饰 -->
         <div class="flex items-center gap-0.5 text-muted-foreground/70">
+          <Tooltip v-for="step in helperSteps" :key="step.id">
+            <TooltipTrigger as-child>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 shrink-0 hover:text-foreground"
+                :aria-label="step.label"
+                @click="openWorkflowStep(step.id)"
+              >
+                <component :is="step.icon" class="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+              {{ step.label }}
+            </TooltipContent>
+          </Tooltip>
+
           <Tooltip>
             <TooltipTrigger as-child>
               <Button
@@ -241,6 +209,22 @@ function openSettings() {
             </TooltipTrigger>
             <TooltipContent side="bottom" :side-offset="6" class="text-xs">
               创作名片
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <RouterLink
+                to="/docs/import"
+                target="_blank"
+                class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                aria-label="开发者接入文档"
+              >
+                <Plug class="h-4 w-4" />
+              </RouterLink>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+              开发者接入
             </TooltipContent>
           </Tooltip>
         </div>

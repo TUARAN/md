@@ -19,12 +19,12 @@ defineEmits<{ select: [] }>()
     type="button"
     class="workflow-step inline-flex shrink-0 items-center rounded-md font-medium transition-colors"
     :class="[
-      dense ? 'gap-1 px-2 py-1 text-xs' : 'gap-1.5 px-2.5 py-1.5 text-sm',
+      dense ? 'gap-1 px-2 py-1 text-xs' : 'gap-1.5 px-3 py-1.5 text-sm',
       current
-        ? 'workflow-step--current bg-primary/10 text-primary'
+        ? 'workflow-step--current bg-foreground text-background shadow-sm'
         : comingSoon
           ? 'workflow-step--pending text-muted-foreground/55 hover:bg-muted/40'
-          : 'workflow-step--inactive text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+          : 'workflow-step--inactive text-muted-foreground hover:bg-background hover:text-foreground',
     ]"
     :title="comingSoon ? `${label}：后续接入` : `${phase}：${label}`"
     :aria-current="current ? 'step' : undefined"

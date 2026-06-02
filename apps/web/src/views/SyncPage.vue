@@ -1,18 +1,17 @@
 <script setup lang="ts">
 /**
- * SyncPage —— workflow 「内容同步」步骤页
+ * SyncPage —— workflow 「排版分发」步骤页
  *
  * 双栏编辑器 + 预览 + 资源面板的完整编辑视图。原 `CodemirrorEditor.vue` 整页
  * 的内容主体迁移到这里;EditorHeader / Footer / main 容器由父级 EditorLayout
  * 提供。`<KeepAlive>` 保证用户在 6 个 workflow 路由间切换时编辑器实例不重建,
  * codemirror 内容、光标、滚动位置、面板尺寸全部保留。
  */
-import { HelpCircle, RefreshCw } from 'lucide-vue-next'
+import { FileText } from 'lucide-vue-next'
 import { provide } from 'vue'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -193,46 +192,16 @@ onUnmounted(() => {
         <div
           class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
         >
-          <!-- 标题 + 说明气泡 -->
-          <div class="flex min-w-0 items-center gap-1.5">
+          <div class="flex min-w-0 flex-col gap-1">
             <WorkflowPageTitle>
               <template #icon>
-                <RefreshCw />
+                <FileText />
               </template>
-              内容同步
+              排版分发
             </WorkflowPageTitle>
-            <Popover>
-              <PopoverTrigger as-child>
-                <button
-                  type="button"
-                  class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  aria-label="关于本页说明"
-                >
-                  <HelpCircle class="h-4 w-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent class="w-80 text-xs leading-relaxed text-muted-foreground" align="start">
-                <p class="text-foreground font-medium">
-                  左栏定稿 Markdown，右栏核对图文；分发时点「发布」写各站草稿。
-                </p>
-                <p class="mt-2">
-                  各站编辑页差异大，发布走
-                  <a
-                    href="https://github.com/TUARAN/syncblog-plugin/releases/latest"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-medium text-foreground underline underline-offset-2"
-                  >SyncBlog 发布插件</a>
-                  把内容写到知乎 / 公众号 / 微博 / 思否 / 掘金等各站草稿。遇到平台适配异常时，请升级到最新版本，或到
-                  <a
-                    href="https://github.com/TUARAN/syncblog-plugin/issues"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="font-medium text-foreground underline underline-offset-2"
-                  >插件仓库反馈适配问题</a>。
-                </p>
-              </PopoverContent>
-            </Popover>
+            <p class="max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              在左侧写 Markdown，右侧预览公众号排版；需要分发时，用发布插件把文章写入知乎、公众号、掘金等平台草稿。
+            </p>
           </div>
 
           <div class="min-w-0 shrink-0">

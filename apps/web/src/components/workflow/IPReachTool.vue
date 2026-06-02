@@ -413,7 +413,7 @@ onMounted(() => {
             IP 访达工具
           </p>
           <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-            从宣发活跃页直接完成出口 IP 检测、目标链接访问、代理池轮换和 91HTTP 配置管理。
+            在分发前检查出口 IP、目标链接访问、代理池轮换和 91HTTP 配置。
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" :disabled="busy" @click="detect()">

@@ -4,7 +4,7 @@ import {
   PLATFORM_PROFILE_TITLES,
 } from '@/utils/socialAccounts'
 
-/** 粉丝量成长阶段（宣发活跃规划用） */
+/** 粉丝量成长阶段（分发控制台规划用） */
 export const FAN_GROWTH_MILESTONES = [
   {
     id: `0-1`,

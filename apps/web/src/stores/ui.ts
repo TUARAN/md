@@ -139,10 +139,10 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
-  /** 工作流当前创作者（平台矩阵、宣发活跃共用） */
+  /** 工作流当前创作者（平台矩阵、分发控制台共用） */
   const workflowCreatorId = store.reactive(`workflow_creator_id`, TUARAN_CREATOR_ID)
 
-  /** 宣发活跃当前选中的平台 type（canonical key，详见 constants/platforms.ts） */
+  /** 分发控制台当前选中的平台 type（canonical key，详见 constants/platforms.ts） */
   const workflowDistributionPlatform = store.reactive(`workflow_distribution_platform`, `csdn`)
   // 收敛历史持久化值（如旧的 `twitter` → `x`）
   workflowDistributionPlatform.value = normalizePlatformType(workflowDistributionPlatform.value)
@@ -180,7 +180,7 @@ export const useUIStore = defineStore(`ui`, () => {
     return v
   }
 
-  /** 风格二创工作台的输入材料（可由数据获取页写入） */
+  /** AI 改写工作台的输入材料（可由选题素材页写入） */
   const creationDraftMarkdown = ref(``)
 
   function setCreationDraftMarkdown(md: string) {

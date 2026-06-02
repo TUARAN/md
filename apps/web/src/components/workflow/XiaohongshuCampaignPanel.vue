@@ -192,7 +192,7 @@ function insertDraftToEditor() {
     return
   }
   if (!editorStore.editor) {
-    toast.error(`请先打开内容同步页初始化编辑器`)
+    toast.error(`请先打开排版分发页初始化编辑器`)
     return
   }
   editorStore.insertAtCursor(`\n\n${draft}\n`)

@@ -26,10 +26,10 @@ export interface AppModeInfo {
 }
 
 const WORKFLOW_STEP_LABELS: Record<string, string> = {
-  data: `数据获取`,
-  creation: `风格二创`,
-  distribution: `宣发活跃`,
-  stats: `闭环汇报`,
+  data: `选题素材`,
+  creation: `AI 改写`,
+  distribution: `分发控制台`,
+  stats: `增长运营`,
 }
 
 export function useAppMode() {
@@ -40,7 +40,7 @@ export function useAppMode() {
     if (PUBLIC_ROUTES.has(name))
       return { mode: `public`, label: ``, stepLabel: `` }
     if (EDITOR_ROUTES.has(name))
-      return { mode: `editor`, label: `编辑器`, stepLabel: `内容同步` }
+      return { mode: `editor`, label: `编辑器`, stepLabel: `排版分发` }
     return {
       mode: `workflow`,
       label: `工作流`,

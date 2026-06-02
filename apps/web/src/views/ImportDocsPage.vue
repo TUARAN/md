@@ -5,12 +5,12 @@ import {
   Check,
   Copy,
   Database,
+  FileText,
   Megaphone,
   MessageCircle,
   PenLine,
   Plug,
   Radio,
-  RefreshCw,
   Reply,
   ShieldCheck,
 } from 'lucide-vue-next'
@@ -23,13 +23,13 @@ const router = useRouter()
 
 const editorOrigin = computed(() => (typeof window !== `undefined` ? window.location.origin : `https://md.doocs.org`))
 
-/** 工作流定位:外站已完成前两步,内容从「内容同步」接入,再往后分发、复盘 */
+/** 工作流定位:外站完成选题/改写后,内容从「排版分发」接入,再进入增长运营 */
 const workflowSteps = [
-  { key: `data`, label: `数据获取`, icon: Database, state: `done` },
-  { key: `creation`, label: `风格二创`, icon: PenLine, state: `done` },
-  { key: `sync`, label: `内容同步`, icon: RefreshCw, state: `enter` },
-  { key: `distribution`, label: `宣发活跃`, icon: Megaphone, state: `next` },
-  { key: `stats`, label: `闭环汇报`, icon: BarChart3, state: `next` },
+  { key: `data`, label: `选题素材`, icon: Database, state: `done` },
+  { key: `creation`, label: `AI 改写`, icon: PenLine, state: `done` },
+  { key: `sync`, label: `排版分发`, icon: FileText, state: `enter` },
+  { key: `distribution`, label: `分发控制台`, icon: Megaphone, state: `next` },
+  { key: `stats`, label: `增长运营`, icon: BarChart3, state: `next` },
 ] as const
 
 const fields = [
@@ -128,9 +128,9 @@ function goBack() {
           在工作流里的位置
         </h2>
         <p class="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-          对外站而言,「数据获取」「风格二创」已在站外完成。内容直接从
-          <span class="font-medium text-foreground">内容同步</span>
-          接入,之后照常走宣发与闭环。
+          对外站而言,选题和改写可以在站外完成。内容直接从
+          <span class="font-medium text-foreground">排版分发</span>
+          接入,之后进入分发控制台,再沉淀为增长运营。
         </p>
 
         <div class="mt-4 flex flex-wrap items-center gap-2">
@@ -162,7 +162,7 @@ function goBack() {
       <!-- 工作原理 -->
       <section class="mt-4 rounded-2xl border border-border/70 bg-background p-5 shadow-sm dark:bg-card sm:p-6">
         <h2 class="flex items-center gap-2 text-base font-semibold">
-          <RefreshCw class="h-4 w-4 text-primary" />
+          <FileText class="h-4 w-4 text-primary" />
           工作原理
         </h2>
         <ol class="mt-3 space-y-2.5">
