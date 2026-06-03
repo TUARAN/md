@@ -1,85 +1,60 @@
 /**
- * D1 access helpers for the users table.
+ * D1 access helpers for email-auth users.
  */
 
 import type { UserRecord } from './types'
 
-export interface GitHubProfile {
-  id: number
-  login: string
-  email: string | null
-  name: string | null
-  avatar_url: string | null
+function defaultLoginFromEmail(email: string): string {
+  const local = email.split(`@`)[0]?.trim() || `user`
+  return local.replace(/[^\w.-]+/g, `-`).slice(0, 48) || `user`
 }
 
-export async function upsertUserFromGitHub(
+export async function createEmailUser(
   db: D1Database,
-  profile: GitHubProfile,
+  params: {
+    email: string
+    passwordHash: string
+  },
 ): Promise<UserRecord> {
   const now = Math.floor(Date.now() / 1000)
-
-  const existing = await db
-    .prepare(`SELECT * FROM users WHERE github_id = ?`)
-    .bind(profile.id)
-    .first<UserRecord>()
-
-  if (existing) {
-    await db
-      .prepare(
-        `UPDATE users SET github_login = ?, email = ?, name = ?, avatar_url = ?, updated_at = ? WHERE id = ?`,
-      )
-      .bind(
-        profile.login,
-        profile.email,
-        profile.name,
-        profile.avatar_url,
-        now,
-        existing.id,
-      )
-      .run()
-    return {
-      ...existing,
-      github_login: profile.login,
-      email: profile.email,
-      name: profile.name,
-      avatar_url: profile.avatar_url,
-      updated_at: now,
-    }
-  }
-
   const id = crypto.randomUUID()
+  const login = defaultLoginFromEmail(params.email)
+
   await db
     .prepare(
-      `INSERT INTO users (id, github_id, github_login, email, name, avatar_url, plan, ai_quota_used, ai_quota_reset_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO users
+        (id, email, password_hash, login, name, avatar_url, auth_provider,
+         email_verified_at, plan, ai_quota_used, ai_quota_reset_at,
+         pro_expires_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, NULL, NULL, 'email', ?, 'free', 0, 0, 0, ?, ?)`,
     )
-    .bind(
-      id,
-      profile.id,
-      profile.login,
-      profile.email,
-      profile.name,
-      profile.avatar_url,
-      `free`,
-      0,
-      0,
-      now,
-      now,
-    )
+    .bind(id, params.email, params.passwordHash, login, now, now, now)
     .run()
 
   return {
     id,
-    github_id: profile.id,
-    github_login: profile.login,
-    email: profile.email,
-    name: profile.name,
-    avatar_url: profile.avatar_url,
+    email: params.email,
+    password_hash: params.passwordHash,
+    login,
+    name: null,
+    avatar_url: null,
+    auth_provider: `email`,
+    email_verified_at: now,
     plan: `free`,
     ai_quota_used: 0,
     ai_quota_reset_at: 0,
+    pro_expires_at: 0,
     created_at: now,
     updated_at: now,
   }
+}
+
+export async function getUserByEmail(db: D1Database, email: string): Promise<UserRecord | null> {
+  const row = await db
+    .prepare(`SELECT * FROM users WHERE lower(email) = lower(?)`)
+    .bind(email)
+    .first<UserRecord>()
+  return row ?? null
 }
 
 export async function getUserById(db: D1Database, id: string): Promise<UserRecord | null> {

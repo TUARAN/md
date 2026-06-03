@@ -1,11 +1,10 @@
 /**
  * Auth store — tracks the currently logged-in Syncblog user (via
- * `/api/auth/me`) and orchestrates login / logout flows.
+ * `/api/auth/me`) and orchestrates email/password auth flows.
  *
  * The Worker reads an HttpOnly cookie, so the store never sees the session
- * token. Login is a top-level navigation to `/api/auth/github/start`; the
- * Worker handles the round-trip and redirects back home, at which point the
- * SPA refetches the user.
+ * token. Login/register APIs set that cookie server-side; the SPA only keeps
+ * the public user snapshot.
  */
 
 import type { PublicUser } from '@/types/auth'
@@ -16,11 +15,19 @@ interface MeResponse {
   user: PublicUser | null
 }
 
+interface AuthResponse {
+  ok: boolean
+  user?: PublicUser
+  error?: string
+}
+
 export const useAuthStore = defineStore(`auth`, () => {
   const user = ref<PublicUser | null>(null)
   /** `'idle'` before first refresh; `'loading'` while in flight; `'ready'` after. */
   const status = ref<'idle' | 'loading' | 'ready' | 'error'>(`idle`)
   const error = ref<string | null>(null)
+  const authDialogOpen = ref(false)
+  const authDialogMode = ref<'login' | 'register'>(`login`)
 
   const isAuthenticated = computed(() => user.value !== null)
   const isPro = computed(() => user.value?.plan === `pro`)
@@ -60,18 +67,58 @@ export const useAuthStore = defineStore(`auth`, () => {
     }
   }
 
-  function startLogin(): void {
-    // Preserve current path so we can deep-link the user back after callback.
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.delete(`returnTo`)
-    currentUrl.searchParams.delete(`code`)
-    currentUrl.searchParams.delete(`state`)
-    currentUrl.searchParams.delete(`error`)
-    currentUrl.searchParams.delete(`error_description`)
-    const returnTo = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
-    const startUrl = new URL(`/api/auth/github/start`, window.location.origin)
-    startUrl.searchParams.set(`returnTo`, returnTo)
-    window.location.assign(startUrl.toString())
+  function startLogin(mode: 'login' | 'register' = `login`): void {
+    authDialogMode.value = mode
+    authDialogOpen.value = true
+  }
+
+  async function sendEmailCode(email: string, purpose: 'register' | 'reset_password' = `register`): Promise<void> {
+    const res = await fetch(`/api/auth/email/send-code`, {
+      method: `POST`,
+      credentials: `same-origin`,
+      headers: {
+        'Accept': `application/json`,
+        'Content-Type': `application/json`,
+      },
+      body: JSON.stringify({ email, purpose }),
+    })
+    const data = await res.json().catch(() => ({})) as AuthResponse
+    if (!res.ok || data.ok === false)
+      throw new Error(data.error || `验证码发送失败 (${res.status})`)
+  }
+
+  async function login(email: string, password: string): Promise<void> {
+    const res = await fetch(`/api/auth/login`, {
+      method: `POST`,
+      credentials: `same-origin`,
+      headers: {
+        'Accept': `application/json`,
+        'Content-Type': `application/json`,
+      },
+      body: JSON.stringify({ email, password }),
+    })
+    const data = await res.json().catch(() => ({})) as AuthResponse
+    if (!res.ok || !data.user)
+      throw new Error(data.error || `登录失败 (${res.status})`)
+    user.value = data.user
+    authDialogOpen.value = false
+  }
+
+  async function register(email: string, password: string, code: string): Promise<void> {
+    const res = await fetch(`/api/auth/register`, {
+      method: `POST`,
+      credentials: `same-origin`,
+      headers: {
+        'Accept': `application/json`,
+        'Content-Type': `application/json`,
+      },
+      body: JSON.stringify({ email, password, code }),
+    })
+    const data = await res.json().catch(() => ({})) as AuthResponse
+    if (!res.ok || !data.user)
+      throw new Error(data.error || `注册失败 (${res.status})`)
+    user.value = data.user
+    authDialogOpen.value = false
   }
 
   async function logout(): Promise<void> {
@@ -91,11 +138,16 @@ export const useAuthStore = defineStore(`auth`, () => {
     user,
     status,
     error,
+    authDialogOpen,
+    authDialogMode,
     isAuthenticated,
     isPro,
     aiQuota,
     refresh,
     startLogin,
+    sendEmailCode,
+    login,
+    register,
     logout,
   }
 })

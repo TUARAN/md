@@ -103,7 +103,7 @@ export function quotaSnapshotFor(user: UserRecord): QuotaSnapshot {
 export function toPublicUser(u: UserRecord): PublicUser {
   return {
     id: u.id,
-    login: u.github_login,
+    login: u.login,
     name: u.name,
     email: u.email,
     avatarUrl: u.avatar_url,

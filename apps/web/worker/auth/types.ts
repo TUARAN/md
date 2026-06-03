@@ -4,11 +4,13 @@
 
 export interface UserRecord {
   id: string
-  github_id: number
-  github_login: string
   email: string | null
+  password_hash: string | null
+  login: string
   name: string | null
   avatar_url: string | null
+  auth_provider: 'email' | 'legacy_github'
+  email_verified_at: number | null
   /**
    * Stored plan label. Kept as a Pinned tier hint; **runtime** plan is
    *  derived from `pro_expires_at` so we never serve a stale Pro.
@@ -57,7 +59,6 @@ export interface PublicUser {
 
 export interface SessionClaims {
   sub: string // syncblog user id
-  ghi: number // github id (for quick legacy lookup if needed)
   iat: number
   exp: number
 }

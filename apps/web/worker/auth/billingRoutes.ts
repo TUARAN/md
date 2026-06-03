@@ -13,6 +13,7 @@
 
 import type { Sku } from './billing'
 import type { AuthEnv } from './routes'
+import type { UserRecord } from './types'
 import {
   extendProExpiry,
   grantManualPro,
@@ -165,7 +166,7 @@ export async function handleBillingApi(
     if (headerSecret !== env.ADMIN_SECRET)
       return jsonResponse({ ok: false, error: `Unauthorized` }, { status: 401 })
 
-    let body: { userId?: string, githubLogin?: string, days?: number, reason?: string } = {}
+    let body: { userId?: string, email?: string, days?: number, reason?: string } = {}
     try { body = await request.json() }
     catch {}
 
@@ -174,11 +175,11 @@ export async function handleBillingApi(
       return jsonResponse({ ok: false, error: `days 必须在 1..3660 之间` }, { status: 400 })
 
     let user = body.userId ? await getUserById(env.DB, body.userId) : null
-    if (!user && body.githubLogin) {
+    if (!user && body.email) {
       user = await env.DB
-        .prepare(`SELECT * FROM users WHERE github_login = ?`)
-        .bind(body.githubLogin)
-        .first()
+        .prepare(`SELECT * FROM users WHERE lower(email) = lower(?)`)
+        .bind(body.email)
+        .first<UserRecord>()
     }
     if (!user)
       return jsonResponse({ ok: false, error: `User not found` }, { status: 404 })

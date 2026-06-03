@@ -53,12 +53,11 @@ function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
 
 export async function mintSession(
   secret: string,
-  payload: { sub: string, ghi: number },
+  payload: { sub: string },
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
   const claims: SessionClaims = {
     sub: payload.sub,
-    ghi: payload.ghi,
     iat: now,
     exp: now + SESSION_TTL_SEC,
   }

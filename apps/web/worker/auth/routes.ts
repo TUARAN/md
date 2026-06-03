@@ -2,47 +2,36 @@
  * Auth route dispatch under /api/auth/*.
  *
  * Routes:
- *   GET  /api/auth/me              — current user (200 { user } | 200 { user: null })
- *   GET  /api/auth/github/start    — 302 to GitHub authorize
- *   GET  /api/auth/github/callback — exchange code → upsert → set session cookie → 302 returnTo
- *   POST /api/auth/logout          — clear session cookie
+ *   GET  /api/auth/me                 — current user
+ *   POST /api/auth/email/send-code    — send email verification code
+ *   POST /api/auth/register           — verify code + create user + set session
+ *   POST /api/auth/login              — email/password login + set session
+ *   POST /api/auth/logout             — clear session cookie
  */
 
 import type { CookieOpts } from './cookies'
+import type { EmailCodePurpose } from './emailCode'
 import type { PublicUser, UserRecord } from './types'
-import {
-  OAUTH_RETURN_TO_COOKIE,
-  OAUTH_STATE_COOKIE,
-  parseCookies,
-  serializeCookie,
-  SESSION_COOKIE,
-} from './cookies'
-import {
-  buildAuthorizeUrl,
-  exchangeCodeForToken,
-  fetchGitHubProfile,
-} from './github'
+import { parseCookies, serializeCookie, SESSION_COOKIE } from './cookies'
+import { sendVerificationEmail } from './email'
+import { consumeEmailCode, generateEmailCode, storeEmailCode } from './emailCode'
+import { hashPassword, verifyPassword } from './password'
 import { toPublicUser } from './quota'
 import { consumeRate, getClientIp, rateLimitedResponse } from './rateLimit'
-import {
-  mintSession,
-  randomToken,
-  SESSION_TTL_SEC,
-  verifySession,
-} from './session'
-import { getUserById, upsertUserFromGitHub } from './user'
+import { mintSession, SESSION_TTL_SEC, verifySession } from './session'
+import { createEmailUser, getUserByEmail, getUserById } from './user'
 
 export interface AuthEnv {
   DB?: D1Database
   SESSION_SECRET?: string
-  GITHUB_CLIENT_ID?: string
-  GITHUB_CLIENT_SECRET?: string
-  /** Production: e.g. `https://syncblog.cn`. If absent, falls back to request origin. */
-  OAUTH_REDIRECT_HOST?: string
+  EMAIL_CODE_SECRET?: string
+  EMAIL_PROVIDER?: string
+  EMAIL_FROM?: string
+  RESEND_API_KEY?: string
 }
 
-const CALLBACK_PATH = `/api/auth/github/callback`
-const DEFAULT_AUTH_RETURN_TO = `/edit`
+const EMAIL_RE = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
+const MIN_PASSWORD_LEN = 8
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers)
@@ -58,12 +47,6 @@ function configError(missing: string): Response {
   )
 }
 
-function resolveOrigin(env: AuthEnv, request: Request): string {
-  if (env.OAUTH_REDIRECT_HOST)
-    return env.OAUTH_REDIRECT_HOST.replace(/\/$/, ``)
-  return new URL(request.url).origin
-}
-
 function isSecureRequest(request: Request): boolean {
   const forwardedProto = request.headers.get(`x-forwarded-proto`)
   return new URL(request.url).protocol === `https:` || forwardedProto === `https`
@@ -73,24 +56,60 @@ function cookieOpts(request: Request, maxAge: number): CookieOpts {
   return { maxAge, secure: isSecureRequest(request) }
 }
 
-function normalizeReturnTo(raw: string | null, origin: string): string {
-  if (!raw)
-    return DEFAULT_AUTH_RETURN_TO
+function normalizeEmail(raw: unknown): string {
+  return typeof raw === `string` ? raw.trim().toLowerCase() : ``
+}
+
+function normalizePassword(raw: unknown): string {
+  return typeof raw === `string` ? raw : ``
+}
+
+function validPurpose(raw: unknown): EmailCodePurpose | null {
+  return raw === `register` || raw === `reset_password` ? raw : null
+}
+
+function validateEmail(email: string): string | null {
+  if (!email)
+    return `请输入邮箱`
+  if (email.length > 254 || !EMAIL_RE.test(email))
+    return `邮箱格式不正确`
+  return null
+}
+
+function validatePassword(password: string): string | null {
+  if (password.length < MIN_PASSWORD_LEN)
+    return `密码至少需要 ${MIN_PASSWORD_LEN} 位`
+  if (password.length > 128)
+    return `密码不能超过 128 位`
+  return null
+}
+
+async function readJsonObject(request: Request): Promise<Record<string, unknown>> {
   try {
-    const target = new URL(raw, origin)
-    if (target.origin !== origin)
-      return DEFAULT_AUTH_RETURN_TO
-    return `${target.pathname}${target.search}${target.hash}` || `/`
+    const body = await request.json()
+    return body && typeof body === `object` && !Array.isArray(body)
+      ? body as Record<string, unknown>
+      : {}
   }
   catch {
-    return DEFAULT_AUTH_RETURN_TO
+    return {}
   }
 }
 
-function withAuthError(returnTo: string, error: string): string {
-  const target = new URL(returnTo, `https://syncblog.cn`)
-  target.searchParams.set(`auth_error`, error)
-  return `${target.pathname}${target.search}${target.hash}`
+async function authenticatedResponse(
+  env: AuthEnv,
+  request: Request,
+  user: UserRecord,
+): Promise<Response> {
+  if (!env.SESSION_SECRET)
+    return configError(`SESSION_SECRET`)
+  const sessionToken = await mintSession(env.SESSION_SECRET, { sub: user.id })
+  const headers = new Headers()
+  headers.append(
+    `Set-Cookie`,
+    serializeCookie(SESSION_COOKIE, sessionToken, cookieOpts(request, SESSION_TTL_SEC)),
+  )
+  return jsonResponse({ ok: true, user: toPublicUser(user) }, { headers })
 }
 
 /**
@@ -125,121 +144,120 @@ export async function handleAuthApi(
     return jsonResponse({ user: user ? toPublicUser(user) : null })
   }
 
-  if (path === `/api/auth/github/start` && request.method === `GET`) {
-    if (!env.GITHUB_CLIENT_ID)
-      return configError(`GITHUB_CLIENT_ID`)
+  if (path === `/api/auth/email/send-code` && request.method === `POST`) {
+    if (!env.DB)
+      return configError(`DB`)
+    if (!env.EMAIL_CODE_SECRET)
+      return configError(`EMAIL_CODE_SECRET`)
 
-    // Throttle the OAuth flow per IP — prevents a flood that would burn
-    // GitHub's per-IP authorize limit and leave the rest of our users
-    // without a usable login button.
-    if (env.DB) {
-      const rl = await consumeRate(env.DB, `oauth_start`, getClientIp(request), 10, 60)
-      if (!rl.allowed)
-        return rateLimitedResponse(rl, `oauth_start`)
+    const body = await readJsonObject(request)
+    const email = normalizeEmail(body.email)
+    const purpose = validPurpose(body.purpose) ?? `register`
+    const emailError = validateEmail(email)
+    if (emailError)
+      return jsonResponse({ ok: false, error: emailError }, { status: 400 })
+
+    const ipRate = await consumeRate(env.DB, `email_code_ip`, getClientIp(request), 6, 60)
+    if (!ipRate.allowed)
+      return rateLimitedResponse(ipRate, `email_code_ip`)
+    const emailRate = await consumeRate(env.DB, `email_code_email`, `${purpose}:${email}`, 1, 60)
+    if (!emailRate.allowed)
+      return rateLimitedResponse(emailRate, `email_code_email`)
+    const dailyRate = await consumeRate(env.DB, `email_code_email_daily`, `${purpose}:${email}`, 10, 24 * 60 * 60)
+    if (!dailyRate.allowed)
+      return rateLimitedResponse(dailyRate, `email_code_email_daily`)
+
+    if (purpose === `register`) {
+      const existing = await getUserByEmail(env.DB, email)
+      if (existing)
+        return jsonResponse({ ok: false, error: `该邮箱已注册，请直接登录` }, { status: 409 })
     }
 
-    const state = randomToken()
-    const origin = resolveOrigin(env, request)
-    const redirectUri = `${origin}${CALLBACK_PATH}`
-    const returnTo = normalizeReturnTo(url.searchParams.get(`returnTo`), origin)
-    const authorizeUrl = buildAuthorizeUrl(env.GITHUB_CLIENT_ID, redirectUri, state)
-
-    const headers = new Headers()
-    headers.set(`Location`, authorizeUrl)
-    headers.append(
-      `Set-Cookie`,
-      serializeCookie(OAUTH_STATE_COOKIE, state, cookieOpts(request, 600)),
-    )
-    headers.append(
-      `Set-Cookie`,
-      serializeCookie(OAUTH_RETURN_TO_COOKIE, returnTo, cookieOpts(request, 600)),
-    )
-    return new Response(null, { status: 302, headers })
-  }
-
-  if (path === CALLBACK_PATH && request.method === `GET`) {
-    console.log(`[auth callback] received`, {
-      hasCode: url.searchParams.has(`code`),
-      hasState: url.searchParams.has(`state`),
-      hasError: url.searchParams.has(`error`),
+    const code = generateEmailCode()
+    await storeEmailCode(env.DB, {
+      email,
+      code,
+      purpose,
+      secret: env.EMAIL_CODE_SECRET,
     })
 
+    try {
+      await sendVerificationEmail(env, { to: email, code, purpose })
+      return jsonResponse({ ok: true })
+    }
+    catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(`[auth email] send failed`, { message })
+      return jsonResponse({ ok: false, error: `验证码邮件发送失败：${message}` }, { status: 502 })
+    }
+  }
+
+  if (path === `/api/auth/register` && request.method === `POST`) {
     if (!env.DB)
       return configError(`DB`)
     if (!env.SESSION_SECRET)
       return configError(`SESSION_SECRET`)
-    if (!env.GITHUB_CLIENT_ID || !env.GITHUB_CLIENT_SECRET)
-      return configError(`GITHUB_CLIENT_ID/SECRET`)
+    if (!env.EMAIL_CODE_SECRET)
+      return configError(`EMAIL_CODE_SECRET`)
 
-    const code = url.searchParams.get(`code`)
-    const stateParam = url.searchParams.get(`state`)
-    const cookies = parseCookies(request.headers.get(`cookie`))
-    const stateCookie = cookies[OAUTH_STATE_COOKIE]
-    const origin = resolveOrigin(env, request)
-    const returnTo = normalizeReturnTo(cookies[OAUTH_RETURN_TO_COOKIE] ?? DEFAULT_AUTH_RETURN_TO, origin)
+    const body = await readJsonObject(request)
+    const email = normalizeEmail(body.email)
+    const password = normalizePassword(body.password)
+    const code = typeof body.code === `string` ? body.code.trim() : ``
 
-    const oauthError = url.searchParams.get(`error`)
-    if (oauthError) {
-      console.warn(`[auth callback] github returned error`, {
-        error: oauthError,
-        description: url.searchParams.get(`error_description`) ?? ``,
-      })
-      const headers = new Headers()
-      headers.set(`Location`, withAuthError(returnTo, oauthError))
-      return new Response(null, { status: 302, headers })
-    }
+    const emailError = validateEmail(email)
+    if (emailError)
+      return jsonResponse({ ok: false, error: emailError }, { status: 400 })
+    const passwordError = validatePassword(password)
+    if (passwordError)
+      return jsonResponse({ ok: false, error: passwordError }, { status: 400 })
+    if (!/^\d{6}$/.test(code))
+      return jsonResponse({ ok: false, error: `请输入 6 位验证码` }, { status: 400 })
 
-    if (!code || !stateParam || !stateCookie || stateParam !== stateCookie) {
-      console.warn(`[auth callback] invalid state`, {
-        hasCode: !!code,
-        hasStateParam: !!stateParam,
-        hasStateCookie: !!stateCookie,
-      })
-      return jsonResponse({ ok: false, error: `Invalid OAuth state` }, { status: 400 })
-    }
+    const existing = await getUserByEmail(env.DB, email)
+    if (existing)
+      return jsonResponse({ ok: false, error: `该邮箱已注册，请直接登录` }, { status: 409 })
 
-    const redirectUri = `${origin}${CALLBACK_PATH}`
+    const codeResult = await consumeEmailCode(env.DB, {
+      email,
+      code,
+      purpose: `register`,
+      secret: env.EMAIL_CODE_SECRET,
+    })
+    if (!codeResult.ok)
+      return jsonResponse({ ok: false, error: codeResult.error }, { status: 400 })
 
-    try {
-      const accessToken = await exchangeCodeForToken(
-        env.GITHUB_CLIENT_ID,
-        env.GITHUB_CLIENT_SECRET,
-        code,
-        redirectUri,
-      )
-      const profile = await fetchGitHubProfile(accessToken)
-      const user = await upsertUserFromGitHub(env.DB, profile)
-      console.log(`[auth callback] authenticated`, {
-        userId: user.id,
-        githubLogin: user.github_login,
-      })
-      const sessionToken = await mintSession(env.SESSION_SECRET, {
-        sub: user.id,
-        ghi: user.github_id,
-      })
+    const passwordHash = await hashPassword(password)
+    const user = await createEmailUser(env.DB, { email, passwordHash })
+    return authenticatedResponse(env, request, user)
+  }
 
-      const headers = new Headers()
-      headers.set(`Location`, returnTo)
-      headers.append(
-        `Set-Cookie`,
-        serializeCookie(SESSION_COOKIE, sessionToken, cookieOpts(request, SESSION_TTL_SEC)),
-      )
-      // Clear the one-shot state cookie.
-      headers.append(
-        `Set-Cookie`,
-        serializeCookie(OAUTH_STATE_COOKIE, ``, cookieOpts(request, 0)),
-      )
-      headers.append(
-        `Set-Cookie`,
-        serializeCookie(OAUTH_RETURN_TO_COOKIE, ``, cookieOpts(request, 0)),
-      )
-      return new Response(null, { status: 302, headers })
-    }
-    catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      console.error(`[auth callback] failed`, { message })
-      return jsonResponse({ ok: false, error: message }, { status: 502 })
-    }
+  if (path === `/api/auth/login` && request.method === `POST`) {
+    if (!env.DB)
+      return configError(`DB`)
+    if (!env.SESSION_SECRET)
+      return configError(`SESSION_SECRET`)
+
+    const body = await readJsonObject(request)
+    const email = normalizeEmail(body.email)
+    const password = normalizePassword(body.password)
+
+    const emailError = validateEmail(email)
+    if (emailError)
+      return jsonResponse({ ok: false, error: emailError }, { status: 400 })
+    if (!password)
+      return jsonResponse({ ok: false, error: `请输入密码` }, { status: 400 })
+
+    const rl = await consumeRate(env.DB, `login_email`, email, 8, 10 * 60)
+    if (!rl.allowed)
+      return rateLimitedResponse(rl, `login_email`)
+
+    const user = await getUserByEmail(env.DB, email)
+    const passwordOk = user ? await verifyPassword(password, user.password_hash) : false
+    if (!user || user.auth_provider !== `email` || !passwordOk)
+      return jsonResponse({ ok: false, error: `邮箱或密码错误` }, { status: 401 })
+
+    return authenticatedResponse(env, request, user)
   }
 
   if (path === `/api/auth/logout` && request.method === `POST`) {
@@ -248,13 +266,7 @@ export async function handleAuthApi(
       `Set-Cookie`,
       serializeCookie(SESSION_COOKIE, ``, cookieOpts(request, 0)),
     )
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: (() => {
-        headers.set(`Content-Type`, `application/json; charset=utf-8`)
-        return headers
-      })(),
-    })
+    return jsonResponse({ ok: true }, { headers })
   }
 
   return jsonResponse({ ok: false, error: `Not Found` }, { status: 404 })

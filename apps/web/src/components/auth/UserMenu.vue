@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Crown, Github, LogOut, Settings, User as UserIcon } from 'lucide-vue-next'
+import { Crown, LogOut, Mail, Settings, User as UserIcon } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -82,8 +82,8 @@ onBeforeUnmount(() => {
     :disabled="auth.status === 'loading'"
     @click="handleLogin"
   >
-    <Github class="h-4 w-4" />
-    <span class="hidden sm:inline">GitHub 登录</span>
+    <Mail class="h-4 w-4" />
+    <span class="hidden sm:inline">登录 / 注册</span>
     <span class="sm:hidden">登录</span>
   </Button>
 
@@ -103,7 +103,7 @@ onBeforeUnmount(() => {
             v-if="avatarSrc"
             :key="avatarSrc"
             :src="avatarSrc"
-            :alt="auth.user?.login ?? 'GitHub avatar'"
+            :alt="auth.user?.login ?? 'avatar'"
             class="h-full w-full object-cover"
           >
           <UserIcon v-else class="h-3.5 w-3.5" />
@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
             v-if="avatarSrc"
             :key="avatarSrc"
             :src="avatarSrc"
-            :alt="auth.user?.login ?? 'GitHub avatar'"
+            :alt="auth.user?.login ?? 'avatar'"
             class="h-full w-full object-cover"
           >
           <template v-else>

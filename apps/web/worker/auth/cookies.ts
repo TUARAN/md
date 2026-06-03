@@ -46,5 +46,3 @@ export function serializeCookie(name: string, value: string, opts: CookieOpts = 
 }
 
 export const SESSION_COOKIE = `sb_session`
-export const OAUTH_STATE_COOKIE = `sb_oauth_state`
-export const OAUTH_RETURN_TO_COOKIE = `sb_oauth_return_to`

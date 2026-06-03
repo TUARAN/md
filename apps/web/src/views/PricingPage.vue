@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, Check, Crown, QrCode, Sparkles } from 'lucide-vue-next'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { APP_NAME } from '@/constants/branding'
@@ -196,7 +196,7 @@ function goHome() {
           为什么按钮点了说「支付通道暂未开放」？
         </p>
         <p>
-          微信支付商户号和支付宝商户都在申请中（需要 ICP 备案 + 企业资质,周期数周）。在此期间想用 Pro,请加微信 <code class="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground">atar24</code>,注明 GitHub 用户名,我们手动开通。商户号下来后这两个按钮立即上线。
+          微信支付商户号和支付宝商户都在申请中（需要 ICP 备案 + 企业资质,周期数周）。在此期间想用 Pro,请加微信 <code class="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-foreground">atar24</code>,注明注册邮箱,我们手动开通。商户号下来后这两个按钮立即上线。
         </p>
       </section>
     </div>

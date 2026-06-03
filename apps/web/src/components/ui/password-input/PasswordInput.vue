@@ -21,6 +21,7 @@ const modelValue = useVModel(props, `modelValue`, emits, {
 })
 
 const showPassword = ref(false)
+const attrs = useAttrs()
 
 function togglePasswordVisibility() {
   showPassword.value = !showPassword.value
@@ -31,6 +32,7 @@ function togglePasswordVisibility() {
   <div class="relative">
     <input
       v-model="modelValue"
+      v-bind="attrs"
       :type="showPassword ? 'text' : 'password'"
       :placeholder="placeholder"
       :class="cn('flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50', props.class)"

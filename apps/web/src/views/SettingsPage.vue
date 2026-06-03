@@ -14,8 +14,8 @@ import {
   ArrowLeft,
   Bot,
   Crown,
-  Github,
   LogOut,
+  Mail,
   Palette,
   PenLine,
   Send,
@@ -200,10 +200,10 @@ function goPricing() {
           </div>
 
           <div v-else class="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
-            <p>未登录。GitHub 一键登录后,AI 调用会按账号计配额,你的 Pro 状态也只有登录后才生效。</p>
+            <p>未登录。使用邮箱注册或登录后,AI 调用会按账号计配额,你的 Pro 状态也只有登录后才生效。</p>
             <Button type="button" class="mt-3 gap-1.5" @click="auth.startLogin()">
-              <Github class="size-4" />
-              使用 GitHub 登录
+              <Mail class="size-4" />
+              登录 / 注册
             </Button>
           </div>
 
