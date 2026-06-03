@@ -14,7 +14,7 @@ import type { EmailCodePurpose } from './emailCode'
 import type { PublicUser, UserRecord } from './types'
 import { parseCookies, serializeCookie, SESSION_COOKIE } from './cookies'
 import { sendVerificationEmail } from './email'
-import { consumeEmailCode, generateEmailCode, storeEmailCode } from './emailCode'
+import { consumeEmailCode, generateEmailCode, storeEmailCode, verifyEmailCode } from './emailCode'
 import { hashPassword, verifyPassword } from './password'
 import { toPublicUser } from './quota'
 import { consumeRate, getClientIp, rateLimitedResponse } from './rateLimit'
@@ -218,7 +218,7 @@ export async function handleAuthApi(
     if (existing)
       return jsonResponse({ ok: false, error: `该邮箱已注册，请直接登录` }, { status: 409 })
 
-    const codeResult = await consumeEmailCode(env.DB, {
+    const codeResult = await verifyEmailCode(env.DB, {
       email,
       code,
       purpose: `register`,
@@ -227,9 +227,22 @@ export async function handleAuthApi(
     if (!codeResult.ok)
       return jsonResponse({ ok: false, error: codeResult.error }, { status: 400 })
 
-    const passwordHash = await hashPassword(password)
-    const user = await createEmailUser(env.DB, { email, passwordHash })
-    return authenticatedResponse(env, request, user)
+    try {
+      const passwordHash = await hashPassword(password)
+      const user = await createEmailUser(env.DB, { email, passwordHash })
+      await consumeEmailCode(env.DB, {
+        email,
+        code,
+        purpose: `register`,
+        secret: env.EMAIL_CODE_SECRET,
+      })
+      return authenticatedResponse(env, request, user)
+    }
+    catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      console.error(`[auth register] failed`, { email, message })
+      return jsonResponse({ ok: false, error: `注册失败，请稍后重试` }, { status: 500 })
+    }
   }
 
   if (path === `/api/auth/login` && request.method === `POST`) {

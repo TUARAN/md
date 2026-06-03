@@ -3,7 +3,7 @@
  */
 
 const PASSWORD_ALG = `pbkdf2_sha256`
-const PASSWORD_ITERATIONS = 210_000
+const PASSWORD_ITERATIONS = 100_000
 const SALT_BYTES = 16
 const HASH_BYTES = 32
 
