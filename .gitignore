@@ -13,8 +13,8 @@ node_modules
 dist
 
 # vendored 浏览器扩展需保留构建产物（其它项目的 dist 仍按上一行忽略）
-!apps/web/vendor/csync-extension/dist/
-!apps/web/vendor/csync-extension/dist/**
+!apps/web/vendor/syncblog-plugin/dist/
+!apps/web/vendor/syncblog-plugin/dist/**
 
 # misc
 .DS_Store
@@ -42,7 +42,9 @@ httpData
 public/upload/**
 !public/upload/*.gitkeep
 
-# csync 扩展 zip（pnpm package:csync 生成，随 build 发布；不提交二进制）
+# SyncBlog Plugin zip（pnpm package:syncblog-plugin 生成，随 build 发布；不提交二进制）
+apps/web/public/syncblog-plugin.zip
+apps/web/public/syncblog-plugin-v*.zip
 apps/web/public/csync-extension.zip
 apps/web/public/csync-extension-v*.zip
 .history

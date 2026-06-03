@@ -71,7 +71,7 @@ const weeklyEntries: WeeklyEntry[] = [
       `平台矩阵进入 workflow,补齐各平台分发策略,统一平台 registry 并加固内容分发同步。`,
       `引入 vue-router,拆出编辑器布局和同步页,顶部导航从多行压平到两行。`,
       `加密用户 API Key、图床凭据和自定义上传脚本,移除内置图床 Token。`,
-      `修复 CSYNC zip 包、macOS 下载兼容、SegmentFault 路由和发布弹窗文案。`,
+      `修复 SyncBlog Plugin 安装包、macOS 下载兼容、SegmentFault 路由和发布弹窗文案。`,
     ],
     shipped: [`创作者名片`, `平台矩阵`, `Vue Router`, `凭据加密`, `发布扩展包`],
   },

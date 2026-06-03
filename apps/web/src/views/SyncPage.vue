@@ -7,13 +7,19 @@
  * 提供。`<KeepAlive>` 保证用户在 6 个 workflow 路由间切换时编辑器实例不重建,
  * codemirror 内容、光标、滚动位置、面板尺寸全部保留。
  */
-import { FileText, Plug } from 'lucide-vue-next'
+import { Copy, FileText, Plug } from 'lucide-vue-next'
 import { provide } from 'vue'
-import { useRouter } from 'vue-router'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -28,9 +34,10 @@ import { useCursorSync } from '@/composables/useCursorSync'
 import { EDITOR_WECHAT_COPY_KEY, useEditorWechatCopy } from '@/composables/useEditorWechatCopy'
 import { useScrollSync } from '@/composables/useScrollSync'
 import { useUIStore } from '@/stores/ui'
+import { copyPlain } from '@/utils/clipboard'
+import { toast } from '@/utils/toast'
 
 const uiStore = useUIStore()
-const router = useRouter()
 
 const {
   isMobile,
@@ -75,6 +82,26 @@ useScrollSync(getEditorView, getPreviewContainer, enableScrollSync)
 // --- 复制状态 ---
 const backLight = ref(false)
 const isCoping = ref(false)
+const isImportInfoOpen = ref(false)
+const isImportExampleCopied = ref(false)
+const editorOrigin = computed(() => (typeof window !== `undefined` ? window.location.origin : `https://md.doocs.org`))
+const importExampleCode = computed(() => `const editor = window.open('${editorOrigin.value}/edit', 'syncblog-editor')
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== '${editorOrigin.value}')
+    return
+
+  if (event.data?.type === 'MD_IMPORT_READY') {
+    editor.postMessage({
+      type: 'MD_IMPORT_ARTICLE',
+      requestId: 'demo-1',
+      title: '我的文章标题',
+      markdown: '# 标题\\n\\n正文内容……',
+      canonicalUrl: 'https://example.com/post/1',
+      tags: ['标签A', '标签B'],
+    }, '${editorOrigin.value}')
+  }
+})`)
 
 function startCopy() {
   backLight.value = true
@@ -100,7 +127,21 @@ function handleUploadImage(file: File, cb?: any, applyUrl?: boolean) {
 }
 
 function openImportEntry() {
-  router.push({ name: `import` })
+  isImportInfoOpen.value = true
+}
+
+async function copyImportExample() {
+  try {
+    await copyPlain(importExampleCode.value)
+    isImportExampleCopied.value = true
+    toast.success(`已复制外站接入示例`)
+    setTimeout(() => {
+      isImportExampleCopied.value = false
+    }, 1600)
+  }
+  catch {
+    toast.error(`复制失败`)
+  }
 }
 
 // --- 面板尺寸配置 ---
@@ -328,6 +369,73 @@ onUnmounted(() => {
         </ResizablePanelGroup>
       </div>
     </WorkflowPageShell>
+
+    <Dialog v-model:open="isImportInfoOpen">
+      <DialogContent class="max-w-2xl gap-5 p-0">
+        <DialogHeader class="border-b border-border/70 px-5 pb-4 pt-5">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Plug class="size-4" />
+            </span>
+            <div>
+              <DialogTitle class="text-base">
+                外站接入
+              </DialogTitle>
+              <DialogDescription class="mt-1 text-xs leading-relaxed">
+                外部采集站、博客后台或浏览器脚本把 Markdown 推送到当前编辑器。
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div class="space-y-4 px-5 pb-5">
+          <section class="grid gap-2 text-sm sm:grid-cols-3">
+            <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+              <p class="font-medium text-foreground">
+                1. 打开编辑器
+              </p>
+              <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                外站通过 <code class="rounded bg-muted px-1 py-0.5">window.open</code> 打开 <code class="rounded bg-muted px-1 py-0.5">/edit</code>。
+              </p>
+            </div>
+            <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+              <p class="font-medium text-foreground">
+                2. 等待就绪
+              </p>
+              <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                编辑器广播 <code class="rounded bg-muted px-1 py-0.5">MD_IMPORT_READY</code> 后再发送内容。
+              </p>
+            </div>
+            <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+              <p class="font-medium text-foreground">
+                3. 写入正文
+              </p>
+              <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+                推送 <code class="rounded bg-muted px-1 py-0.5">MD_IMPORT_ARTICLE</code>，编辑器写入当前文稿。
+              </p>
+            </div>
+          </section>
+
+          <section class="rounded-lg border border-border/70 bg-background">
+            <div class="flex items-center justify-between gap-3 border-b border-border/70 px-3 py-2">
+              <p class="text-sm font-medium text-foreground">
+                接入示例
+              </p>
+              <Button
+                class="h-8 gap-1.5 rounded-md px-2.5 text-xs"
+                type="button"
+                variant="secondary"
+                @click="copyImportExample"
+              >
+                <Copy class="size-3.5" />
+                {{ isImportExampleCopied ? '已复制' : '复制' }}
+              </Button>
+            </div>
+            <pre class="max-h-72 overflow-auto whitespace-pre-wrap break-words p-3 text-xs leading-relaxed text-muted-foreground">{{ importExampleCode }}</pre>
+          </section>
+        </div>
+      </DialogContent>
+    </Dialog>
 
     <UploadImgDialog @upload-image="handleUploadImage" />
     <InsertFormDialog />
