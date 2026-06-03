@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Bot, ChevronRight, Database, FileText, Megaphone, Menu, Plug, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
+import { BarChart3, ChevronRight, Database, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -52,7 +52,6 @@ const primaryDomains = [
 const distributionSteps = [
   { id: `data` as const, label: `选择素材`, icon: Database, routeName: `data` },
   { id: `creation` as const, label: `AI 创作`, icon: Sparkles, routeName: `creation` },
-  { id: `import` as const, label: `外站接入`, icon: Plug, routeName: `import` },
   { id: `sync` as const, label: `排版编辑`, icon: FileText, routeName: `sync` },
 ] as const
 
@@ -100,10 +99,6 @@ function openChangelog() {
 
 function openSettings() {
   router.push({ name: `settings` })
-}
-
-function openAIAssistant() {
-  uiStore.toggleAIDialog(true)
 }
 </script>
 
@@ -215,26 +210,6 @@ function openAIAssistant() {
     <!-- 右侧：辅助入口 -->
     <div class="hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
-        <!-- AI 助手：用渐变色与其他灰阶辅助按钮区隔，提示这是 AI 功能 -->
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <button
-              type="button"
-              class="ai-assistant-pill inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-white transition-all"
-              aria-label="AI 助手"
-              @click="openAIAssistant"
-            >
-              <Bot class="size-3.5" />
-              <span>助手</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
-            打开 AI 助手
-          </TooltipContent>
-        </Tooltip>
-
-        <div class="mx-1 h-4 w-px bg-border/60" aria-hidden="true" />
-
         <Tooltip>
           <TooltipTrigger as-child>
             <Button
@@ -322,29 +297,6 @@ function openAIAssistant() {
   color: hsl(var(--foreground));
   background: hsl(var(--background));
   box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.08), inset 0 0 0 1px hsl(var(--border) / 0.5);
-}
-
-/* —— AI 助手按钮：蓝紫渐变 + 软投影，提示这是 AI 功能 —— */
-.ai-assistant-pill {
-  background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(262 83% 65%) 100%);
-  box-shadow: 0 1px 2px 0 hsl(217 91% 50% / 0.25), 0 4px 10px -2px hsl(217 91% 50% / 0.2),
-    inset 0 1px 0 0 hsl(0 0% 100% / 0.18);
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    transform: translateY(-0.5px);
-    box-shadow: 0 2px 4px 0 hsl(217 91% 50% / 0.3), 0 6px 14px -2px hsl(217 91% 50% / 0.28),
-      inset 0 1px 0 0 hsl(0 0% 100% / 0.22);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &:focus-visible {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
 }
 
 /* —— 二级 Tab：玻璃高亮 + 渐变下划线 —— */

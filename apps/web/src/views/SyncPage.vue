@@ -7,11 +7,13 @@
  * 提供。`<KeepAlive>` 保证用户在 6 个 workflow 路由间切换时编辑器实例不重建,
  * codemirror 内容、光标、滚动位置、面板尺寸全部保留。
  */
-import { FileText } from 'lucide-vue-next'
+import { FileText, Plug } from 'lucide-vue-next'
 import { provide } from 'vue'
+import { useRouter } from 'vue-router'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
+import { Button } from '@/components/ui/button'
 import {
   ResizableHandle,
   ResizablePanel,
@@ -28,6 +30,7 @@ import { useScrollSync } from '@/composables/useScrollSync'
 import { useUIStore } from '@/stores/ui'
 
 const uiStore = useUIStore()
+const router = useRouter()
 
 const {
   isMobile,
@@ -94,6 +97,10 @@ provide(EDITOR_WECHAT_COPY_KEY, wechatCopy)
 // --- 上传图片透传 ---
 function handleUploadImage(file: File, cb?: any, applyUrl?: boolean) {
   editorPanelCompRef.value?.uploadImage(file, cb, applyUrl)
+}
+
+function openImportEntry() {
+  router.push({ name: `import` })
 }
 
 // --- 面板尺寸配置 ---
@@ -202,6 +209,18 @@ onUnmounted(() => {
             <p class="max-w-2xl text-xs leading-relaxed text-muted-foreground">
               在左侧写 Markdown，右侧预览公众号排版；需要分发时，用发布插件把文章写入知乎、公众号、掘金等平台草稿。
             </p>
+            <div class="mt-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+                @click="openImportEntry"
+              >
+                <Plug class="size-3.5" />
+                外站接入
+              </Button>
+            </div>
           </div>
 
           <div class="min-w-0 shrink-0">
