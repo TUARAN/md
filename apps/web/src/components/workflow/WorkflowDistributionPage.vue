@@ -218,7 +218,17 @@ function goXiaohongshuCreation() {
   router.push({ name: `creation`, query: { mode: `xiaohongshu` } })
 }
 
+function requireAuthForCreatorCard(action: string) {
+  if (authStore.isAuthenticated)
+    return true
+  toast.error(`登录后即可${action}`)
+  authStore.startLogin()
+  return false
+}
+
 async function copyCreatorCardLink() {
+  if (!requireAuthForCreatorCard(`复制创作名片链接`))
+    return
   try {
     await copyPlain(creatorCardShareUrl.value)
     toast.success(`创作名片链接已复制`)
@@ -229,6 +239,8 @@ async function copyCreatorCardLink() {
 }
 
 async function copyCreatorCardPitch() {
+  if (!requireAuthForCreatorCard(`复制宣传文案`))
+    return
   if (!creatorCardCopy.value)
     return
   try {
@@ -241,6 +253,8 @@ async function copyCreatorCardPitch() {
 }
 
 function openCreatorCard() {
+  if (!requireAuthForCreatorCard(`打开创作名片`))
+    return
   window.open(creatorCardShareUrl.value, `_blank`, `noopener,noreferrer`)
 }
 
@@ -287,11 +301,21 @@ function onMatrixDataSourceToggle(event: Event) {
           </p>
         </div>
       </details>
-      <div class="mt-3">
+      <div v-if="authStore.isAuthenticated" class="mt-3">
         <WorkflowCreatorPicker />
       </div>
+      <p
+        v-else
+        class="mt-3 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-xs leading-relaxed text-muted-foreground"
+      >
+        创作者数据与创作名片需
+        <button type="button" class="font-medium text-primary underline underline-offset-2" @click="authStore.startLogin()">
+          登录
+        </button>
+        后查看。
+      </p>
       <section
-        v-if="creator && creatorOffer"
+        v-if="authStore.isAuthenticated && creator && creatorOffer"
         class="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-3 py-3 dark:bg-primary/10"
       >
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -404,8 +428,11 @@ function onMatrixDataSourceToggle(event: Event) {
             </span>
             <span v-if="!isPlatformRailCollapsed" class="min-w-0 flex-1">
               <span class="block truncate text-sm font-medium">{{ row.title }}</span>
-              <span class="mt-0.5 block truncate text-[11px] text-muted-foreground">
+              <span v-if="authStore.isAuthenticated" class="mt-0.5 block truncate text-[11px] text-muted-foreground">
                 粉丝 {{ row.followers }} · 阅读 {{ row.reads }}
+              </span>
+              <span v-else class="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                登录后可见粉丝 / 阅读
               </span>
             </span>
           </button>
@@ -463,7 +490,7 @@ function onMatrixDataSourceToggle(event: Event) {
                   <span class="font-medium text-foreground">节奏：</span>{{ strategy.cadence }}
                 </p>
               </div>
-              <div v-if="growth.row" class="shrink-0 text-right text-sm">
+              <div v-if="growth.row && authStore.isAuthenticated" class="shrink-0 text-right text-sm">
                 <p class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                   粉丝阶段
                 </p>

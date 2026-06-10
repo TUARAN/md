@@ -4,6 +4,7 @@ import { Check, ChevronDown, ChevronRight, ExternalLink, Info, Loader2, Minus, R
 import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
 import { PLATFORM_CATEGORIES } from '@/constants/platforms'
+import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
@@ -23,6 +24,8 @@ const { output } = storeToRefs(renderStore)
 
 const uiStore = useUIStore()
 const { isMobile } = storeToRefs(uiStore)
+
+const auth = useAuthStore()
 
 const {
   allAccounts,
@@ -140,6 +143,11 @@ function post() {
 }
 
 function openCreatorProfile() {
+  if (!auth.isAuthenticated) {
+    toast.error(`登录后即可查看创作名片`)
+    auth.startLogin()
+    return
+  }
   cacheAccountsToProfile()
   window.open(CREATOR_PROFILE_ROUTE, `_blank`, `noopener,noreferrer`)
 }
@@ -257,7 +265,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <div class="flex-1 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/20 px-3 py-2 text-sm">
                 <span class="text-muted-foreground">
-                  已登录账号会写入创作名片；登录新平台后可点「重新检测账号」刷新。
+                  已登录账号会写入创作名片；登录 Syncblog 后可查看名片，登录新平台后可点「重新检测账号」刷新。
                 </span>
                 <div class="flex flex-wrap items-center gap-2">
                   <Button
@@ -275,7 +283,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
                     type="button"
                     variant="outline"
                     size="sm"
-                    :disabled="!allAccounts.some(a => a.loggedIn)"
+                    :disabled="!auth.isAuthenticated || !allAccounts.some(a => a.loggedIn)"
                     @click="openCreatorProfile"
                   >
                     <ExternalLink class="mr-2 h-4 w-4" />

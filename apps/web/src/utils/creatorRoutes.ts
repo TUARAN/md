@@ -14,7 +14,7 @@ export function getAppBasePath() {
 /** 创作名片主锚点(creator-offer 页面内的主区块) */
 export const CREATOR_CARD_HASH = `content-sync`
 
-/** 个人 IP 合作说明页,如 /md/creator-offer/tuaran */
+/** 个人 IP 合作说明页（需登录）,如 /md/creator-offer/tuaran */
 export function creatorOfferRoute(creatorId: string, hash = ``) {
   const id = creatorId.trim().toLowerCase()
   const path = `${getAppBasePath()}/creator-offer/${encodeURIComponent(id)}`

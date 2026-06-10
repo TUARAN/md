@@ -12,7 +12,7 @@ import {
 } from '@/utils/socialAccounts'
 import { store } from '@/utils/storage'
 
-/** 创作名片（安东尼个人 IP 对外页） */
+/** 创作名片（需登录） */
 export const CREATOR_CARD_ROUTE = creatorCardRoute(TUARAN_CREATOR_ID)
 /** 编辑器「创作名片」入口 */
 export const CREATOR_PROFILE_ROUTE = CREATOR_CARD_ROUTE

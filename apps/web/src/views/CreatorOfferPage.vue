@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ArrowLeft, ArrowRight, Check, ExternalLink, Minus, Sparkles, X } from 'lucide-vue-next'
+import { ArrowLeft, ArrowRight, Check, ExternalLink, Loader2, Mail, Minus, Sparkles, X } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
+import { LOGIN_PURPOSE_STATEMENT } from '@/constants/billingPolicy'
 import { getCreatorOffer } from '@/constants/creatorOffer'
+import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { CREATOR_CARD_HASH } from '@/utils/creatorRoutes'
 import { getPlatformProfileTitle } from '@/utils/socialAccounts'
@@ -13,6 +15,7 @@ const props = defineProps<{
 
 const router = useRouter()
 const uiStore = useUIStore()
+const auth = useAuthStore()
 
 const SERVICE_ACCENT: Record<string, string> = {
   lite: `border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/40`,
@@ -34,9 +37,11 @@ const homepageLabel = computed(() => {
   }
 })
 
-watch(offer, (value) => {
-  if (value)
+watch([offer, () => auth.isAuthenticated], ([value, isAuthed]) => {
+  if (isAuthed && value)
     document.title = value.pageTitle
+  else
+    document.title = `登录后查看 · 创作名片`
 }, { immediate: true })
 
 function goPlatformMatrix() {
@@ -52,18 +57,63 @@ function openHomepage() {
     window.open(url, `_blank`, `noopener,noreferrer`)
 }
 
+function scrollToCardHash() {
+  if (window.location.hash.replace(/^#/, ``) !== CREATOR_CARD_HASH)
+    return
+  nextTick(() => {
+    document.getElementById(CREATOR_CARD_HASH)?.scrollIntoView({ block: `start` })
+  })
+}
+
 onMounted(() => {
-  if (window.location.hash.replace(/^#/, ``) === CREATOR_CARD_HASH) {
-    nextTick(() => {
-      document.getElementById(CREATOR_CARD_HASH)?.scrollIntoView({ block: `start` })
-    })
-  }
+  if (auth.status === `idle`)
+    void auth.refresh()
 })
+
+watch(
+  () => auth.isAuthenticated,
+  (isAuthed) => {
+    if (isAuthed)
+      scrollToCardHash()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <main
-    v-if="offer"
+    v-if="auth.status === 'loading'"
+    class="flex min-h-[100dvh] items-center justify-center bg-background px-4 text-muted-foreground"
+  >
+    <Loader2 class="mr-2 h-5 w-5 animate-spin" />
+    正在验证登录状态…
+  </main>
+
+  <main
+    v-else-if="!auth.isAuthenticated"
+    class="flex min-h-[100dvh] items-center justify-center bg-background px-4"
+  >
+    <div class="max-w-md text-center">
+      <h1 class="text-xl font-semibold">
+        登录后查看创作名片
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+        创作者个人 IP 与合作说明仅对已登录用户开放。{{ LOGIN_PURPOSE_STATEMENT }}
+      </p>
+      <div class="mt-5 flex flex-wrap justify-center gap-2">
+        <Button type="button" class="gap-1.5" @click="auth.startLogin()">
+          <Mail class="h-4 w-4" />
+          登录 / 注册
+        </Button>
+        <Button type="button" variant="outline" @click="router.push({ name: 'sync' })">
+          返回编辑器
+        </Button>
+      </div>
+    </div>
+  </main>
+
+  <main
+    v-else-if="offer"
     :id="CREATOR_CARD_HASH"
     class="min-h-[100dvh] overflow-y-auto bg-[#e8eaef] text-foreground dark:bg-[#0c0f14]"
   >

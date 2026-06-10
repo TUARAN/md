@@ -20,7 +20,7 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /pricing                     name=pricing    AI 算力额度（成本价中转）
  *   /changelog                   name=changelog  更新日志
  *   /docs/import                 name=import-docs  站外接入文档
- *   /creator-offer/:creatorId    name=creator-offer  公开创作名片
+ *   /creator-offer/:creatorId    name=creator-offer  创作名片（需登录）
  *
  * 路由 **名字** 维持不变(sync / data / creation / import / distribution / stats),只有
  * **路径** 改了。这样所有 `router.push({ name: 'sync' })` 都不用动。
