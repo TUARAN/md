@@ -9,8 +9,7 @@ import { ChevronLeft, ChevronRight, Copy, ExternalLink, Eye, IdCard, Megaphone, 
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { PanelShell } from '@/components/ui/layout'
-import { getCreatorOffer } from '@/constants/creatorOffer'
-import { getCreatorPlatformMatrix, getWorkflowCreator } from '@/constants/creators'
+import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
 import { FAN_GROWTH_MILESTONES } from '@/constants/distributionFocus'
 import {
   getDistributionStrategy,
@@ -32,7 +31,13 @@ import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const {
-  workflowCreatorId,
+  activeCreatorId,
+  offer: creatorOffer,
+  creators,
+  platformMatrix,
+  creatorProfile,
+} = useWorkflowCreatorContext()
+const {
   workflowDistributionPlatform,
   workflowMatrixDataSourceExpanded,
 } = storeToRefs(uiStore)
@@ -42,13 +47,12 @@ const router = useRouter()
 const isPlatformRailCollapsed = ref(false)
 const distributionModule = ref<`strategy` | `ipReach`>(`strategy`)
 
-const creator = computed(() => getWorkflowCreator(workflowCreatorId.value))
-const creatorOffer = computed(() => getCreatorOffer(workflowCreatorId.value))
+const creator = computed(() => creators.value[0] ?? null)
 
 const platformRows = computed(() => {
-  const matrix = getCreatorPlatformMatrix(workflowCreatorId.value)
+  const matrix = platformMatrix.value
   const byType = new Map(matrix.map(row => [row.type, row]))
-  return listDistributionPlatformTypes(workflowCreatorId.value, matrix.map(row => row.type))
+  return listDistributionPlatformTypes(activeCreatorId.value, matrix.map(row => row.type))
     .map((type) => {
       const row = byType.get(type)
       return {
@@ -61,18 +65,32 @@ const platformRows = computed(() => {
     })
 })
 
+const selectedPlatformRow = computed(() =>
+  platformRows.value.find(row => row.type === workflowDistributionPlatform.value) ?? null,
+)
+
 const strategy = computed(() =>
-  getDistributionStrategy(workflowCreatorId.value, workflowDistributionPlatform.value),
+  getDistributionStrategy(activeCreatorId.value, workflowDistributionPlatform.value),
 )
 
 const growth = computed(() =>
-  getPlatformGrowthSnapshot(workflowCreatorId.value, workflowDistributionPlatform.value),
+  getPlatformGrowthSnapshot(
+    activeCreatorId.value,
+    workflowDistributionPlatform.value,
+    selectedPlatformRow.value,
+  ),
 )
 
 const platformLabel = computed(() => getPlatformProfileTitle(workflowDistributionPlatform.value))
 const isXiaohongshuSelected = computed(() => workflowDistributionPlatform.value === `xiaohongshu`)
-const creatorCardSharePath = computed(() => creatorCardRoute(workflowCreatorId.value))
+const creatorCardSharePath = computed(() => {
+  if (creatorProfile.brandShareRoutePath)
+    return creatorProfile.brandShareRoutePath
+  return creatorCardRoute(activeCreatorId.value)
+})
 const creatorCardShareUrl = computed(() => {
+  if (creatorProfile.brandShareUrl)
+    return creatorProfile.brandShareUrl
   if (typeof window === `undefined`)
     return creatorCardSharePath.value
   return new URL(creatorCardSharePath.value, window.location.origin).toString()
@@ -105,7 +123,7 @@ const checkinDate = computed(() => todayLocalDate())
 
 const checkinParams = computed(() => {
   const params = new URLSearchParams({
-    creatorId: workflowCreatorId.value,
+    creatorId: activeCreatorId.value,
     platformType: workflowDistributionPlatform.value,
     date: checkinDate.value,
   })
@@ -113,7 +131,7 @@ const checkinParams = computed(() => {
 })
 
 const checkinStorageKey = computed(() =>
-  `workflow.distribution.checkin.${workflowCreatorId.value}.${workflowDistributionPlatform.value}.${checkinDate.value}`,
+  `workflow.distribution.checkin.${activeCreatorId.value}.${workflowDistributionPlatform.value}.${checkinDate.value}`,
 )
 
 const checkinItems = computed(() => strategy.value.growthPlan?.checkinItems ?? [])
@@ -219,19 +237,28 @@ function goXiaohongshuCreation() {
 }
 
 function requireAuthForCreatorCard(action: string) {
-  if (authStore.isAuthenticated)
-    return true
-  toast.error(`登录后即可${action}`)
-  authStore.startLogin()
-  return false
+  if (!authStore.isAuthenticated) {
+    toast.error(`登录后即可${action}`)
+    authStore.startLogin()
+    return false
+  }
+  if (!creatorOffer.value) {
+    toast.error(`请先录入平台账号信息`)
+    return false
+  }
+  return true
 }
 
 async function copyCreatorCardLink() {
-  if (!requireAuthForCreatorCard(`复制创作名片链接`))
+  if (!requireAuthForCreatorCard(`复制分享链接`))
     return
+  if (!creatorProfile.profile?.shareEnabled) {
+    toast.error(`请先在设置 → 创作名片中开启品牌方分享`)
+    return
+  }
   try {
     await copyPlain(creatorCardShareUrl.value)
-    toast.success(`创作名片链接已复制`)
+    toast.success(`品牌方分享链接已复制`)
   }
   catch {
     toast.error(`复制失败，请手动复制链接`)
@@ -275,7 +302,7 @@ function onMatrixDataSourceToggle(event: Event) {
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         围绕当前文章管理发布平台、账号动作、访问检测和增长运营；当前
-        <span class="font-mono text-foreground">{{ workflowCreatorId }}</span>
+        <span class="font-mono text-foreground">{{ activeCreatorId }}</span>
         ·
         <span class="font-medium text-foreground">{{ platformLabel }}</span>
         的分发动作会在下方展示。
@@ -308,12 +335,33 @@ function onMatrixDataSourceToggle(event: Event) {
         v-else
         class="mt-3 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2 text-xs leading-relaxed text-muted-foreground"
       >
-        创作者数据与创作名片需
-        <button type="button" class="font-medium text-primary underline underline-offset-2" @click="authStore.startLogin()">
-          登录
+        登录后可创建并查看
+        <strong class="text-foreground">你的创作名片</strong>
+        与平台策略；站长预设标签仅绑定站长账号。
+        <button type="button" class="ml-1 font-medium text-primary underline underline-offset-2" @click="authStore.startLogin()">
+          登录 / 注册
         </button>
-        后查看。
       </p>
+      <section
+        v-if="authStore.isAuthenticated && !creatorOffer"
+        class="mt-3 rounded-xl border border-dashed border-primary/30 bg-primary/[0.04] px-3 py-3 text-sm dark:bg-primary/10"
+      >
+        <p class="font-medium">
+          还没有创作名片
+        </p>
+        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+          在编辑器顶栏「发布」中检测到平台账号，或在设置 → 创作名片中手动录入，名片与平台矩阵会自动生成。
+        </p>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" @click="router.push({ name: 'settings', hash: '#creator' })">
+            前往设置
+          </Button>
+          <Button type="button" size="sm" @click="router.push({ name: 'sync' })">
+            打开编辑器检测账号
+          </Button>
+        </div>
+      </section>
+
       <section
         v-if="authStore.isAuthenticated && creator && creatorOffer"
         class="mt-3 rounded-xl border border-primary/20 bg-primary/[0.04] px-3 py-3 dark:bg-primary/10"
@@ -369,11 +417,11 @@ function onMatrixDataSourceToggle(event: Event) {
             </Button>
             <Button type="button" variant="outline" size="sm" @click="copyCreatorCardLink">
               <Copy class="mr-1.5 h-3.5 w-3.5" />
-              复制链接
+              复制分享链接
             </Button>
             <Button type="button" size="sm" @click="openCreatorCard">
               <ExternalLink class="mr-1.5 h-3.5 w-3.5" />
-              打开名片
+              {{ creatorProfile.profile?.shareEnabled ? '预览分享页' : '打开名片' }}
             </Button>
           </div>
         </div>
@@ -432,7 +480,7 @@ function onMatrixDataSourceToggle(event: Event) {
                 粉丝 {{ row.followers }} · 阅读 {{ row.reads }}
               </span>
               <span v-else class="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                登录后可见粉丝 / 阅读
+                登录后可见
               </span>
             </span>
           </button>

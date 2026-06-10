@@ -1,4 +1,4 @@
 interface:
-  display_name: "Cloudflare Email Auth"
-  short_description: "Build email/password auth with D1 and Resend"
-  default_prompt: "Use $cloudflare-email-auth to implement and deploy email/password authentication with D1 and Resend."
+  display_name: Cloudflare Email Auth
+  short_description: Build email/password auth with D1 and Resend
+  default_prompt: Use $cloudflare-email-auth to implement and deploy email/password authentication with D1 and Resend.

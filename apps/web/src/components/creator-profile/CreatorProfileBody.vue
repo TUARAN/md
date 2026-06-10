@@ -144,7 +144,12 @@ const accountsByCategory = computed(() => {
 })
 
 const updatedAt = computed(() => {
-  const last = Math.max(profile.value.updatedAt || 0, ...detectedAccounts.value.map((a: PublicSocialAccount) => a.updatedAt || 0))
+  // profile 在没检测到账号时为 null（见 socialAccountsStore.profile）
+  const profileUpdatedAt = profile.value?.updatedAt ?? 0
+  const last = Math.max(
+    profileUpdatedAt,
+    ...detectedAccounts.value.map((a: PublicSocialAccount) => a.updatedAt || 0),
+  )
   return last ? new Date(last).toLocaleString() : ``
 })
 
@@ -182,7 +187,7 @@ function isSelectedDistribution(account: PublicSocialAccount) {
 <template>
   <div class="flex flex-1 flex-col">
     <section
-      v-if="showStats"
+      v-if="showStats && profile"
       class="grid gap-3 border-b border-border/70 py-4 sm:grid-cols-2 lg:grid-cols-4"
     >
       <div class="rounded-lg border border-border bg-background px-4 py-3 dark:bg-card">

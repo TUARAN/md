@@ -3,6 +3,7 @@ import { PLATFORM_DEFAULT_PROFILE_STATS, PLATFORM_DEFAULT_PROFILE_URLS } from '@
 export const TUARAN_CREATOR_ID = `tuaran`
 
 export const TUARAN_OFFER = {
+  kind: `site-owner` as const,
   id: TUARAN_CREATOR_ID,
   displayName: `安东尼`,
   pageTitle: `安东尼 · 创作名片`,

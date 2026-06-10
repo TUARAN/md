@@ -33,10 +33,15 @@ import {
   TOPUP_DAILY_AI_QUOTA,
 } from '@/constants/billingPolicy'
 import { APP_NAME } from '@/constants/branding'
+import { CREATOR_ID_MAX_LEN, CREATOR_ID_MIN_LEN, slugifyCreatorId, validateCreatorId } from '@/constants/creatorProfilePolicy'
 import { useAuthStore } from '@/stores/auth'
+import { useCreatorProfileStore } from '@/stores/creatorProfile'
 import { useThemeStore } from '@/stores/theme'
+import { copyPlain } from '@/utils/clipboard'
+import { toast } from '@/utils/toast'
 
 const auth = useAuthStore()
+const creatorProfile = useCreatorProfileStore()
 const themeStore = useThemeStore()
 const route = useRoute()
 const router = useRouter()
@@ -50,6 +55,7 @@ interface SectionDef {
 
 const sections: SectionDef[] = [
   { id: `account`, label: `账号`, icon: UserIcon },
+  { id: `creator`, label: `创作名片`, icon: PenLine },
   { id: `ai`, label: `AI 助手`, icon: Bot },
   { id: `theme`, label: `主题与样式`, icon: Palette },
   { id: `publishing`, label: `发布通道`, icon: Send, disabled: true },
@@ -119,6 +125,109 @@ function goEditor() {
 
 function goPricing() {
   router.push({ name: `pricing` })
+}
+
+const creatorForm = ref({
+  creatorId: ``,
+  displayName: ``,
+  tagline: ``,
+  homepage: ``,
+  shareEnabled: false,
+})
+const savingCreatorProfile = ref(false)
+const regeneratingShareToken = ref(false)
+
+/** slugify 后的实际 id，用户输入大写/中文/空格时仍能直观看到落库形态 */
+const creatorIdPreview = computed(() => slugifyCreatorId(creatorForm.value.creatorId))
+/** inline 校验：站长 id 由后端固定，不需要校验；其它用户为空时不提示（仅在用户开始输入后才报错） */
+const creatorIdError = computed(() => {
+  if (creatorProfile.isSiteOwner)
+    return null
+  if (!creatorForm.value.creatorId.trim())
+    return null
+  return validateCreatorId(creatorForm.value.creatorId)
+})
+
+watch(
+  () => creatorProfile.profile,
+  (profile) => {
+    if (!profile)
+      return
+    creatorForm.value = {
+      creatorId: profile.creatorId,
+      displayName: profile.displayName,
+      tagline: profile.tagline,
+      homepage: profile.homepage ?? ``,
+      shareEnabled: profile.shareEnabled,
+    }
+  },
+  { immediate: true },
+)
+
+async function saveCreatorProfile() {
+  if (!auth.isAuthenticated)
+    return
+  if (!creatorProfile.isSiteOwner) {
+    const validationError = validateCreatorId(creatorForm.value.creatorId)
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
+  }
+  savingCreatorProfile.value = true
+  try {
+    const result = await creatorProfile.save({
+      creatorId: creatorProfile.isSiteOwner ? undefined : creatorForm.value.creatorId.trim(),
+      displayName: creatorForm.value.displayName.trim(),
+      tagline: creatorForm.value.tagline.trim(),
+      homepage: creatorForm.value.homepage.trim() || null,
+      shareEnabled: creatorForm.value.shareEnabled,
+    })
+    if (result.offline)
+      toast.warning(`已暂存到本地，未同步到服务器（离线模式）`)
+    else
+      toast.success(`创作名片已保存`)
+  }
+  catch (e) {
+    toast.error(e instanceof Error ? e.message : `保存失败`)
+  }
+  finally {
+    savingCreatorProfile.value = false
+  }
+}
+
+async function copyBrandShareLink() {
+  if (!creatorProfile.brandShareUrl) {
+    toast.error(`请先开启品牌方分享并保存`)
+    return
+  }
+  try {
+    await copyPlain(creatorProfile.brandShareUrl)
+    toast.success(`品牌方分享链接已复制`)
+  }
+  catch {
+    toast.error(`复制失败，请手动复制链接`)
+  }
+}
+
+async function regenerateShareLink() {
+  if (!auth.isAuthenticated)
+    return
+  regeneratingShareToken.value = true
+  try {
+    const result = await creatorProfile.save({ regenerateShareToken: true, shareEnabled: true })
+    creatorForm.value.shareEnabled = true
+    if (result.offline)
+      toast.warning(`已在本地生成新链接，但未同步到服务器（离线模式）`)
+    else
+      toast.success(`已生成新的分享链接，旧链接将失效`)
+  }
+  catch (e) {
+    toast.error(e instanceof Error ? e.message : `重置失败`)
+  }
+  finally {
+    regeneratingShareToken.value = false
+  }
 }
 </script>
 
@@ -221,6 +330,117 @@ function goPricing() {
               <LogOut class="mr-1.5 size-4" />
               退出登录
             </Button>
+          </div>
+        </PanelShell>
+
+        <!-- 创作名片 -->
+        <PanelShell v-show="activeSection === 'creator'" as="section" tone="neutral" radius="lg" padding="lg" class="grid gap-4">
+          <SectionHeader :icon="PenLine" title="创作名片">
+            <template #description>
+              每个登录账号拥有独立创作标签；平台账号检测后会写入名片，下次登录仍可查看。站长预设「安东尼 / tuaran」仅绑定 {{ 'tuaran666@gmail.com' }}。
+            </template>
+          </SectionHeader>
+
+          <div v-if="!auth.isAuthenticated" class="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+            登录后可创建并保存你的创作名片标签。
+            <Button type="button" class="mt-3 gap-1.5" @click="auth.startLogin()">
+              <Mail class="size-4" />
+              登录 / 注册
+            </Button>
+          </div>
+
+          <div v-else class="grid gap-4">
+            <div class="grid gap-3">
+              <label class="grid gap-1.5 text-sm">
+                <span class="font-medium">标签 ID</span>
+                <Input
+                  v-model="creatorForm.creatorId"
+                  :disabled="creatorProfile.isSiteOwner"
+                  :placeholder="`小写字母/数字，${CREATOR_ID_MIN_LEN}-${CREATOR_ID_MAX_LEN} 位`"
+                  class="font-mono"
+                  :class="creatorIdError ? 'border-red-500/60 focus-visible:ring-red-500/30' : ''"
+                />
+                <span class="text-xs text-muted-foreground">
+                  名片 URL：<span class="font-mono">/creator-offer/{{ creatorIdPreview || 'your-id' }}</span>
+                  <template v-if="creatorProfile.isSiteOwner"> · 站长固定为 tuaran</template>
+                </span>
+                <span v-if="creatorIdError" class="text-xs text-red-600 dark:text-red-400">
+                  {{ creatorIdError }}
+                </span>
+              </label>
+              <label class="grid gap-1.5 text-sm">
+                <span class="font-medium">展示名称</span>
+                <Input v-model="creatorForm.displayName" placeholder="如：你的笔名或品牌名" />
+              </label>
+              <label class="grid gap-1.5 text-sm">
+                <span class="font-medium">一句话介绍</span>
+                <Input v-model="creatorForm.tagline" placeholder="如：技术写作 · 多平台同步" />
+              </label>
+              <label class="grid gap-1.5 text-sm">
+                <span class="font-medium">主页链接（可选）</span>
+                <Input v-model="creatorForm.homepage" placeholder="https://" />
+              </label>
+            </div>
+
+            <div class="rounded-lg border border-border/70 bg-muted/20 p-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p class="text-sm font-medium">
+                    品牌方只读分享
+                  </p>
+                  <p class="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                    开启后生成带 token 的链接，品牌方可无需登录预览创作名片。
+                  </p>
+                </div>
+                <label class="inline-flex items-center gap-2 text-sm">
+                  <input v-model="creatorForm.shareEnabled" type="checkbox" class="size-4 rounded border-border">
+                  开启分享
+                </label>
+              </div>
+              <div v-if="creatorProfile.brandShareUrl" class="mt-3 grid gap-2">
+                <p class="break-all font-mono text-[11px] text-muted-foreground">
+                  {{ creatorProfile.brandShareUrl }}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <Button type="button" variant="outline" size="sm" @click="copyBrandShareLink">
+                    复制分享链接
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="regeneratingShareToken"
+                    @click="regenerateShareLink"
+                  >
+                    重置链接
+                  </Button>
+                </div>
+              </div>
+              <p v-else class="mt-2 text-xs text-muted-foreground">
+                保存并开启分享后，这里会显示品牌方预览链接。
+              </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                :disabled="savingCreatorProfile || !!creatorIdError"
+                @click="saveCreatorProfile"
+              >
+                保存名片信息
+              </Button>
+              <Button
+                v-if="creatorProfile.creatorCardRoutePath"
+                type="button"
+                variant="outline"
+                @click="router.push(creatorProfile.creatorCardRoutePath)"
+              >
+                预览创作名片
+              </Button>
+              <Button type="button" variant="outline" @click="router.push({ name: 'distribution' })">
+                前往数据策略
+              </Button>
+            </div>
           </div>
         </PanelShell>
 

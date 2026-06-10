@@ -247,6 +247,50 @@ const STRATEGIES_BY_CREATOR: Record<string, Record<string, Omit<DistributionStra
   },
 }
 
+/** 普通用户默认策略：按平台给出通用建议，不继承站长定制内容 */
+const GENERIC_STRATEGIES: Record<string, Omit<DistributionStrategy, 'platformType'>> = {
+  default: {
+    title: `通用分发`,
+    summary: `同步排版后的稿件，保持各平台链接与署名一致。`,
+    cadence: `随你的主阵地发布节奏`,
+    tips: [`先选 1–2 个主平台做深，再逐步扩展同步渠道。`],
+    tactics: [`标题写清读者收益`, `文末保留统一引流块`, `发布前检查外链与排版`],
+    nextActions: [`确认该平台已登录`, `发布后 48h 回看阅读 / 互动`],
+  },
+  csdn: {
+    title: `CSDN`,
+    summary: `技术长文与 SEO 友好的主阵地之一。`,
+    cadence: `每周 1–2 篇`,
+    tips: [`标题含检索词`, `摘要 120 字内说清价值`],
+    tactics: [`文末固定引流块`, `同题在其他社区做改写`],
+    nextActions: [`核对专栏资料`, `发布后看访问与收藏`],
+  },
+  juejin: {
+    title: `掘金`,
+    summary: `开发者社区，适合教程、实践与观点稿。`,
+    cadence: `每周 1–2 篇`,
+    tips: [`首段先给结论`, `代码块与步骤图完整`],
+    tactics: [`参与话题 / 沸点`, `与主站文章互链`],
+    nextActions: [`检查账号登录态`, `同步最新长文`],
+  },
+  zhihu: {
+    title: `知乎`,
+    summary: `问答与专栏，适合观点与深度解读。`,
+    cadence: `每周 1 篇专栏 + 适度互动`,
+    tips: [`标题避免过度营销`, `正文前 3 段留住读者`],
+    tactics: [`文末引导关注`, `同题回答相关问题`],
+    nextActions: [`更新专栏简介`, `看 7 日阅读趋势`],
+  },
+  xiaohongshu: {
+    title: `小红书`,
+    summary: `图文 / 短内容，适合生活方式与技术科普改写。`,
+    cadence: `每周 2–3 条`,
+    tips: [`封面与标题决定点击率`, `正文分段便于扫读`],
+    tactics: [`首图突出关键词`, `评论区引导私信 / 主页`],
+    nextActions: [`检查创作者中心登录`, `记录哪类封面 CTR 更高`],
+  },
+}
+
 /** 宣发页优先展示的平台顺序（按创作者） */
 const PLATFORM_ORDER_BY_CREATOR: Record<string, string[]> = {
   [TUARAN_CREATOR_ID]: [
@@ -293,7 +337,7 @@ export function listDistributionPlatformTypes(creatorId: string, matrixTypes: st
 export function getDistributionStrategy(creatorId: string, platformType: string): DistributionStrategy {
   const id = creatorId.trim().toLowerCase()
   const type = normalizePlatformType(platformType)
-  const table = STRATEGIES_BY_CREATOR[id] ?? STRATEGIES_BY_CREATOR[TUARAN_CREATOR_ID]
+  const table = STRATEGIES_BY_CREATOR[id] ?? GENERIC_STRATEGIES
   const row = table[type] ?? table.default
   const platformRow = type === `x`
     ? null
@@ -312,8 +356,13 @@ export function getDistributionStrategy(creatorId: string, platformType: string)
   }
 }
 
-export function getPlatformGrowthSnapshot(_creatorId: string, platformType: string) {
-  if (normalizePlatformType(platformType) === `x`) {
+export function getPlatformGrowthSnapshot(
+  creatorId: string,
+  platformType: string,
+  matrixRow?: { followers: string, reads: string } | null,
+) {
+  const type = normalizePlatformType(platformType)
+  if (type === `x`) {
     const milestone = FAN_GROWTH_MILESTONES.find(m => m.id === `0-1`)!
     return {
       row: null,
@@ -322,7 +371,25 @@ export function getPlatformGrowthSnapshot(_creatorId: string, platformType: stri
       milestone,
     }
   }
-  const row = getDistributionPlatformRow(normalizePlatformType(platformType))
+
+  const row = matrixRow
+    ? {
+        type,
+        title: getDistributionPlatformRow(type).title,
+        url: null,
+        followers: matrixRow.followers,
+        reads: matrixRow.reads,
+      }
+    : creatorId.trim().toLowerCase() === TUARAN_CREATOR_ID
+      ? getDistributionPlatformRow(type)
+      : {
+          type,
+          title: getDistributionPlatformRow(type).title,
+          url: null,
+          followers: `—`,
+          reads: `—`,
+        }
+
   const followers = parseFollowerCount(row.followers)
   const milestoneId = resolveFanGrowthMilestoneId(followers)
   const milestone = FAN_GROWTH_MILESTONES.find(m => m.id === milestoneId)!

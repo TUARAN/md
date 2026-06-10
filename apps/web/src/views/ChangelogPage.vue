@@ -1,19 +1,40 @@
 <script setup lang="ts">
+import type {
+  RoadmapItem,
+  RoadmapMilestone,
+  RoadmapPriority,
+} from '@/constants/roadmap'
 import {
+  AlertTriangle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  Compass,
   GitBranch,
   GitCommitHorizontal,
   GitFork,
+  History,
+  ListChecks,
   Rocket,
   ShieldCheck,
+  Target,
   Wrench,
 } from 'lucide-vue-next'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { APP_NAME } from '@/constants/branding'
+import {
+  buildRoadmapStats,
+  ROADMAP_AUDIENCE_META,
+  ROADMAP_CATEGORY_META,
+  ROADMAP_ITEMS,
+  ROADMAP_MILESTONE_META,
+  ROADMAP_MILESTONE_ORDER,
+  ROADMAP_PRIORITY_META,
+  ROADMAP_PRIORITY_ORDER,
+  ROADMAP_STATUS_META,
+} from '@/constants/roadmap'
 
 const router = useRouter()
 
@@ -34,6 +55,27 @@ interface TimelineEntry {
 }
 
 const timelineEntries: TimelineEntry[] = [
+  {
+    id: `fork-2026-06-10`,
+    source: `fork`,
+    kind: `milestone`,
+    date: `2026-06-10`,
+    title: `多租户创作名片加固与状态机收敛`,
+    subtitle: `把"用户级创作名片"从可用做到稳：修复短暂的站长数据泄漏、补齐 D1 唯一冲突回退、收敛多 store 循环依赖。`,
+    items: [
+      `工作流默认 creatorId 由站长 tuaran 改为空串，避免普通用户登录瞬间渲染到站长的快照数据。`,
+      `slugifyCreatorId 调换 slice / strip 顺序，前后端一致，修复 48 字符边界处尾部留 - 被校验拒掉的隐性 bug。`,
+      `合并 0006 / 0007 D1 迁移为单文件；首次插入不再预生成 share_token，避免"为禁用功能预先生成密钥"。`,
+      `worker 端为新建名片加入 creator_id UNIQUE 回退（fallback slug + 随机后缀），防止站长邮箱命中已被占用的 tuaran 时 5xx。`,
+      `引入 CreatorOfferContent.kind 判别联合，移除 services.length 兜底判断与 as unknown as 强转。`,
+      `creatorProfile.save 返回 { offline } 状态；D1 未挂或 404 时改为 toast.warning 明示"未同步到服务器"。`,
+      `socialAccounts store 改为 server profile 派生，统一 store.getJSON/setJSON 抽象（修复浏览器扩展模式下直读 localStorage 的丢失问题）。`,
+      `CreatorOfferPage 5 段互斥 v-if 收敛成 viewState 状态机，避免组合遗漏导致的误跳转。`,
+      `WorkflowDistributionPage 已登录但无名片时补 empty state CTA；WorkflowCreatorPicker 无名片时不再静默隐藏。`,
+      `SettingsPage 标签 ID 加 inline 校验与 slugify 预览，校验未通过时禁用保存按钮。`,
+    ],
+    tags: [`创作名片`, `多租户`, `D1 迁移`, `状态机`, `安全加固`],
+  },
   {
     id: `fork-2026-06-03`,
     source: `fork`,
@@ -318,6 +360,49 @@ onMounted(() => {
 function goHome() {
   router.push({ name: `sync` })
 }
+
+/* ------------------------------------------------------------------ */
+/* roadmap view                                                        */
+/* ------------------------------------------------------------------ */
+
+type ActiveTab = `history` | `roadmap`
+
+/** 默认进入"已发布"tab；用户可通过顶部 segmented control 切换 */
+const activeTab = ref<ActiveTab>(`history`)
+
+/** 路线图筛选：里程碑（all / alpha / beta / ga / post-ga） */
+const roadmapMilestoneFilter = ref<`all` | RoadmapMilestone>(`all`)
+/** 路线图筛选：优先级 */
+const roadmapPriorityFilter = ref<`all` | RoadmapPriority>(`all`)
+
+const filteredRoadmapItems = computed<RoadmapItem[]>(() => {
+  return ROADMAP_ITEMS.filter((item) => {
+    if (roadmapMilestoneFilter.value !== `all` && item.milestone !== roadmapMilestoneFilter.value)
+      return false
+    if (roadmapPriorityFilter.value !== `all` && item.priority !== roadmapPriorityFilter.value)
+      return false
+    return true
+  })
+})
+
+/** 按里程碑分组，再按优先级排序，便于路线图视图直接渲染 */
+const groupedRoadmap = computed(() => {
+  return ROADMAP_MILESTONE_ORDER.map((milestone) => {
+    const items = filteredRoadmapItems.value
+      .filter(item => item.milestone === milestone)
+      .sort((a, b) => {
+        const ap = ROADMAP_PRIORITY_ORDER.indexOf(a.priority)
+        const bp = ROADMAP_PRIORITY_ORDER.indexOf(b.priority)
+        return ap - bp
+      })
+    return { milestone, items }
+  })
+})
+
+const roadmapStats = computed(() => buildRoadmapStats(ROADMAP_ITEMS))
+
+/** 当前筛选生效后还剩多少；用于空态提示 */
+const filteredCount = computed(() => filteredRoadmapItems.value.length)
 </script>
 
 <template>
@@ -345,10 +430,10 @@ function goHome() {
           </div>
 
           <h1 class="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-            更新日志
+            更新日志 &amp; 路线图
           </h1>
           <p class="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            这个页面把上游 doocs/md 的主要版本节点和当前 fork 之后的产品改动合并到同一条时间线里。蓝色表示 upstream,绿色表示本 fork 的修改日志。
+            「已发布」记录上游 doocs/md 的主要版本节点和当前 fork 之后的产品改动；「路线图」列出面向公众发布前后的合规、安全、计费、内容审核等改造目标。
           </p>
         </div>
 
@@ -388,7 +473,50 @@ function goHome() {
         </div>
       </header>
 
-      <section class="mt-6 grid gap-3 lg:grid-cols-3">
+      <!--
+        Tab 切换：已发布 / 路线图
+        放在 stats 之后、说明卡片之前；segmented 风格而不是底线 tab，避免在 changelog 这种纯展示页过重。
+      -->
+      <div
+        class="mt-6 inline-flex rounded-lg border border-border/70 bg-background p-1 shadow-sm dark:bg-card"
+        role="tablist"
+        aria-label="更新日志与路线图切换"
+      >
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'history'"
+          class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+          :class="activeTab === 'history'
+            ? 'bg-muted text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'"
+          @click="activeTab = 'history'"
+        >
+          <History class="size-4" />
+          已发布
+          <span class="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+            {{ timelineStats.total }}
+          </span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'roadmap'"
+          class="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+          :class="activeTab === 'roadmap'
+            ? 'bg-muted text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'"
+          @click="activeTab = 'roadmap'"
+        >
+          <Compass class="size-4" />
+          路线图
+          <span class="ml-1 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+            {{ roadmapStats.total }}
+          </span>
+        </button>
+      </div>
+
+      <section v-if="activeTab === 'history'" class="mt-6 grid gap-3 lg:grid-cols-3">
         <article class="rounded-lg border border-border/70 bg-background p-4 shadow-sm dark:bg-card">
           <Rocket class="size-5 text-emerald-600" />
           <h2 class="mt-3 text-sm font-semibold">
@@ -418,7 +546,7 @@ function goHome() {
         </article>
       </section>
 
-      <section class="mt-8">
+      <section v-if="activeTab === 'history'" class="mt-8">
         <div class="relative">
           <div class="absolute left-4 top-0 hidden h-full w-px bg-border md:block" />
 
@@ -493,6 +621,231 @@ function goHome() {
             </div>
           </article>
         </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- Roadmap tab                                                   -->
+      <!-- ============================================================ -->
+      <section v-if="activeTab === 'roadmap'" class="mt-6">
+        <!-- 顶部说明卡：里程碑分级解释 + 阻断项统计 -->
+        <div class="grid gap-3 lg:grid-cols-[1.4fr_1fr]">
+          <article class="rounded-lg border border-border/70 bg-background p-4 shadow-sm dark:bg-card">
+            <div class="flex items-center gap-2">
+              <Target class="size-5 text-primary" />
+              <h2 class="text-sm font-semibold">
+                公开发布的阶段定义
+              </h2>
+            </div>
+            <ul class="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
+              <li
+                v-for="milestone in ROADMAP_MILESTONE_ORDER"
+                :key="milestone"
+                class="flex gap-2"
+              >
+                <span
+                  class="mt-0.5 inline-flex h-5 shrink-0 items-center rounded border px-1.5 text-[10px] font-semibold"
+                  :class="ROADMAP_MILESTONE_META[milestone].classes"
+                >
+                  {{ ROADMAP_MILESTONE_META[milestone].shortLabel }}
+                </span>
+                <span>{{ ROADMAP_MILESTONE_META[milestone].summary }}</span>
+              </li>
+            </ul>
+          </article>
+
+          <article class="grid gap-2">
+            <div class="rounded-lg border border-red-200 bg-red-50/60 p-3 dark:border-red-500/30 dark:bg-red-500/5">
+              <div class="flex items-center gap-2">
+                <AlertTriangle class="size-4 text-red-600 dark:text-red-300" />
+                <p class="text-sm font-semibold text-red-700 dark:text-red-200">
+                  对外公开前必须闭环
+                </p>
+              </div>
+              <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                P0 阻断项（合规、安全、计费、内容审核、错误监控）共 <strong class="text-red-700 dark:text-red-300">{{ roadmapStats.priorityCount.P0 }}</strong> 项，是 Public Beta 之前的硬门槛。
+              </p>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="rounded-lg border border-border/70 bg-background p-3 shadow-sm dark:bg-card">
+                <p class="text-xs text-muted-foreground">
+                  里程碑总数
+                </p>
+                <p class="mt-1 text-xl font-semibold">
+                  {{ roadmapStats.total }}
+                </p>
+              </div>
+              <div class="rounded-lg border border-border/70 bg-background p-3 shadow-sm dark:bg-card">
+                <p class="text-xs text-muted-foreground">
+                  进行中
+                </p>
+                <p class="mt-1 text-xl font-semibold text-primary">
+                  {{ roadmapStats.statusCount['in-progress'] }}
+                </p>
+              </div>
+              <div class="rounded-lg border border-border/70 bg-background p-3 shadow-sm dark:bg-card">
+                <p class="text-xs text-muted-foreground">
+                  等外部依赖
+                </p>
+                <p class="mt-1 text-xl font-semibold text-red-600 dark:text-red-300">
+                  {{ roadmapStats.statusCount.blocked }}
+                </p>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <!-- 筛选条：里程碑 + 优先级 -->
+        <div class="mt-5 flex flex-col gap-2 rounded-lg border border-border/70 bg-background p-3 shadow-sm dark:bg-card sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">里程碑</span>
+            <button
+              type="button"
+              class="rounded-md border border-border/70 px-2 py-1 text-xs"
+              :class="roadmapMilestoneFilter === 'all'
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="roadmapMilestoneFilter = 'all'"
+            >
+              全部
+            </button>
+            <button
+              v-for="milestone in ROADMAP_MILESTONE_ORDER"
+              :key="milestone"
+              type="button"
+              class="rounded-md border border-border/70 px-2 py-1 text-xs"
+              :class="roadmapMilestoneFilter === milestone
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="roadmapMilestoneFilter = milestone"
+            >
+              {{ ROADMAP_MILESTONE_META[milestone].shortLabel }}
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">优先级</span>
+            <button
+              type="button"
+              class="rounded-md border border-border/70 px-2 py-1 text-xs"
+              :class="roadmapPriorityFilter === 'all'
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="roadmapPriorityFilter = 'all'"
+            >
+              全部
+            </button>
+            <button
+              v-for="priority in ROADMAP_PRIORITY_ORDER"
+              :key="priority"
+              type="button"
+              class="rounded-md border border-border/70 px-2 py-1 text-xs font-mono"
+              :class="roadmapPriorityFilter === priority
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="roadmapPriorityFilter = priority"
+            >
+              {{ priority }}
+            </button>
+          </div>
+        </div>
+
+        <!-- 空态 -->
+        <p
+          v-if="filteredCount === 0"
+          class="mt-4 rounded-lg border border-dashed border-border/70 bg-muted/20 p-6 text-center text-sm text-muted-foreground"
+        >
+          当前筛选下没有匹配的路线图项目。
+        </p>
+
+        <!-- 按里程碑分组渲染 -->
+        <div class="mt-5 grid gap-6">
+          <article
+            v-for="group in groupedRoadmap"
+            v-show="group.items.length"
+            :key="group.milestone"
+            class="grid gap-3"
+          >
+            <header class="flex flex-wrap items-baseline gap-2 border-b border-border/70 pb-2">
+              <span
+                class="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-semibold"
+                :class="ROADMAP_MILESTONE_META[group.milestone].classes"
+              >
+                <ListChecks class="size-3.5" />
+                {{ ROADMAP_MILESTONE_META[group.milestone].label }}
+              </span>
+              <span class="text-xs text-muted-foreground">
+                共 {{ group.items.length }} 项
+              </span>
+            </header>
+
+            <ul class="grid gap-3 md:grid-cols-2">
+              <li
+                v-for="item in group.items"
+                :key="item.id"
+                class="grid gap-2 rounded-lg border border-border/70 bg-background p-4 shadow-sm dark:bg-card"
+              >
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span
+                    class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-mono font-semibold"
+                    :class="ROADMAP_PRIORITY_META[item.priority].classes"
+                  >
+                    {{ ROADMAP_PRIORITY_META[item.priority].label }}
+                  </span>
+                  <span
+                    class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-medium"
+                    :class="ROADMAP_STATUS_META[item.status].classes"
+                  >
+                    {{ ROADMAP_STATUS_META[item.status].label }}
+                  </span>
+                  <span class="text-[10px] text-muted-foreground">
+                    {{ ROADMAP_CATEGORY_META[item.category].label }}
+                  </span>
+                </div>
+
+                <h3 class="text-sm font-semibold leading-tight">
+                  {{ item.title }}
+                </h3>
+                <p class="text-xs leading-relaxed text-muted-foreground">
+                  {{ item.goal }}
+                </p>
+
+                <div v-if="item.deliverables.length" class="mt-1 grid gap-1">
+                  <p class="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    关键交付物
+                  </p>
+                  <ul class="grid gap-1">
+                    <li
+                      v-for="d in item.deliverables"
+                      :key="d"
+                      class="flex gap-1.5 text-xs leading-relaxed text-muted-foreground"
+                    >
+                      <span class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/60" />
+                      <span>{{ d }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <p v-if="item.risk" class="mt-1 rounded border border-amber-300/60 bg-amber-50/60 px-2 py-1 text-[11px] leading-relaxed text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+                  风险 / 依赖：{{ item.risk }}
+                </p>
+
+                <div class="mt-1 flex flex-wrap gap-1">
+                  <span
+                    v-for="aud in item.audience"
+                    :key="aud"
+                    class="rounded border border-border/70 bg-muted/40 px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                  >
+                    {{ ROADMAP_AUDIENCE_META[aud] }}
+                  </span>
+                </div>
+              </li>
+            </ul>
+          </article>
+        </div>
+
+        <!-- 底部免责声明：roadmap ≠ 承诺 -->
+        <p class="mt-8 rounded-lg border border-dashed border-border/70 bg-muted/20 p-3 text-center text-xs text-muted-foreground">
+          路线图基于当前优先级排序，会随用户反馈与平台政策调整。条目数量与状态不构成对外承诺，仅反映"已被识别为重要、需要排进 backlog"。
+        </p>
       </section>
     </div>
   </main>

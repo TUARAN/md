@@ -5,11 +5,12 @@ import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
 import { PLATFORM_CATEGORIES } from '@/constants/platforms'
 import { useAuthStore } from '@/stores/auth'
+import { useCreatorProfileStore } from '@/stores/creatorProfile'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
-import { CREATOR_PROFILE_ROUTE } from '@/stores/socialAccounts'
 import { useUIStore } from '@/stores/ui'
 import { copyPlain } from '@/utils/clipboard'
+import { creatorCardRoute } from '@/utils/creatorRoutes'
 import { toast } from '@/utils/toast'
 
 defineOptions({
@@ -26,6 +27,7 @@ const uiStore = useUIStore()
 const { isMobile } = storeToRefs(uiStore)
 
 const auth = useAuthStore()
+const creatorProfile = useCreatorProfileStore()
 
 const {
   allAccounts,
@@ -144,12 +146,17 @@ function post() {
 
 function openCreatorProfile() {
   if (!auth.isAuthenticated) {
-    toast.error(`登录后即可查看创作名片`)
+    toast.error(`登录后即可查看你的创作名片`)
     auth.startLogin()
     return
   }
+  if (!creatorProfile.creatorId) {
+    toast.error(`正在加载创作名片，请稍后再试`)
+    void creatorProfile.refresh()
+    return
+  }
   cacheAccountsToProfile()
-  window.open(CREATOR_PROFILE_ROUTE, `_blank`, `noopener,noreferrer`)
+  window.open(creatorCardRoute(creatorProfile.creatorId), `_blank`, `noopener,noreferrer`)
 }
 
 function onUpdate(val: boolean) {
@@ -265,7 +272,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <div class="flex-1 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/20 px-3 py-2 text-sm">
                 <span class="text-muted-foreground">
-                  已登录账号会写入创作名片；登录 Syncblog 后可查看名片，登录新平台后可点「重新检测账号」刷新。
+                  已登录账号会写入你的创作名片；登录 Syncblog 后可查看个人标签，登录新平台后可点「重新检测账号」刷新。
                 </span>
                 <div class="flex flex-wrap items-center gap-2">
                   <Button

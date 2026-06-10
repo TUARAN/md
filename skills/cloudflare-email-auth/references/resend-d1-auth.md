@@ -258,7 +258,7 @@ curl -i -X POST https://example.com/api/auth/email/send-code \
 Expected API response:
 
 ```json
-{"ok":true}
+{ "ok": true }
 ```
 
 Then verify:

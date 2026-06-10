@@ -14,7 +14,7 @@ export function getAppBasePath() {
 /** 创作名片主锚点(creator-offer 页面内的主区块) */
 export const CREATOR_CARD_HASH = `content-sync`
 
-/** 个人 IP 合作说明页（需登录）,如 /md/creator-offer/tuaran */
+/** 个人 IP 合作说明页（本人登录或 ?share=token 只读）,如 /md/creator-offer/tuaran */
 export function creatorOfferRoute(creatorId: string, hash = ``) {
   const id = creatorId.trim().toLowerCase()
   const path = `${getAppBasePath()}/creator-offer/${encodeURIComponent(id)}`
@@ -25,4 +25,18 @@ export function creatorOfferRoute(creatorId: string, hash = ``) {
 /** 创作名片(对外主入口),自动滚动到 CREATOR_CARD_HASH 区块 */
 export function creatorCardRoute(creatorId: string) {
   return creatorOfferRoute(creatorId, CREATOR_CARD_HASH)
+}
+
+/** 品牌方只读分享链接（带 share token，无需登录） */
+export function creatorShareRoute(creatorId: string, shareToken: string) {
+  const path = creatorOfferRoute(creatorId, CREATOR_CARD_HASH)
+  const separator = path.includes(`?`) ? `&` : `?`
+  return `${path}${separator}share=${encodeURIComponent(shareToken)}`
+}
+
+export function buildCreatorShareUrl(creatorId: string, shareToken: string, origin?: string) {
+  const path = creatorShareRoute(creatorId, shareToken)
+  if (!origin)
+    return path
+  return new URL(path, origin).toString()
 }

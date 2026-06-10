@@ -1,4 +1,3 @@
-import { TUARAN_CREATOR_ID } from '@/constants/creatorOffer'
 import { getCreatorPlatformMatrix } from '@/constants/creators'
 import { listDistributionPlatformTypes } from '@/constants/distributionStrategies'
 import { normalizePlatformType } from '@/constants/platforms'
@@ -139,8 +138,12 @@ export const useUIStore = defineStore(`ui`, () => {
     aiImageDialogVisible.value = value ?? !aiImageDialogVisible.value
   }
 
-  /** 工作流当前创作者（平台矩阵、数据策略共用） */
-  const workflowCreatorId = store.reactive(`workflow_creator_id`, TUARAN_CREATOR_ID)
+  /**
+   * 工作流当前创作者（平台矩阵、数据策略共用）。
+   * 默认空串：未登录或 creatorProfile 尚未加载时不渲染任何具体创作者的数据，
+   * 避免短暂泄漏站长（tuaran）的快照给其他用户。登录后由 creatorProfile.applyProfile 主动写入。
+   */
+  const workflowCreatorId = store.reactive(`workflow_creator_id`, ``)
 
   /** 数据策略当前选中的平台 type（canonical key，详见 constants/platforms.ts） */
   const workflowDistributionPlatform = store.reactive(`workflow_distribution_platform`, `csdn`)
@@ -151,6 +154,8 @@ export const useUIStore = defineStore(`ui`, () => {
   const workflowMatrixDataSourceExpanded = store.reactive(`workflow_matrix_data_source_expanded`, true)
 
   function defaultDistributionPlatformForCreator(creatorId: string) {
+    if (!creatorId)
+      return `csdn`
     const matrix = getCreatorPlatformMatrix(creatorId).map(r => r.type)
     const ordered = listDistributionPlatformTypes(creatorId, matrix)
     return ordered[0] ?? `csdn`
@@ -161,6 +166,10 @@ export const useUIStore = defineStore(`ui`, () => {
     workflowCreatorId.value = id
     workflowDistributionPlatform.value = defaultDistributionPlatformForCreator(id)
   }
+
+  // ⚠️ 不在此处订阅 creatorProfile：旧实现造成 ui ↔ creatorProfile 的双向耦合，
+  // 任何一边的 immediate watch 都会在另一边 setup 尚未返回时触发。
+  // creatorProfile.applyProfile 现已直接调用 setWorkflowCreatorId 主动驱动 UI。
 
   function setWorkflowDistributionPlatform(platformType: string) {
     workflowDistributionPlatform.value = normalizePlatformType(platformType) || `csdn`
