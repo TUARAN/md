@@ -3,9 +3,10 @@
  *
  * Window: UTC day. Counter resets the first time we see `now >= reset_at`.
  *
- * Limits are intentionally conservative for v1; revisit when we ship Pro
- * billing. `plan` lives on the user row so admins can manually flip users to
- * pro from the D1 console while billing isn't wired up.
+ * Limits are intentionally conservative for v1. `plan` lives on the user row;
+ * `pro` means prepaid AI quota tier (cost-pass-through top-up), not a paid
+ * product subscription. Admins can manually extend quota from the D1 console
+ * while billing isn't wired up.
  */
 
 import type { PublicUser, UserRecord } from './types'
@@ -19,8 +20,8 @@ export const AI_QUOTA_LIMITS: Record<UserRecord['plan'], number> = {
  * Effective plan = stored plan reconciled against `pro_expires_at`.
  *
  * Pro flows in via webhook → `pro_expires_at` is set to the end of the
- * paid period. When that expires (no renewal received) the user silently
- * drops back to Free without any explicit job — we just compute it.
+ * prepaid quota period. When that expires (no renewal received) the user
+ * silently drops back to free daily quota without any explicit job.
  */
 export function effectivePlan(user: UserRecord): UserRecord['plan'] {
   const nowSec = Math.floor(Date.now() / 1000)

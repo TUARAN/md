@@ -93,7 +93,7 @@ async function runGenerate() {
         return
       }
       if (data?.code === `QUOTA_EXHAUSTED`) {
-        toast.error(`今日账号配额已用完，可升级 Pro 提高配额`)
+        toast.error(`今日账号配额已用完，可充值 AI 算力额度（成本价中转，平台不收费）`)
         window.location.assign(`/pricing`)
         return
       }
@@ -205,7 +205,7 @@ function insertOutputIntoEditor() {
       </template>
       <template #actions>
         <StatusBadge v-if="useSessionAuth" tone="info" :icon="Sparkles">
-          Free {{ quotaRemaining }} / {{ auth.aiQuota?.limit }}
+          免费 {{ quotaRemaining }} / {{ auth.aiQuota?.limit }}
         </StatusBadge>
         <StatusBadge v-else tone="success" :icon="Sparkles">
           免费试用
@@ -262,7 +262,7 @@ function insertOutputIntoEditor() {
         <template v-else-if="!auth.isPro">
           <button type="button" class="ml-2 inline-flex items-center gap-1 font-medium text-amber-700 underline underline-offset-2 dark:text-amber-300" @click="goPricing">
             <Crown class="size-3" />
-            升级 Pro 提高配额
+            充值 AI 算力额度
           </button>
         </template>
       </p>

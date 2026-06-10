@@ -218,11 +218,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
               </li>
             </ol>
             <p class="mt-2 text-xs">
-              标题或正文写错？多为目标平台后台改版所致，先升级 SyncBlog Plugin 到最新；仍异常请到插件仓库反馈。批量队列、数据回流等高级能力会放到
-              <RouterLink to="/pricing" class="font-medium text-primary underline underline-offset-2">
-                Pro
-              </RouterLink>
-              中迭代。
+              标题或正文写错？多为目标平台后台改版所致，先升级 SyncBlog Plugin 到最新；仍异常请到插件仓库反馈。批量队列、数据回流等能力会随版本迭代陆续开放，工具本身永久免费。
             </p>
           </div>
 

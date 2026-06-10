@@ -195,7 +195,7 @@ export default class extends WorkerEntrypoint<Env> {
           return this.jsonWithCors(
             {
               ok: false,
-              error: `今日 AI 配额已用尽，明天 UTC 0 点重置或升级到 Pro`,
+              error: `今日 AI 配额已用尽，明天 UTC 0 点重置或充值 AI 算力额度（成本价中转）`,
               code: `QUOTA_EXHAUSTED`,
             },
             { status: 429 },

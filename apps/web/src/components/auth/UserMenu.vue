@@ -10,6 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { QUOTA_PACK_LABEL } from '@/constants/billingPolicy'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -21,6 +22,8 @@ const initials = computed(() => {
   const source = u.name?.trim() || u.login || ``
   return source.slice(0, 2).toUpperCase()
 })
+
+const planLabel = computed(() => auth.isPro ? QUOTA_PACK_LABEL : `免费使用`)
 
 const quotaLabel = computed(() => {
   const q = auth.aiQuota
@@ -116,7 +119,7 @@ onBeforeUnmount(() => {
           class="hidden items-center gap-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 sm:inline-flex"
         >
           <Crown class="h-2.5 w-2.5" />
-          Pro
+          额度
         </span>
       </Button>
     </DropdownMenuTrigger>
@@ -152,8 +155,8 @@ onBeforeUnmount(() => {
       <div class="px-2 py-1.5 text-[11px] text-muted-foreground">
         <div class="flex items-center justify-between gap-2">
           <span>{{ quotaLabel }}</span>
-          <span class="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase">
-            {{ auth.user?.plan }}
+          <span class="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+            {{ planLabel }}
           </span>
         </div>
       </div>
@@ -166,7 +169,7 @@ onBeforeUnmount(() => {
         @select="handleUpgrade"
       >
         <Crown class="h-4 w-4" />
-        升级到 Pro
+        充值 AI 额度
       </DropdownMenuItem>
 
       <DropdownMenuItem class="gap-2" @select="handleSettings">

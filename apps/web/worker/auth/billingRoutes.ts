@@ -5,7 +5,7 @@
  *   POST /api/billing/intent              发起付款 (登录用户)
  *   POST /api/billing/wechat/callback     微信支付 webhook
  *   POST /api/billing/alipay/callback     支付宝 webhook
- *   POST /api/billing/admin/grant-pro     人工开通 Pro (X-Admin-Secret 头)
+ *   POST /api/billing/admin/grant-pro     人工开通 AI 额度 (X-Admin-Secret 头)
  *
  * 商户号未到位前: intent/callback 都 503,但请求会被 payment_events 记录,
  * 方便商户号申请下来后回看历史尝试。admin/grant-pro 立即可用。
@@ -96,14 +96,14 @@ export async function handleBillingApi(
     if (provider === `wechat` && !isWechatConfigured(env)) {
       return jsonResponse({
         ok: false,
-        error: `微信支付商户号尚未配置,先用「联系我们」开通 Pro`,
+        error: `微信支付商户号尚未配置，请先联系人工充值 AI 算力额度`,
         code: `WECHAT_NOT_CONFIGURED`,
       }, { status: 503 })
     }
     if (provider === `alipay` && !isAlipayConfigured(env)) {
       return jsonResponse({
         ok: false,
-        error: `支付宝商户尚未配置,先用「联系我们」开通 Pro`,
+        error: `支付宝商户尚未配置，请先联系人工充值 AI 算力额度`,
         code: `ALIPAY_NOT_CONFIGURED`,
       }, { status: 503 })
     }
@@ -156,7 +156,7 @@ export async function handleBillingApi(
 
   // ---------------------------------------------------------------------------
   // POST /api/billing/admin/grant-pro
-  // 立即可用的人工开 Pro 通道。商户号期间靠这个。
+  // 立即可用的人工开通额度通道。商户号期间靠这个。
   // ---------------------------------------------------------------------------
   if (path === `/api/billing/admin/grant-pro` && request.method === `POST`) {
     if (!env.ADMIN_SECRET)

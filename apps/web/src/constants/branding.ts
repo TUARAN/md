@@ -25,7 +25,7 @@ export const APP_WORKFLOW_VISION
 
 /** 当前版本范围说明 */
 export const APP_CURRENT_SCOPE
-  = `当前版本以内容整理、Markdown 编辑与渲染、多图床与向公众号等渠道同步为主，为后续全链路能力打基础。`
+  = `当前版本以内容整理、Markdown 编辑与渲染、多图床与向公众号等渠道同步为主，为后续全链路能力打基础。工具永久免费；充值仅为大模型 API 算力的成本价中转。`
 
 export const documentTitle = `${APP_NAME} · ${APP_SLOGAN}`
 

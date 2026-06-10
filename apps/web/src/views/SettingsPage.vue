@@ -27,6 +27,11 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { PanelShell, SectionHeader, StatusBadge } from '@/components/ui/layout'
+import {
+  FREE_DAILY_AI_QUOTA,
+  QUOTA_PACK_LABEL,
+  TOPUP_DAILY_AI_QUOTA,
+} from '@/constants/billingPolicy'
 import { APP_NAME } from '@/constants/branding'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
@@ -170,7 +175,7 @@ function goPricing() {
         <PanelShell v-show="activeSection === 'account'" as="section" tone="neutral" radius="lg" padding="lg" class="grid gap-4">
           <SectionHeader :icon="UserIcon" title="账号">
             <template #description>
-              管理你的登录身份、计划与 AI 调用配额。
+              管理登录身份与 AI 调用配额。工具本身永久免费，登录不收费。
             </template>
           </SectionHeader>
 
@@ -185,7 +190,7 @@ function goPricing() {
                   {{ auth.user?.name || auth.user?.login }}
                 </p>
                 <StatusBadge :tone="auth.isPro ? 'warning' : 'neutral'" :icon="auth.isPro ? Crown : undefined">
-                  {{ auth.isPro ? 'Pro' : 'Free' }}
+                  {{ auth.isPro ? QUOTA_PACK_LABEL : '免费使用' }}
                 </StatusBadge>
               </div>
               <p class="text-xs text-muted-foreground">
@@ -200,7 +205,7 @@ function goPricing() {
           </div>
 
           <div v-else class="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-sm leading-relaxed text-muted-foreground">
-            <p>未登录。使用邮箱注册或登录后,AI 调用会按账号计配额,你的 Pro 状态也只有登录后才生效。</p>
+            <p>未登录。使用邮箱注册或登录后，AI 调用会按账号计配额；登录与工具使用均免费，充值仅为购买大模型算力。</p>
             <Button type="button" class="mt-3 gap-1.5" @click="auth.startLogin()">
               <Mail class="size-4" />
               登录 / 注册
@@ -210,7 +215,7 @@ function goPricing() {
           <div v-if="auth.isAuthenticated" class="flex flex-wrap gap-2">
             <Button v-if="!auth.isPro" type="button" variant="default" @click="goPricing">
               <Crown class="mr-1.5 size-4" />
-              升级到 Pro
+              充值 AI 额度
             </Button>
             <Button type="button" variant="outline" @click="auth.logout()">
               <LogOut class="mr-1.5 size-4" />
@@ -248,7 +253,7 @@ function goPricing() {
                 {{ auth.aiQuota?.used }} / {{ auth.aiQuota?.limit }},剩余
                 <span class="font-medium text-foreground">{{ quotaRemaining }}</span> 次
               </p>
-              <p>窗口在每日 UTC 0 点重置。Free 计划每日 10 次,Pro 1000 次。</p>
+              <p>窗口在每日 UTC 0 点重置。免费用户每日 {{ FREE_DAILY_AI_QUOTA }} 次；充值后每日 {{ TOPUP_DAILY_AI_QUOTA }} 次（成本价中转，平台不收费）。</p>
             </div>
           </div>
 
@@ -259,7 +264,7 @@ function goPricing() {
             </Button>
             <Button v-if="!auth.isPro" type="button" variant="default" @click="goPricing">
               <Crown class="mr-1.5 size-4" />
-              升级提配额
+              充值 AI 额度
             </Button>
           </div>
         </PanelShell>

@@ -1,24 +1,27 @@
 /**
- * Billing helpers — SKU catalogue, subscription writes, Pro grant logic.
+ * Billing helpers — AI 算力额度 SKU、充值记录、额度开通逻辑。
  *
- * 渠道集成(微信支付 / 支付宝)在拿到商户号之前是 stub:`createPaymentIntent`
- * 返回 503,直到 `WECHAT_MCH_ID` / `ALIPAY_APP_ID` 等 secret 配齐。
- * 与此同时 `grantManualPro` 让我们能从 D1 console 或 Worker admin 路由手
- * 工开通 Pro,商户号下来前不影响有付费意向的用户。
+ * 计费原则：Syncblog 工具永久免费；充值款项仅用于向 DeepSeek 等上游
+ * 购买 API 算力并按成本为用户开通更高每日配额，平台不收取差价。
+ *
+ * 渠道集成（微信支付 / 支付宝）在拿到商户号之前是 stub：`createPaymentIntent`
+ * 返回 503，直到 `WECHAT_MCH_ID` / `ALIPAY_APP_ID` 等 secret 配齐。
+ * 与此同时 `grantManualPro` 让我们能从 D1 console 或 Worker admin 路由
+ * 人工开通额度，商户号下来前不影响有充值意向的用户。
  */
 
 import type { SubscriptionRecord, UserRecord } from './types'
 
-/** 月付 vs 年付。价格按分存(避免浮点误差)。 */
+/** 月充 / 年充。价格按分存（避免浮点误差），对应上游 API 成本估算。 */
 export const SKU_CATALOG = {
   pro_monthly: {
-    label: `Pro 月付`,
-    amountCents: 3900, // ¥39
+    label: `AI 算力月充`,
+    amountCents: 3900, // ¥39 — 成本价中转，非平台订阅费
     durationDays: 31,
   },
   pro_yearly: {
-    label: `Pro 年付`,
-    amountCents: 39900, // ¥399 — 8.5 折相对于月付 × 12 = ¥468
+    label: `AI 算力年充`,
+    amountCents: 39900, // ¥399 — 预充一年，仍按成本估算
     durationDays: 366,
   },
 } as const
@@ -30,7 +33,7 @@ export function isValidSku(s: string): s is Sku {
 }
 
 /**
- * 把订阅写进 D1。`status` 通常先 `pending`,后续 webhook 校验通过再改 active。
+ * 把充值记录写进 D1。`status` 通常先 `pending`，后续 webhook 校验通过再改 active。
  */
 export async function insertSubscription(
   db: D1Database,
@@ -94,10 +97,10 @@ export async function insertSubscription(
 }
 
 /**
- * 把用户的 Pro 截止时间往后推 `days` 天。如果用户当前已经是 Pro,从现有的
- * `pro_expires_at` 开始延长(续费场景);否则从 now 开始。
+ * 把用户的 AI 额度有效期往后推 `days` 天。如果用户当前已有额度，从现有的
+ * `pro_expires_at` 开始延长（续充场景）；否则从 now 开始。
  *
- * 返回新的 `pro_expires_at`(unix sec)。
+ * 返回新的 `pro_expires_at`（unix sec）。
  */
 export async function extendProExpiry(
   db: D1Database,
@@ -121,12 +124,12 @@ export async function extendProExpiry(
 }
 
 /**
- * Admin / 商户号未到位期间的「人工开 Pro」路径。
- *   - 写一条 provider='manual' 的 active 订阅
+ * Admin / 商户号未到位期间的「人工开通额度」路径。
+ *   - 写一条 provider='manual' 的 active 充值记录
  *   - 延长 pro_expires_at
  *   - 不收钱、不需要回调
  *
- * 调用方负责鉴权(目前在 /api/billing/admin/grant-pro 里用 ADMIN_SECRET)。
+ * 调用方负责鉴权（目前在 /api/billing/admin/grant-pro 里用 ADMIN_SECRET）。
  */
 export async function grantManualPro(
   db: D1Database,

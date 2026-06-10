@@ -17,7 +17,7 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /workflow/import             name=import     外站接入
  *   /workflow/distribution       name=distribution  数据策略
  *   /workflow/stats              name=stats      增长运营
- *   /pricing                     name=pricing    定价
+ *   /pricing                     name=pricing    AI 算力额度（成本价中转）
  *   /changelog                   name=changelog  更新日志
  *   /docs/import                 name=import-docs  站外接入文档
  *   /creator-offer/:creatorId    name=creator-offer  公开创作名片
@@ -101,7 +101,7 @@ const routes: RouteRecordRaw[] = [
 
   // 站外文章接入文档(公开页,不挂顶栏)
   { path: `/docs/import`, name: `import-docs`, component: ImportDocsPage },
-  // 定价 / 升级 Pro(公开页,不挂顶栏)
+  // AI 算力额度充值页（公开页，不挂顶栏；工具本身永久免费）
   { path: `/pricing`, name: `pricing`, component: PricingPage },
   // 更新日志(公开页,不挂顶栏)
   { path: `/changelog`, name: `changelog`, component: ChangelogPage },
