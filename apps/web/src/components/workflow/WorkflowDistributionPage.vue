@@ -298,14 +298,14 @@ function onMatrixDataSourceToggle(event: Event) {
         <template #icon>
           <Megaphone />
         </template>
-        多平台发布
+        矩阵管理
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        围绕当前文章管理发布平台、账号动作、访问检测和复盘节奏；当前
+        管理各平台账号矩阵：发布节奏、账号动作、访问检测和复盘策略。当前
         <span class="font-mono text-foreground">{{ activeCreatorId }}</span>
         ·
         <span class="font-medium text-foreground">{{ platformLabel }}</span>
-        的分发动作会在下方展示。
+        的矩阵动作会在下方展示。
       </p>
       <details
         class="mt-2 rounded-lg border border-border/50 bg-muted/10 text-xs leading-relaxed text-muted-foreground"
@@ -769,7 +769,7 @@ function onMatrixDataSourceToggle(event: Event) {
 
           <section class="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
             <Button variant="outline" size="sm" @click="goContentSync">
-              上一步：排版预览
+              上一步：排版发布
             </Button>
           </section>
         </div>

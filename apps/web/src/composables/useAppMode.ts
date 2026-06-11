@@ -30,7 +30,7 @@ const WORKFLOW_STEP_LABELS: Record<string, string> = {
   data: `找素材`,
   creation: `写文章`,
   import: `外站接入`,
-  distribution: `多平台发布`,
+  distribution: `矩阵管理`,
   stats: `数据复盘`,
 }
 
@@ -42,7 +42,7 @@ export function useAppMode() {
     if (PUBLIC_ROUTES.has(name))
       return { mode: `public`, label: ``, stepLabel: `` }
     if (EDITOR_ROUTES.has(name))
-      return { mode: `editor`, label: `编辑器`, stepLabel: `排版预览` }
+      return { mode: `editor`, label: `编辑器`, stepLabel: `排版发布` }
     return {
       mode: `workflow`,
       label: `工作流`,

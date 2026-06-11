@@ -59,8 +59,8 @@ function handleCopy(mode: string) {
 const workflowSteps = [
   { id: `data` as const, label: `找素材`, icon: Database, routeName: `data` },
   { id: `creation` as const, label: `写文章`, icon: Sparkles, routeName: `creation` },
-  { id: `sync` as const, label: `排版预览`, icon: FileText, routeName: `sync` },
-  { id: `distribution` as const, label: `多平台发布`, icon: Megaphone, routeName: `distribution` },
+  { id: `sync` as const, label: `排版发布`, icon: FileText, routeName: `sync` },
+  { id: `distribution` as const, label: `矩阵管理`, icon: Megaphone, routeName: `distribution` },
   { id: `stats` as const, label: `数据复盘`, icon: BarChart3, routeName: `stats` },
 ] as const
 

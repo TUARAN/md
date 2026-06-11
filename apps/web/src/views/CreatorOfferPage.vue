@@ -209,10 +209,10 @@ watch(
         无权查看该创作名片
       </h1>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        你只能查看自己账号下的创作名片。登录后可在「多平台发布」录入平台信息并生成个人标签。
+        你只能查看自己账号下的创作名片。登录后可在「矩阵管理」录入平台信息并生成个人标签。
       </p>
       <Button type="button" class="mt-4" variant="outline" @click="router.push({ name: 'distribution' })">
-        前往多平台发布
+        前往矩阵管理
       </Button>
     </div>
   </main>

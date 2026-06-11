@@ -438,7 +438,7 @@ async function regenerateShareLink() {
                 预览创作名片
               </Button>
               <Button type="button" variant="outline" @click="router.push({ name: 'distribution' })">
-                前往多平台发布
+                前往矩阵管理
               </Button>
             </div>
           </div>
