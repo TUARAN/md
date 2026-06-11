@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
+import { BarChart3, Database, Download, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
-import { getDataAcquisitionNavUrl } from '@/constants/branding'
+import { getDataAcquisitionNavUrl, getSyncblogPluginReleaseUrl } from '@/constants/branding'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
@@ -92,6 +92,15 @@ function openChangelog() {
 function openSettings() {
   router.push({ name: `settings` })
 }
+
+/**
+ * 「下载发布插件」入口：新开 SyncBlog 发布插件 release 页。
+ * 这里不直接 trigger zip 下载——release zip 名带版本号，没有稳定 latest 直链；
+ * 用户也常需要看 release notes（兼容性、新平台支持）再决定是否升级。
+ */
+function openPluginDownload() {
+  window.open(getSyncblogPluginReleaseUrl(), `_blank`, `noopener,noreferrer`)
+}
 </script>
 
 <template>
@@ -163,6 +172,28 @@ function openSettings() {
     <!-- 右侧：辅助入口 -->
     <div class="hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
+        <!--
+          下载发布插件：跳到 SyncBlog Plugin GitHub release 页。
+          位置：放在最左（日志、设置之前），新用户第一次使用就需要它。
+        -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 shrink-0 text-muted-foreground/80 hover:text-foreground"
+              aria-label="下载发布插件"
+              @click="openPluginDownload"
+            >
+              <Download class="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+            下载 SyncBlog 发布插件
+          </TooltipContent>
+        </Tooltip>
+
         <Tooltip>
           <TooltipTrigger as-child>
             <Button

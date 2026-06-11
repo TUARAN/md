@@ -3,6 +3,7 @@ import type { Post, PostAccount } from '@md/shared/types'
 import { Check, ChevronDown, ChevronRight, ExternalLink, Info, Loader2, Minus, RefreshCw, Send } from 'lucide-vue-next'
 import { CheckboxIndicator, CheckboxRoot, Primitive } from 'radix-vue'
 import { usePlatformAccountDetection } from '@/composables/usePlatformAccountDetection'
+import { getSyncblogPluginReleaseUrl } from '@/constants/branding'
 import { PLATFORM_CATEGORIES } from '@/constants/platforms'
 import { useAuthStore } from '@/stores/auth'
 import { useCreatorProfileStore } from '@/stores/creatorProfile'
@@ -220,7 +221,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
               <li>
                 <strong class="text-foreground">推荐：SyncBlog Plugin</strong>：
                 <a
-                  href="https://github.com/TUARAN/syncblog-plugin/releases/latest"
+                  :href="getSyncblogPluginReleaseUrl()"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="font-medium text-primary underline underline-offset-2"
@@ -242,7 +243,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <AlertTitle>未检测到可用发布扩展</AlertTitle>
             <AlertDescription>
               请安装
-              <a href="https://github.com/TUARAN/syncblog-plugin/releases/latest" target="_blank" rel="noopener noreferrer" class="underline text-primary">SyncBlog Plugin</a>，安装后刷新页面并点「重新检测账号」。
+              <a :href="getSyncblogPluginReleaseUrl()" target="_blank" rel="noopener noreferrer" class="underline text-primary">SyncBlog Plugin</a>，安装后刷新页面并点「重新检测账号」。
             </AlertDescription>
           </Alert>
 
