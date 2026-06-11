@@ -245,7 +245,7 @@ onUnmounted(() => {
               <template #icon>
                 <FileText />
               </template>
-              排版分发
+              排版预览
             </WorkflowPageTitle>
             <p class="max-w-2xl text-xs leading-relaxed text-muted-foreground">
               在左侧写 Markdown，右侧预览公众号排版；需要分发时，用发布插件把文章写入知乎、公众号、掘金等平台草稿。

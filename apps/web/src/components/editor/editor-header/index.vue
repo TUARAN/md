@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, ChevronRight, Database, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
+import { BarChart3, Database, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -44,33 +44,29 @@ function handleCopy(mode: string) {
   wechatCopy?.handleCopy(mode)
 }
 
-const primaryDomains = [
-  { id: `distribution` as const, label: `排版分发`, icon: FileText, routeName: `sync`, summary: `素材、创作、排版、发布` },
-  { id: `growth` as const, label: `增长运营`, icon: BarChart3, routeName: `stats`, summary: `复盘、策略、运营动作` },
-] as const
-
-const distributionSteps = [
-  { id: `data` as const, label: `选择素材`, icon: Database, routeName: `data` },
-  { id: `creation` as const, label: `AI 创作`, icon: Sparkles, routeName: `creation` },
-  { id: `sync` as const, label: `排版编辑`, icon: FileText, routeName: `sync` },
-] as const
-
-const growthSteps = [
-  { id: `distribution` as const, label: `数据策略`, icon: Megaphone, routeName: `distribution` },
+/*
+ * 顶栏导航：扁平化 5 步流程。
+ *
+ * 之前的设计把流程切成「排版分发 / 增长运营」两个一级 + 各自二级 tab，
+ * 但一级抽象、二级又出现「排版编辑」与一级「排版分发」命名穿透，
+ * 加上 L1/L2 视觉权重倒挂，新用户基本看不懂。
+ *
+ * 现在直接铺平成 5 个具体动作，命名全部"动词 / 名词"，
+ * 用户一眼能看完整个内容流。
+ *
+ * 路由名保持不变（data/creation/sync/distribution/stats），仅改 label 与排列。
+ */
+const workflowSteps = [
+  { id: `data` as const, label: `找素材`, icon: Database, routeName: `data` },
+  { id: `creation` as const, label: `写文章`, icon: Sparkles, routeName: `creation` },
+  { id: `sync` as const, label: `排版预览`, icon: FileText, routeName: `sync` },
+  { id: `distribution` as const, label: `多平台发布`, icon: Megaphone, routeName: `distribution` },
   { id: `stats` as const, label: `数据复盘`, icon: BarChart3, routeName: `stats` },
 ] as const
 
-type DistributionStep = (typeof distributionSteps)[number]
-type GrowthStep = (typeof growthSteps)[number]
-type RouteStep = DistributionStep | GrowthStep
+type WorkflowStep = (typeof workflowSteps)[number]
 
-const activeDomain = computed(() => {
-  return workflowAppPage.value === `stats` || workflowAppPage.value === `distribution` ? `growth` : `distribution`
-})
-
-const secondarySteps = computed(() => activeDomain.value === `growth` ? growthSteps : distributionSteps)
-
-function openWorkflowStep(stepId: RouteStep['routeName']) {
+function openWorkflowStep(stepId: WorkflowStep['routeName']) {
   if (stepId === `data`) {
     const url = getDataAcquisitionNavUrl()
     if (url) {
@@ -81,16 +77,12 @@ function openWorkflowStep(stepId: RouteStep['routeName']) {
   router.push({ name: stepId })
 }
 
-function isSecondaryStepActive(step: DistributionStep | GrowthStep) {
+function isStepActive(step: WorkflowStep) {
   return workflowAppPage.value === step.routeName
 }
 
-function openSecondaryStep(step: DistributionStep | GrowthStep) {
+function openStep(step: WorkflowStep) {
   openWorkflowStep(step.routeName)
-}
-
-function openPrimaryDomain(routeName: (typeof primaryDomains)[number]['routeName']) {
-  router.push({ name: routeName })
 }
 
 function openChangelog() {
@@ -104,42 +96,23 @@ function openSettings() {
 
 <template>
   <header class="header-container relative flex h-14 items-center gap-3 px-4 md:gap-4 md:px-5">
-    <!-- 桌面：一级"上下文徽章" + 面包屑箭头 + 二级 Tab 主导航 -->
+    <!--
+      桌面端：扁平化 5 步流程。
+      去掉了 L1 业务域 + L2 步骤的双层结构，单层直接列流程动作。
+    -->
     <div class="hidden min-w-0 flex-1 items-center gap-2 md:flex">
-      <div
-        class="domain-switcher relative inline-flex shrink-0 items-center gap-0.5 rounded-full p-0.5"
-        role="tablist"
-        aria-label="业务域切换"
-      >
-        <button
-          v-for="domain in primaryDomains"
-          :key="domain.id"
-          type="button"
-          role="tab"
-          :aria-selected="activeDomain === domain.id"
-          class="domain-pill relative inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] transition-all duration-200"
-          :class="activeDomain === domain.id ? 'domain-pill--active' : 'text-muted-foreground/80 hover:text-foreground'"
-          @click="openPrimaryDomain(domain.routeName)"
-        >
-          <component :is="domain.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>{{ domain.label }}</span>
-        </button>
-      </div>
-
-      <ChevronRight class="size-3.5 shrink-0 text-muted-foreground/40" aria-hidden="true" />
-
       <nav
         class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
-        aria-label="工作流步骤"
+        aria-label="内容流程"
       >
         <button
-          v-for="step in secondarySteps"
+          v-for="step in workflowSteps"
           :key="step.id"
           type="button"
           class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-200"
-          :class="isSecondaryStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-          :aria-current="isSecondaryStepActive(step) ? 'step' : undefined"
-          @click="openSecondaryStep(step)"
+          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+          :aria-current="isStepActive(step) ? 'step' : undefined"
+          @click="openStep(step)"
         >
           <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
           <span>{{ step.label }}</span>
@@ -147,64 +120,44 @@ function openSettings() {
       </nav>
     </div>
 
-    <!-- 移动端：Pill 切换 + 汉堡 / 第二行步骤滚动 -->
-    <div class="flex min-w-0 flex-1 flex-col gap-1.5 md:hidden">
-      <div class="flex min-w-0 items-center justify-between gap-2">
-        <div
-          class="domain-switcher relative inline-flex shrink-0 items-center gap-0.5 rounded-full p-0.5"
-          role="tablist"
-          aria-label="业务域切换"
-        >
-          <button
-            v-for="domain in primaryDomains"
-            :key="domain.id"
-            type="button"
-            role="tab"
-            :aria-selected="activeDomain === domain.id"
-            class="domain-pill relative inline-flex min-h-7 shrink-0 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-all duration-200"
-            :class="activeDomain === domain.id ? 'domain-pill--active' : 'text-muted-foreground hover:text-foreground'"
-            @click="openPrimaryDomain(domain.routeName)"
-          >
-            <component :is="domain.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-            <span>{{ domain.label }}</span>
-          </button>
-        </div>
-
-        <Menubar class="shrink-0 border-0 p-0">
-          <MenubarMenu>
-            <MenubarTrigger
-              class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
-            >
-              <Menu class="size-4 pointer-events-none" />
-            </MenubarTrigger>
-            <MenubarContent align="start">
-              <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
-              <EditDropdown :as-sub="true" @copy="handleCopy" />
-              <FormatDropdown :as-sub="true" />
-              <InsertDropdown :as-sub="true" />
-              <StyleDropdown :as-sub="true" />
-              <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-help="handleOpenMarkdownHelp" />
-            </MenubarContent>
-          </MenubarMenu>
-        </Menubar>
-      </div>
-
+    <!--
+      移动端：扁平化 5 步流程（横向滚动）+ 右侧汉堡菜单
+    -->
+    <div class="flex min-w-0 flex-1 items-center justify-between gap-2 md:hidden">
       <nav
-        class="step-tabs flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="工作流步骤"
+        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        aria-label="内容流程"
       >
         <button
-          v-for="step in secondarySteps"
+          v-for="step in workflowSteps"
           :key="step.id"
           type="button"
           class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-200"
-          :class="isSecondaryStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="openSecondaryStep(step)"
+          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          @click="openStep(step)"
         >
           <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
           <span>{{ step.label }}</span>
         </button>
       </nav>
+
+      <Menubar class="shrink-0 border-0 p-0">
+        <MenubarMenu>
+          <MenubarTrigger
+            class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
+          >
+            <Menu class="size-4 pointer-events-none" />
+          </MenubarTrigger>
+          <MenubarContent align="start">
+            <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
+            <EditDropdown :as-sub="true" @copy="handleCopy" />
+            <FormatDropdown :as-sub="true" />
+            <InsertDropdown :as-sub="true" />
+            <StyleDropdown :as-sub="true" />
+            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-help="handleOpenMarkdownHelp" />
+          </MenubarContent>
+        </MenubarMenu>
+      </Menubar>
     </div>
 
     <!-- 右侧：辅助入口 -->
@@ -278,28 +231,7 @@ function openSettings() {
   }
 }
 
-/* —— 一级"上下文徽章"：低对比，不与二级 Tab 抢主角 —— */
-.domain-switcher {
-  background: hsl(var(--muted) / 0.45);
-  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.5);
-  backdrop-filter: blur(6px);
-}
-
-.domain-pill {
-  &:focus-visible {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
-  }
-}
-
-.domain-pill--active {
-  color: hsl(var(--foreground));
-  background: hsl(var(--background));
-  box-shadow: 0 1px 2px 0 hsl(var(--foreground) / 0.08), inset 0 0 0 1px hsl(var(--border) / 0.5);
-}
-
-/* —— 二级 Tab：玻璃高亮 + 渐变下划线 —— */
+/* —— 流程步骤 Tab：玻璃高亮 + 渐变下划线 —— */
 .step-tab {
   &:hover {
     background: hsl(var(--accent) / 0.45);

@@ -438,7 +438,7 @@ async function regenerateShareLink() {
                 预览创作名片
               </Button>
               <Button type="button" variant="outline" @click="router.push({ name: 'distribution' })">
-                前往数据策略
+                前往多平台发布
               </Button>
             </div>
           </div>
@@ -480,7 +480,7 @@ async function regenerateShareLink() {
           <div class="flex flex-wrap gap-2">
             <Button type="button" variant="outline" @click="router.push({ name: 'creation' })">
               <Wand2 class="mr-1.5 size-4" />
-              去 AI 创作
+              去写文章
             </Button>
             <Button v-if="!auth.isPro" type="button" variant="default" @click="goPricing">
               <Crown class="mr-1.5 size-4" />

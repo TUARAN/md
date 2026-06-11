@@ -298,10 +298,10 @@ function onMatrixDataSourceToggle(event: Event) {
         <template #icon>
           <Megaphone />
         </template>
-        数据策略
+        多平台发布
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        围绕当前文章管理发布平台、账号动作、访问检测和增长运营；当前
+        围绕当前文章管理发布平台、账号动作、访问检测和复盘节奏；当前
         <span class="font-mono text-foreground">{{ activeCreatorId }}</span>
         ·
         <span class="font-medium text-foreground">{{ platformLabel }}</span>
@@ -488,7 +488,7 @@ function onMatrixDataSourceToggle(event: Event) {
       </aside>
 
       <main class="min-w-0">
-        <div class="mb-4 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="数据策略模块">
+        <div class="mb-4 inline-flex rounded-lg border border-border/80 bg-white/80 p-1 dark:bg-card" aria-label="发布模块">
           <button
             type="button"
             class="inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors"
@@ -769,7 +769,7 @@ function onMatrixDataSourceToggle(event: Event) {
 
           <section class="flex flex-wrap items-center gap-2 border-t border-border/60 pt-4">
             <Button variant="outline" size="sm" @click="goContentSync">
-              上一步：排版分发
+              上一步：排版预览
             </Button>
           </section>
         </div>

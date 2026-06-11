@@ -273,10 +273,10 @@ async function copyReport() {
         <template #icon>
           <BarChart3 />
         </template>
-        增长运营
+        数据复盘
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        汇总发布数据、平台表现和下一步动作；数据复盘是增长运营里的 Pro 能力之一。
+        汇总发布数据、平台表现和下一步动作；AI 自动生成的复盘报告是 Pro 能力之一。
       </p>
     </template>
 

@@ -23,14 +23,14 @@ const router = useRouter()
 
 const editorOrigin = computed(() => (typeof window !== `undefined` ? window.location.origin : `https://md.doocs.org`))
 
-/** 工作流定位:外站完成选题/改写后,内容从「排版分发」接入,再进入增长运营 */
+/** 工作流定位：外站完成选题/改写后，内容从「排版预览」接入，再进入多平台发布与数据复盘 */
 const workflowSteps = [
-  { key: `data`, label: `选择素材`, icon: Database, state: `done` },
-  { key: `creation`, label: `AI 创作`, icon: PenLine, state: `done` },
+  { key: `data`, label: `找素材`, icon: Database, state: `done` },
+  { key: `creation`, label: `写文章`, icon: PenLine, state: `done` },
   { key: `import`, label: `外站接入`, icon: Plug, state: `enter` },
-  { key: `sync`, label: `排版分发`, icon: FileText, state: `next` },
-  { key: `distribution`, label: `数据策略`, icon: Megaphone, state: `next` },
-  { key: `stats`, label: `增长运营`, icon: BarChart3, state: `next` },
+  { key: `sync`, label: `排版预览`, icon: FileText, state: `next` },
+  { key: `distribution`, label: `多平台发布`, icon: Megaphone, state: `next` },
+  { key: `stats`, label: `数据复盘`, icon: BarChart3, state: `next` },
 ] as const
 
 const fields = [
@@ -129,9 +129,9 @@ function goBack() {
           在工作流里的位置
         </h2>
         <p class="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-          对外站而言,选题和改写可以在站外完成。内容通过
+          对外站而言，选题和改写可以在站外完成。内容通过
           <span class="font-medium text-foreground">外站接入</span>
-          进入排版分发,之后进入数据策略,再沉淀为增长运营。
+          进入排版预览，之后多平台发布，再沉淀为数据复盘。
         </p>
 
         <div class="mt-4 flex flex-wrap items-center gap-2">

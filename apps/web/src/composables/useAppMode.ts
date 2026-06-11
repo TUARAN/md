@@ -25,12 +25,13 @@ export interface AppModeInfo {
   stepLabel: string
 }
 
+// 与 editor-header 的扁平 5 步流程命名保持一致
 const WORKFLOW_STEP_LABELS: Record<string, string> = {
-  data: `选择素材`,
-  creation: `AI 创作`,
+  data: `找素材`,
+  creation: `写文章`,
   import: `外站接入`,
-  distribution: `数据策略`,
-  stats: `增长运营`,
+  distribution: `多平台发布`,
+  stats: `数据复盘`,
 }
 
 export function useAppMode() {
@@ -41,7 +42,7 @@ export function useAppMode() {
     if (PUBLIC_ROUTES.has(name))
       return { mode: `public`, label: ``, stepLabel: `` }
     if (EDITOR_ROUTES.has(name))
-      return { mode: `editor`, label: `编辑器`, stepLabel: `排版分发` }
+      return { mode: `editor`, label: `编辑器`, stepLabel: `排版预览` }
     return {
       mode: `workflow`,
       label: `工作流`,
