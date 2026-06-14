@@ -1,4 +1,5 @@
 export { default as EditorWorkflowSyncRail } from './EditorWorkflowSyncRail.vue'
+export { default as WorkflowBookletLifecyclePage } from './WorkflowBookletLifecyclePage.vue'
 export { default as WorkflowBookletPlanPage } from './WorkflowBookletPlanPage.vue'
 export { default as WorkflowBookletResearchPage } from './WorkflowBookletResearchPage.vue'
 export { default as WorkflowBookletWritingPage } from './WorkflowBookletWritingPage.vue'

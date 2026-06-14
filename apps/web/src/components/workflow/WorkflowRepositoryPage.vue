@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { Code2, Copy, FileCode2, FileText, GitBranch, Github, PackageOpen, Rocket, Sparkles } from 'lucide-vue-next'
+import { Code2, Copy, FileCode2, FileText, GitBranch, Github, PackageOpen, Repeat2, Rocket, Sparkles, TrendingUp } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -14,7 +14,7 @@ import WorkflowPageShell from './WorkflowPageShell.vue'
 import WorkflowPageTitle from './WorkflowPageTitle.vue'
 import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
 
-type RepositoryStageId = `repo-idea` | `repo-plan` | `repo-build`
+type RepositoryStageId = `repo-idea` | `repo-plan` | `repo-build` | `repo-operation` | `repo-loop`
 
 interface RepositoryStage {
   id: RepositoryStageId
@@ -60,11 +60,29 @@ const repositoryStages: RepositoryStage[] = [
     outputs: [`核心文件清单`, `初始化命令`, `测试样例`, `Release checklist`],
     promptFocus: [`生成首版代码文件`, `补齐 package/script 配置`, `写 smoke test`, `输出发布前检查清单`],
   },
+  {
+    id: `repo-operation`,
+    title: `运营层`,
+    subtitle: `让 GitHub 项目获得第一批真实用户和反馈`,
+    icon: TrendingUp,
+    goal: `把项目发布出去并持续运营：README 转化、示例演示、Release 节奏、Issue 模板、社区入口和传播素材。`,
+    outputs: [`Launch checklist`, `README 转化优化`, `Issue 模板`, `传播素材包`],
+    promptFocus: [`设计 GitHub 首发运营动作`, `优化 README 首屏转化`, `生成 issue templates`, `写 release notes 和传播文案`],
+  },
+  {
+    id: `repo-loop`,
+    title: `闭环层`,
+    subtitle: `用 issue、star、使用数据反推下一轮迭代`,
+    icon: Repeat2,
+    goal: `把开源项目运营反馈转成可执行迭代：问题归类、路线图、贡献者任务、版本复盘和下一版优先级。`,
+    outputs: [`Issue 归类表`, `Roadmap 更新`, `贡献者任务池`, `版本复盘文档`],
+    promptFocus: [`整理 issue 到优先级矩阵`, `生成下一版 roadmap`, `拆分 good first issue`, `复盘 star / fork / 下载转化`],
+  },
 ]
 
 const activeStageId = computed<RepositoryStageId>(() => {
   const name = String(route.name ?? ``)
-  if (name === `repo-idea` || name === `repo-plan` || name === `repo-build`)
+  if (name === `repo-idea` || name === `repo-plan` || name === `repo-build` || name === `repo-operation` || name === `repo-loop`)
     return name
   return `repo-plan`
 })
@@ -141,10 +159,10 @@ function openStage(stage: RepositoryStage) {
             用大模型创作 GitHub 项目
           </WorkflowPageTitle>
           <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            从一个项目想法出发，让大模型帮你完成开源项目选题、仓库规格、README、Issue 拆解和首版代码脚手架。
+            从一个项目想法出发，让大模型帮你完成开源项目选题、仓库规格、README、Issue 拆解、首版代码脚手架、发布运营和迭代闭环。
           </p>
           <p class="text-sm font-medium text-foreground">
-            仓库线服务于「做一个可发布的 GitHub 项目」，和文章线、小册线并列。
+            仓库线服务于「做一个可发布、可运营、可迭代的 GitHub 项目」，和文章线、小册线并列。
           </p>
         </div>
 

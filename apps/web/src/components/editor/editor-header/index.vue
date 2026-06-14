@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BadgeDollarSign, BarChart3, BookOpen, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, ScrollText, Settings, Sparkles, Target } from 'lucide-vue-next'
+import { BadgeDollarSign, BarChart3, BookOpen, ChevronRight, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, Repeat2, ScrollText, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -44,10 +44,10 @@ function handleCopy(mode: string) {
 }
 
 /*
- * 顶栏导航分两条线:
+ * 顶栏导航分三条线:
  * - 文章线:素材、写作、排版发布、矩阵分发、数据复盘
- * - 小册线:成体系内容产品,不接在文章排版发布之后
- * - 仓库线:围绕 GitHub 项目从选题、仓库策划到代码脚手架
+ * - 小册线:成体系内容产品,从选题到销售运营再到复盘闭环
+ * - 仓库线:围绕 GitHub 项目从选题、仓库策划、代码脚手架到运营迭代
  */
 const articleWorkflowSteps = [
   { id: `data` as const, label: `找素材`, icon: Database, routeName: `data` },
@@ -61,12 +61,16 @@ const bookletWorkflowSteps = [
   { id: `booklet-research` as const, label: `调研选题`, icon: Target, routeName: `booklet-research` },
   { id: `booklet-plan` as const, label: `小册策划`, icon: BadgeDollarSign, routeName: `booklet-plan` },
   { id: `booklet-writing` as const, label: `章节生产`, icon: BookOpen, routeName: `booklet-writing` },
+  { id: `booklet-operation` as const, label: `运营层`, icon: TrendingUp, routeName: `booklet-operation` },
+  { id: `booklet-loop` as const, label: `闭环层`, icon: Repeat2, routeName: `booklet-loop` },
 ] as const
 
 const repositoryWorkflowSteps = [
   { id: `repo-idea` as const, label: `项目选题`, icon: GitBranch, routeName: `repo-idea` },
   { id: `repo-plan` as const, label: `仓库策划`, icon: Github, routeName: `repo-plan` },
   { id: `repo-build` as const, label: `代码脚手架`, icon: Code2, routeName: `repo-build` },
+  { id: `repo-operation` as const, label: `运营层`, icon: TrendingUp, routeName: `repo-operation` },
+  { id: `repo-loop` as const, label: `闭环层`, icon: Repeat2, routeName: `repo-loop` },
 ] as const
 
 type WorkflowStep = (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number] | (typeof repositoryWorkflowSteps)[number]
@@ -118,18 +122,19 @@ function openPluginDownload() {
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="文章创作与分发"
       >
-        <button
-          v-for="step in articleWorkflowSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
-          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-          :aria-current="isStepActive(step) ? 'step' : undefined"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
+        <template v-for="(step, index) in articleWorkflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
+            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+            :aria-current="isStepActive(step) ? 'step' : undefined"
+            @click="openStep(step)"
+          >
+            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+          <ChevronRight v-if="index < articleWorkflowSteps.length - 1" class="step-arrow" aria-hidden="true" />
+        </template>
       </nav>
     </div>
 
@@ -139,18 +144,19 @@ function openPluginDownload() {
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="小册体系创作与分发"
       >
-        <button
-          v-for="step in bookletWorkflowSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
-          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-          :aria-current="isStepActive(step) ? 'step' : undefined"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
+        <template v-for="(step, index) in bookletWorkflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
+            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+            :aria-current="isStepActive(step) ? 'step' : undefined"
+            @click="openStep(step)"
+          >
+            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+          <ChevronRight v-if="index < bookletWorkflowSteps.length - 1" class="step-arrow" aria-hidden="true" />
+        </template>
       </nav>
     </div>
 
@@ -160,18 +166,19 @@ function openPluginDownload() {
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="GitHub 仓库创作"
       >
-        <button
-          v-for="step in repositoryWorkflowSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
-          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-          :aria-current="isStepActive(step) ? 'step' : undefined"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
+        <template v-for="(step, index) in repositoryWorkflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
+            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+            :aria-current="isStepActive(step) ? 'step' : undefined"
+            @click="openStep(step)"
+          >
+            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+          <ChevronRight v-if="index < repositoryWorkflowSteps.length - 1" class="step-arrow" aria-hidden="true" />
+        </template>
       </nav>
     </div>
 
@@ -182,17 +189,18 @@ function openPluginDownload() {
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="文章创作与分发"
       >
-        <button
-          v-for="step in articleWorkflowSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
-          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
+        <template v-for="(step, index) in articleWorkflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
+            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="openStep(step)"
+          >
+            <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+          <ChevronRight v-if="index < articleWorkflowSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
+        </template>
       </nav>
 
       <Menubar class="shrink-0 border-0 p-0">
@@ -220,17 +228,18 @@ function openPluginDownload() {
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="小册体系创作与分发"
       >
-        <button
-          v-for="step in bookletWorkflowSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
-          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
+        <template v-for="(step, index) in bookletWorkflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
+            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="openStep(step)"
+          >
+            <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+          <ChevronRight v-if="index < bookletWorkflowSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
+        </template>
       </nav>
     </div>
 
@@ -240,17 +249,18 @@ function openPluginDownload() {
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="GitHub 仓库创作"
       >
-        <button
-          v-for="step in repositoryWorkflowSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
-          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
+        <template v-for="(step, index) in repositoryWorkflowSteps" :key="step.id">
+          <button
+            type="button"
+            class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
+            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+            @click="openStep(step)"
+          >
+            <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+            <span>{{ step.label }}</span>
+          </button>
+          <ChevronRight v-if="index < repositoryWorkflowSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
+        </template>
       </nav>
     </div>
 
@@ -346,6 +356,18 @@ function openPluginDownload() {
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+.step-arrow {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: hsl(var(--muted-foreground) / 0.48);
+}
+
+.step-arrow--mobile {
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 .workflow-lane-label {

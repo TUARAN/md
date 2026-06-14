@@ -16,9 +16,13 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /workflow/booklet/research   name=booklet-research 小册调研选题
  *   /workflow/booklet/plan       name=booklet-plan     小册策划
  *   /workflow/booklet/writing    name=booklet-writing  小册章节生产
+ *   /workflow/booklet/operation  name=booklet-operation 小册运营层
+ *   /workflow/booklet/loop       name=booklet-loop      小册闭环层
  *   /workflow/repository/idea     name=repo-idea        仓库项目选题
  *   /workflow/repository/plan     name=repo-plan        仓库策划
  *   /workflow/repository/build    name=repo-build       代码脚手架
+ *   /workflow/repository/operation name=repo-operation  仓库运营层
+ *   /workflow/repository/loop     name=repo-loop        仓库闭环层
  *   /workflow/creation           name=creation   AI 创作
  *   /workflow/import             name=import     外站接入
  *   /workflow/distribution       name=distribution  数据策略
@@ -54,6 +58,7 @@ const WorkflowDataPage = () => import('@/components/workflow/WorkflowDataPage.vu
 const WorkflowBookletResearchPage = () => import('@/components/workflow/WorkflowBookletResearchPage.vue')
 const WorkflowBookletPlanPage = () => import('@/components/workflow/WorkflowBookletPlanPage.vue')
 const WorkflowBookletWritingPage = () => import('@/components/workflow/WorkflowBookletWritingPage.vue')
+const WorkflowBookletLifecyclePage = () => import('@/components/workflow/WorkflowBookletLifecyclePage.vue')
 const WorkflowRepositoryPage = () => import('@/components/workflow/WorkflowRepositoryPage.vue')
 const WorkflowCreationPage = () => import('@/components/workflow/WorkflowCreationPage.vue')
 const WorkflowImportPage = () => import('@/components/workflow/WorkflowImportPage.vue')
@@ -67,7 +72,7 @@ const SettingsPage = () => import('@/views/SettingsPage.vue')
 const ChangelogPage = () => import('@/views/ChangelogPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
-export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `repo-idea`, `repo-plan`, `repo-build`, `creation`, `import`, `distribution`, `stats`] as const
+export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `booklet-operation`, `booklet-loop`, `repo-idea`, `repo-plan`, `repo-build`, `repo-operation`, `repo-loop`, `creation`, `import`, `distribution`, `stats`] as const
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
 /** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
@@ -96,11 +101,15 @@ const routes: RouteRecordRaw[] = [
       { path: `workflow/booklet/research`, name: `booklet-research`, component: WorkflowBookletResearchPage },
       { path: `workflow/booklet/plan`, name: `booklet-plan`, component: WorkflowBookletPlanPage },
       { path: `workflow/booklet/writing`, name: `booklet-writing`, component: WorkflowBookletWritingPage },
+      { path: `workflow/booklet/operation`, name: `booklet-operation`, component: WorkflowBookletLifecyclePage },
+      { path: `workflow/booklet/loop`, name: `booklet-loop`, component: WorkflowBookletLifecyclePage },
       { path: `workflow/monetize`, redirect: { name: `booklet-plan` } },
       { path: `workflow/repository`, redirect: { name: `repo-plan` } },
       { path: `workflow/repository/idea`, name: `repo-idea`, component: WorkflowRepositoryPage },
       { path: `workflow/repository/plan`, name: `repo-plan`, component: WorkflowRepositoryPage },
       { path: `workflow/repository/build`, name: `repo-build`, component: WorkflowRepositoryPage },
+      { path: `workflow/repository/operation`, name: `repo-operation`, component: WorkflowRepositoryPage },
+      { path: `workflow/repository/loop`, name: `repo-loop`, component: WorkflowRepositoryPage },
       { path: `workflow/creation`, name: `creation`, component: WorkflowCreationPage },
       { path: `workflow/import`, name: `import`, component: WorkflowImportPage },
       { path: `workflow/distribution`, name: `distribution`, component: WorkflowDistributionPage },

@@ -152,7 +152,7 @@ function onTabScroll(e: WheelEvent) {
 
 <template>
   <Dialog v-model:open="uiStore.isShowUploadImgDialog">
-    <DialogContent class="md:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" @pointer-down-outside="ev => ev.preventDefault()">
+    <DialogContent class="md:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" @pointer-down-outside="(ev: Event) => ev.preventDefault()">
       <DialogHeader>
         <DialogTitle>本地上传</DialogTitle>
       </DialogHeader>
