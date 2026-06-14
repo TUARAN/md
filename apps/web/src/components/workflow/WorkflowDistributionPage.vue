@@ -294,6 +294,9 @@ function onMatrixDataSourceToggle(event: Event) {
 <template>
   <WorkflowPageShell>
     <template #header>
+      <div class="mb-3 inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
+        Syncblog · 文章线
+      </div>
       <WorkflowPageTitle>
         <template #icon>
           <Megaphone />

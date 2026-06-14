@@ -161,6 +161,7 @@ function openPluginDownload() {
           {{ lane.label }}
         </button>
       </div>
+      <div class="lane-divider" aria-hidden="true" />
       <nav
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
         aria-label="当前线步骤"
@@ -357,13 +358,14 @@ function openPluginDownload() {
 
 .lane-tab {
   display: inline-flex;
-  height: 1.625rem;
+  height: 1.75rem;
   flex-shrink: 0;
   align-items: center;
   border-radius: 999px;
-  padding: 0 0.75rem;
-  font-size: 0.75rem;
+  padding: 0 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: hsl(var(--muted-foreground));
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -381,13 +383,26 @@ function openPluginDownload() {
 .lane-tab--mobile {
   height: 1.5rem;
   padding: 0 0.625rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
 }
 
+/* 一级菜单激活：实心主色,与二级 step 的浅色描边态拉开层级 */
 .lane-tab--active {
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  box-shadow: 0 1px 2px hsl(var(--shadow-soft) / 0.14);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 1px 3px hsl(var(--primary) / 0.32);
+
+  &:hover {
+    color: hsl(var(--primary-foreground));
+  }
+}
+
+/* 一级 / 二级之间的分隔 */
+.lane-divider {
+  width: 1px;
+  height: 1.25rem;
+  flex-shrink: 0;
+  background: hsl(var(--border) / 0.85);
 }
 
 .header-actions {

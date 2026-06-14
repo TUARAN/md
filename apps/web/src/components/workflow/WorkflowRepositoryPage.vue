@@ -154,15 +154,12 @@ function openStage(stage: RepositoryStage) {
           </div>
           <WorkflowPageTitle>
             <template #icon>
-              <Github />
+              <component :is="activeStage.icon" />
             </template>
-            用大模型创作 GitHub 项目
+            {{ activeStage.title }}
           </WorkflowPageTitle>
           <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            从一个项目想法出发，让大模型帮你完成开源项目选题、仓库规格、README、Issue 拆解、首版代码脚手架、发布运营和迭代闭环。
-          </p>
-          <p class="text-sm font-medium text-foreground">
-            开源线服务于「做一个可发布、可运营、可迭代的 GitHub 项目」，和文章线、小册线并列。
+            {{ activeStage.goal }}
           </p>
         </div>
 
