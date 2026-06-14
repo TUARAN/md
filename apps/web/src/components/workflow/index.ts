@@ -8,5 +8,6 @@ export { default as WorkflowDistributionPage } from './WorkflowDistributionPage.
 export { default as WorkflowPageShell } from './WorkflowPageShell.vue'
 export { default as WorkflowPageTitle } from './WorkflowPageTitle.vue'
 export { default as WorkflowRailPanel } from './WorkflowRailPanel.vue'
+export { default as WorkflowRepositoryPage } from './WorkflowRepositoryPage.vue'
 export { default as WorkflowSectionTitle } from './WorkflowSectionTitle.vue'
 export { default as WorkflowStatsPage } from './WorkflowStatsPage.vue'

@@ -16,6 +16,9 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /workflow/booklet/research   name=booklet-research 小册调研选题
  *   /workflow/booklet/plan       name=booklet-plan     小册策划
  *   /workflow/booklet/writing    name=booklet-writing  小册章节生产
+ *   /workflow/repository/idea     name=repo-idea        仓库项目选题
+ *   /workflow/repository/plan     name=repo-plan        仓库策划
+ *   /workflow/repository/build    name=repo-build       代码脚手架
  *   /workflow/creation           name=creation   AI 创作
  *   /workflow/import             name=import     外站接入
  *   /workflow/distribution       name=distribution  数据策略
@@ -51,6 +54,7 @@ const WorkflowDataPage = () => import('@/components/workflow/WorkflowDataPage.vu
 const WorkflowBookletResearchPage = () => import('@/components/workflow/WorkflowBookletResearchPage.vue')
 const WorkflowBookletPlanPage = () => import('@/components/workflow/WorkflowBookletPlanPage.vue')
 const WorkflowBookletWritingPage = () => import('@/components/workflow/WorkflowBookletWritingPage.vue')
+const WorkflowRepositoryPage = () => import('@/components/workflow/WorkflowRepositoryPage.vue')
 const WorkflowCreationPage = () => import('@/components/workflow/WorkflowCreationPage.vue')
 const WorkflowImportPage = () => import('@/components/workflow/WorkflowImportPage.vue')
 const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDistributionPage.vue')
@@ -63,7 +67,7 @@ const SettingsPage = () => import('@/views/SettingsPage.vue')
 const ChangelogPage = () => import('@/views/ChangelogPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
-export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `creation`, `import`, `distribution`, `stats`] as const
+export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `repo-idea`, `repo-plan`, `repo-build`, `creation`, `import`, `distribution`, `stats`] as const
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
 /** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
@@ -71,6 +75,7 @@ const LEGACY_HASH_TO_ROUTE: Record<string, WorkflowRouteName> = {
   'content-sync': `sync`,
   'data': `data`,
   'monetize': `booklet-plan`,
+  'repository': `repo-plan`,
   'creation': `creation`,
   'import': `import`,
   'matrix': `distribution`,
@@ -92,6 +97,10 @@ const routes: RouteRecordRaw[] = [
       { path: `workflow/booklet/plan`, name: `booklet-plan`, component: WorkflowBookletPlanPage },
       { path: `workflow/booklet/writing`, name: `booklet-writing`, component: WorkflowBookletWritingPage },
       { path: `workflow/monetize`, redirect: { name: `booklet-plan` } },
+      { path: `workflow/repository`, redirect: { name: `repo-plan` } },
+      { path: `workflow/repository/idea`, name: `repo-idea`, component: WorkflowRepositoryPage },
+      { path: `workflow/repository/plan`, name: `repo-plan`, component: WorkflowRepositoryPage },
+      { path: `workflow/repository/build`, name: `repo-build`, component: WorkflowRepositoryPage },
       { path: `workflow/creation`, name: `creation`, component: WorkflowCreationPage },
       { path: `workflow/import`, name: `import`, component: WorkflowImportPage },
       { path: `workflow/distribution`, name: `distribution`, component: WorkflowDistributionPage },
@@ -103,6 +112,7 @@ const routes: RouteRecordRaw[] = [
   { path: `/sync`, redirect: `/edit` },
   { path: `/data`, redirect: `/workflow/data` },
   { path: `/monetize`, redirect: `/workflow/booklet/plan` },
+  { path: `/repository`, redirect: `/workflow/repository/plan` },
   { path: `/creation`, redirect: `/workflow/creation` },
   { path: `/import`, redirect: `/workflow/import` },
   { path: `/distribution`, redirect: `/workflow/distribution` },

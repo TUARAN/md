@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BadgeDollarSign, BarChart3, BookOpen, Database, Download, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles, Target } from 'lucide-vue-next'
+import { BadgeDollarSign, BarChart3, BookOpen, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, ScrollText, Settings, Sparkles, Target } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,7 @@ function handleCopy(mode: string) {
  * 顶栏导航分两条线:
  * - 文章线:素材、写作、排版发布、矩阵分发、数据复盘
  * - 小册线:成体系内容产品,不接在文章排版发布之后
+ * - 仓库线:围绕 GitHub 项目从选题、仓库策划到代码脚手架
  */
 const articleWorkflowSteps = [
   { id: `data` as const, label: `找素材`, icon: Database, routeName: `data` },
@@ -62,7 +63,13 @@ const bookletWorkflowSteps = [
   { id: `booklet-writing` as const, label: `章节生产`, icon: BookOpen, routeName: `booklet-writing` },
 ] as const
 
-type WorkflowStep = (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number]
+const repositoryWorkflowSteps = [
+  { id: `repo-idea` as const, label: `项目选题`, icon: GitBranch, routeName: `repo-idea` },
+  { id: `repo-plan` as const, label: `仓库策划`, icon: Github, routeName: `repo-plan` },
+  { id: `repo-build` as const, label: `代码脚手架`, icon: Code2, routeName: `repo-build` },
+] as const
+
+type WorkflowStep = (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number] | (typeof repositoryWorkflowSteps)[number]
 
 function openWorkflowStep(step: WorkflowStep) {
   const stepId = step.routeName
@@ -103,8 +110,8 @@ function openPluginDownload() {
 </script>
 
 <template>
-  <header class="header-container relative flex min-h-[5.5rem] flex-col gap-1 px-3 py-2 md:min-h-[5.75rem] md:px-5">
-    <!-- 桌面端：两条线分两行，避免把小册误接到文章发布流程后面。 -->
+  <header class="header-container relative flex min-h-[7.75rem] flex-col gap-1 px-3 py-2 md:min-h-[8rem] md:px-5">
+    <!-- 桌面端：三条线分行，避免把小册/仓库误接到文章发布流程后面。 -->
     <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
       <span class="workflow-lane-label workflow-lane-label--wide">文章线</span>
       <nav
@@ -147,7 +154,28 @@ function openPluginDownload() {
       </nav>
     </div>
 
-    <!-- 移动端：两行横向滚动，右侧保留菜单。 -->
+    <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
+      <span class="workflow-lane-label workflow-lane-label--wide">仓库线</span>
+      <nav
+        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        aria-label="GitHub 仓库创作"
+      >
+        <button
+          v-for="step in repositoryWorkflowSteps"
+          :key="step.id"
+          type="button"
+          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
+          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+          :aria-current="isStepActive(step) ? 'step' : undefined"
+          @click="openStep(step)"
+        >
+          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+          <span>{{ step.label }}</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 移动端：三行横向滚动，右侧保留菜单。 -->
     <div class="flex w-full min-w-0 items-center justify-between gap-2 md:hidden">
       <span class="workflow-lane-label">文章</span>
       <nav
@@ -194,6 +222,26 @@ function openPluginDownload() {
       >
         <button
           v-for="step in bookletWorkflowSteps"
+          :key="step.id"
+          type="button"
+          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
+          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          @click="openStep(step)"
+        >
+          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+          <span>{{ step.label }}</span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="flex w-full min-w-0 items-center gap-2 md:hidden">
+      <span class="workflow-lane-label">仓库</span>
+      <nav
+        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        aria-label="GitHub 仓库创作"
+      >
+        <button
+          v-for="step in repositoryWorkflowSteps"
           :key="step.id"
           type="button"
           class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
