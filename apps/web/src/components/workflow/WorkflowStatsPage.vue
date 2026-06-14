@@ -135,7 +135,7 @@ const reportMarkdown = computed(() => {
     : `暂无可评估链接。`
 
   return [
-    `# ${activeTemplate.value.name} · 数据复盘`,
+    `# ${activeTemplate.value.name} · 数据闭环`,
     ``,
     `## 1. 数据来源`,
     `已发布链接 ${publishedLinks.value.length} 条，覆盖 ${publishedLinks.value.map(item => item.platform).join(`、`) || `未选择平台`}。`,
@@ -258,7 +258,7 @@ async function refreshMetrics() {
 async function copyReport() {
   try {
     await copyPlain(reportMarkdown.value)
-    toast.success(`已复制数据复盘`)
+    toast.success(`已复制数据闭环`)
   }
   catch {
     toast.error(`复制失败`)
@@ -273,7 +273,7 @@ async function copyReport() {
         <template #icon>
           <BarChart3 />
         </template>
-        数据复盘
+        数据闭环
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         汇总发布数据、平台表现和下一步动作；AI 自动生成的复盘报告是 Pro 能力之一。

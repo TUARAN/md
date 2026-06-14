@@ -95,7 +95,7 @@ const {
           @click="goRemixWithAssistant"
         >
           <Wand2 class="mr-1.5 size-4 shrink-0" />
-          去写文章
+          去文章创作
         </Button>
       </div>
       <Tabs v-model="resultTab" class="w-full min-w-0">

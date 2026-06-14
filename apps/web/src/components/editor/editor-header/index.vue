@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BadgeDollarSign, BarChart3, BookOpen, ChevronRight, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, Repeat2, ScrollText, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
-import { computed, inject } from 'vue'
+import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -44,36 +44,66 @@ function handleCopy(mode: string) {
 }
 
 /*
- * 顶栏导航分三条线:
- * - 文章线:素材、写作、排版发布、矩阵分发、数据复盘
+ * 顶栏导航分三条线,通过 tab 切换显示哪条线的步骤(不再三行平铺):
+ * - 文章线:素材采集、文章创作、排版发布、矩阵运营、数据闭环
  * - 小册线:成体系内容产品,从选题到销售运营再到复盘闭环
- * - 仓库线:围绕 GitHub 项目从选题、仓库策划、代码脚手架到运营迭代
+ * - 开源线:围绕 GitHub 项目从选题、规格策划、工程搭建到运营迭代
  */
 const articleWorkflowSteps = [
-  { id: `data` as const, label: `找素材`, icon: Database, routeName: `data` },
-  { id: `creation` as const, label: `写文章`, icon: Sparkles, routeName: `creation` },
+  { id: `data` as const, label: `素材采集`, icon: Database, routeName: `data` },
+  { id: `creation` as const, label: `文章创作`, icon: Sparkles, routeName: `creation` },
   { id: `sync` as const, label: `排版发布`, icon: FileText, routeName: `sync` },
-  { id: `distribution` as const, label: `矩阵管理`, icon: Megaphone, routeName: `distribution` },
-  { id: `stats` as const, label: `数据复盘`, icon: BarChart3, routeName: `stats` },
+  { id: `distribution` as const, label: `矩阵运营`, icon: Megaphone, routeName: `distribution` },
+  { id: `stats` as const, label: `数据闭环`, icon: BarChart3, routeName: `stats` },
 ] as const
 
 const bookletWorkflowSteps = [
   { id: `booklet-research` as const, label: `调研选题`, icon: Target, routeName: `booklet-research` },
-  { id: `booklet-plan` as const, label: `小册策划`, icon: BadgeDollarSign, routeName: `booklet-plan` },
+  { id: `booklet-plan` as const, label: `内容策划`, icon: BadgeDollarSign, routeName: `booklet-plan` },
   { id: `booklet-writing` as const, label: `章节生产`, icon: BookOpen, routeName: `booklet-writing` },
-  { id: `booklet-operation` as const, label: `运营层`, icon: TrendingUp, routeName: `booklet-operation` },
-  { id: `booklet-loop` as const, label: `闭环层`, icon: Repeat2, routeName: `booklet-loop` },
+  { id: `booklet-operation` as const, label: `矩阵运营`, icon: TrendingUp, routeName: `booklet-operation` },
+  { id: `booklet-loop` as const, label: `数据闭环`, icon: Repeat2, routeName: `booklet-loop` },
 ] as const
 
 const repositoryWorkflowSteps = [
   { id: `repo-idea` as const, label: `项目选题`, icon: GitBranch, routeName: `repo-idea` },
-  { id: `repo-plan` as const, label: `仓库策划`, icon: Github, routeName: `repo-plan` },
-  { id: `repo-build` as const, label: `代码脚手架`, icon: Code2, routeName: `repo-build` },
-  { id: `repo-operation` as const, label: `运营层`, icon: TrendingUp, routeName: `repo-operation` },
-  { id: `repo-loop` as const, label: `闭环层`, icon: Repeat2, routeName: `repo-loop` },
+  { id: `repo-plan` as const, label: `规格策划`, icon: Github, routeName: `repo-plan` },
+  { id: `repo-build` as const, label: `工程搭建`, icon: Code2, routeName: `repo-build` },
+  { id: `repo-operation` as const, label: `矩阵运营`, icon: TrendingUp, routeName: `repo-operation` },
+  { id: `repo-loop` as const, label: `数据闭环`, icon: Repeat2, routeName: `repo-loop` },
 ] as const
 
 type WorkflowStep = (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number] | (typeof repositoryWorkflowSteps)[number]
+
+/** 三条线收进一个 tab 切换器:点 tab 切换显示哪条线的步骤,点步骤才跳路由 */
+const WORKFLOW_LANES = [
+  { id: `article` as const, label: `文章`, steps: articleWorkflowSteps },
+  { id: `booklet` as const, label: `小册`, steps: bookletWorkflowSteps },
+  { id: `opensource` as const, label: `开源`, steps: repositoryWorkflowSteps },
+] as const
+
+type LaneId = (typeof WORKFLOW_LANES)[number][`id`]
+
+/** 当前路由属于哪条线(找不到回退文章线,例如编辑器 /edit 即文章线「排版发布」) */
+function laneOfRoute(name: string): LaneId {
+  const hit = WORKFLOW_LANES.find(lane => lane.steps.some(step => step.routeName === name))
+  return hit?.id ?? `article`
+}
+
+/**
+ * 当前展示哪条线的步骤:默认跟随路由所属线;用户点 tab 可临时切到别的线查看,
+ * 一旦路由变化(点了步骤或外部跳转)又重新跟随路由。
+ */
+const activeLaneId = ref<LaneId>(laneOfRoute(workflowAppPage.value))
+watch(workflowAppPage, name => (activeLaneId.value = laneOfRoute(name)))
+
+const activeLaneSteps = computed(() =>
+  WORKFLOW_LANES.find(lane => lane.id === activeLaneId.value)?.steps ?? articleWorkflowSteps,
+)
+
+function selectLane(id: LaneId) {
+  activeLaneId.value = id
+}
 
 function openWorkflowStep(step: WorkflowStep) {
   const stepId = step.routeName
@@ -114,15 +144,28 @@ function openPluginDownload() {
 </script>
 
 <template>
-  <header class="header-container relative flex min-h-[7.75rem] flex-col gap-1 px-3 py-2 md:min-h-[8rem] md:px-5">
-    <!-- 桌面端：三条线分行，避免把小册/仓库误接到文章发布流程后面。 -->
-    <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
-      <span class="workflow-lane-label workflow-lane-label--wide">文章线</span>
+  <header class="header-container relative flex min-h-[5.25rem] flex-col gap-1.5 px-3 py-2 md:min-h-[3.5rem] md:px-5">
+    <!-- 桌面端：一行 = 线 tab 切换 + 当前线的步骤（不再三行平铺） -->
+    <div class="hidden w-full min-w-0 items-center gap-3 pr-28 md:flex">
+      <div class="lane-tabs" role="tablist" aria-label="工作流线">
+        <button
+          v-for="lane in WORKFLOW_LANES"
+          :key="lane.id"
+          type="button"
+          role="tab"
+          class="lane-tab"
+          :class="{ 'lane-tab--active': activeLaneId === lane.id }"
+          :aria-selected="activeLaneId === lane.id"
+          @click="selectLane(lane.id)"
+        >
+          {{ lane.label }}
+        </button>
+      </div>
       <nav
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="文章创作与分发"
+        aria-label="当前线步骤"
       >
-        <template v-for="(step, index) in articleWorkflowSteps" :key="step.id">
+        <template v-for="(step, index) in activeLaneSteps" :key="step.id">
           <button
             type="button"
             class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
@@ -133,75 +176,27 @@ function openPluginDownload() {
             <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
             <span>{{ step.label }}</span>
           </button>
-          <ChevronRight v-if="index < articleWorkflowSteps.length - 1" class="step-arrow" aria-hidden="true" />
+          <ChevronRight v-if="index < activeLaneSteps.length - 1" class="step-arrow" aria-hidden="true" />
         </template>
       </nav>
     </div>
 
-    <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
-      <span class="workflow-lane-label workflow-lane-label--wide">小册线</span>
-      <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="小册体系创作与分发"
-      >
-        <template v-for="(step, index) in bookletWorkflowSteps" :key="step.id">
-          <button
-            type="button"
-            class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
-            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-            :aria-current="isStepActive(step) ? 'step' : undefined"
-            @click="openStep(step)"
-          >
-            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-            <span>{{ step.label }}</span>
-          </button>
-          <ChevronRight v-if="index < bookletWorkflowSteps.length - 1" class="step-arrow" aria-hidden="true" />
-        </template>
-      </nav>
-    </div>
-
-    <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
-      <span class="workflow-lane-label workflow-lane-label--wide">仓库线</span>
-      <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="GitHub 仓库创作"
-      >
-        <template v-for="(step, index) in repositoryWorkflowSteps" :key="step.id">
-          <button
-            type="button"
-            class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
-            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-            :aria-current="isStepActive(step) ? 'step' : undefined"
-            @click="openStep(step)"
-          >
-            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-            <span>{{ step.label }}</span>
-          </button>
-          <ChevronRight v-if="index < repositoryWorkflowSteps.length - 1" class="step-arrow" aria-hidden="true" />
-        </template>
-      </nav>
-    </div>
-
-    <!-- 移动端：三行横向滚动，右侧保留菜单。 -->
+    <!-- 移动端：第一行 = 线 tab + 菜单，第二行 = 当前线步骤横向滚动 -->
     <div class="flex w-full min-w-0 items-center justify-between gap-2 md:hidden">
-      <span class="workflow-lane-label">文章</span>
-      <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="文章创作与分发"
-      >
-        <template v-for="(step, index) in articleWorkflowSteps" :key="step.id">
-          <button
-            type="button"
-            class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
-            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-            @click="openStep(step)"
-          >
-            <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-            <span>{{ step.label }}</span>
-          </button>
-          <ChevronRight v-if="index < articleWorkflowSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
-        </template>
-      </nav>
+      <div class="lane-tabs" role="tablist" aria-label="工作流线">
+        <button
+          v-for="lane in WORKFLOW_LANES"
+          :key="lane.id"
+          type="button"
+          role="tab"
+          class="lane-tab lane-tab--mobile"
+          :class="{ 'lane-tab--active': activeLaneId === lane.id }"
+          :aria-selected="activeLaneId === lane.id"
+          @click="selectLane(lane.id)"
+        >
+          {{ lane.label }}
+        </button>
+      </div>
 
       <Menubar class="shrink-0 border-0 p-0">
         <MenubarMenu>
@@ -222,13 +217,12 @@ function openPluginDownload() {
       </Menubar>
     </div>
 
-    <div class="flex w-full min-w-0 items-center gap-2 md:hidden">
-      <span class="workflow-lane-label">小册</span>
+    <div class="flex w-full min-w-0 items-center md:hidden">
       <nav
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="小册体系创作与分发"
+        aria-label="当前线步骤"
       >
-        <template v-for="(step, index) in bookletWorkflowSteps" :key="step.id">
+        <template v-for="(step, index) in activeLaneSteps" :key="step.id">
           <button
             type="button"
             class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
@@ -238,28 +232,7 @@ function openPluginDownload() {
             <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
             <span>{{ step.label }}</span>
           </button>
-          <ChevronRight v-if="index < bookletWorkflowSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
-        </template>
-      </nav>
-    </div>
-
-    <div class="flex w-full min-w-0 items-center gap-2 md:hidden">
-      <span class="workflow-lane-label">仓库</span>
-      <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="GitHub 仓库创作"
-      >
-        <template v-for="(step, index) in repositoryWorkflowSteps" :key="step.id">
-          <button
-            type="button"
-            class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
-            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-            @click="openStep(step)"
-          >
-            <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-            <span>{{ step.label }}</span>
-          </button>
-          <ChevronRight v-if="index < repositoryWorkflowSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
+          <ChevronRight v-if="index < activeLaneSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
         </template>
       </nav>
     </div>
@@ -370,23 +343,51 @@ function openPluginDownload() {
   height: 0.75rem;
 }
 
-.workflow-lane-label {
+/* —— 线切换 tab：pill 分段控件 —— */
+.lane-tabs {
   display: inline-flex;
-  height: 1.5rem;
   flex-shrink: 0;
   align-items: center;
+  gap: 0.125rem;
+  padding: 0.1875rem;
   border-radius: 999px;
   border: 1px solid hsl(var(--border) / 0.7);
   background: hsl(var(--muted) / 0.42);
-  padding: 0 0.5rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: hsl(var(--muted-foreground));
 }
 
-.workflow-lane-label--wide {
-  width: 3.65rem;
-  justify-content: center;
+.lane-tab {
+  display: inline-flex;
+  height: 1.625rem;
+  flex-shrink: 0;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    color: hsl(var(--foreground));
+  }
+
+  &:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
+  }
+}
+
+.lane-tab--mobile {
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  font-size: 0.6875rem;
+}
+
+.lane-tab--active {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px hsl(var(--shadow-soft) / 0.14);
 }
 
 .header-actions {
