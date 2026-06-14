@@ -271,7 +271,7 @@ onUnmounted(() => {
       </template>
 
       <div
-        class="container-main-section border-radius-10 relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden border-x border-b"
+        class="container-main-section app-panel relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       >
         <ResizablePanelGroup direction="horizontal">
           <ResizablePanel

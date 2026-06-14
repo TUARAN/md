@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BarChart3, Database, Download, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles } from 'lucide-vue-next'
+import { BadgeDollarSign, BarChart3, BookOpen, Database, Download, FileText, Megaphone, Menu, ScrollText, Settings, Sparkles, Target } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,6 @@ const route = useRoute()
 
 /** 当前 workflow 步骤 id,由路由名派生(代替老的 ui.workflowAppPage 状态) */
 const workflowAppPage = computed(() => String(route.name ?? `sync`))
-
 const {
   aboutDialogVisible,
   editorStateDialogVisible,
@@ -45,18 +44,11 @@ function handleCopy(mode: string) {
 }
 
 /*
- * 顶栏导航：扁平化 5 步流程。
- *
- * 之前的设计把流程切成「排版分发 / 增长运营」两个一级 + 各自二级 tab，
- * 但一级抽象、二级又出现「排版编辑」与一级「排版分发」命名穿透，
- * 加上 L1/L2 视觉权重倒挂，新用户基本看不懂。
- *
- * 现在直接铺平成 5 个具体动作，命名全部"动词 / 名词"，
- * 用户一眼能看完整个内容流。
- *
- * 路由名保持不变（data/creation/sync/distribution/stats），仅改 label 与排列。
+ * 顶栏导航分两条线:
+ * - 文章线:素材、写作、排版发布、矩阵分发、数据复盘
+ * - 小册线:成体系内容产品,不接在文章排版发布之后
  */
-const workflowSteps = [
+const articleWorkflowSteps = [
   { id: `data` as const, label: `找素材`, icon: Database, routeName: `data` },
   { id: `creation` as const, label: `写文章`, icon: Sparkles, routeName: `creation` },
   { id: `sync` as const, label: `排版发布`, icon: FileText, routeName: `sync` },
@@ -64,9 +56,16 @@ const workflowSteps = [
   { id: `stats` as const, label: `数据复盘`, icon: BarChart3, routeName: `stats` },
 ] as const
 
-type WorkflowStep = (typeof workflowSteps)[number]
+const bookletWorkflowSteps = [
+  { id: `booklet-research` as const, label: `调研选题`, icon: Target, routeName: `booklet-research` },
+  { id: `booklet-plan` as const, label: `小册策划`, icon: BadgeDollarSign, routeName: `booklet-plan` },
+  { id: `booklet-writing` as const, label: `章节生产`, icon: BookOpen, routeName: `booklet-writing` },
+] as const
 
-function openWorkflowStep(stepId: WorkflowStep['routeName']) {
+type WorkflowStep = (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number]
+
+function openWorkflowStep(step: WorkflowStep) {
+  const stepId = step.routeName
   if (stepId === `data`) {
     const url = getDataAcquisitionNavUrl()
     if (url) {
@@ -82,7 +81,7 @@ function isStepActive(step: WorkflowStep) {
 }
 
 function openStep(step: WorkflowStep) {
-  openWorkflowStep(step.routeName)
+  openWorkflowStep(step)
 }
 
 function openChangelog() {
@@ -104,21 +103,19 @@ function openPluginDownload() {
 </script>
 
 <template>
-  <header class="header-container relative flex h-14 items-center gap-3 px-4 md:gap-4 md:px-5">
-    <!--
-      桌面端：扁平化 5 步流程。
-      去掉了 L1 业务域 + L2 步骤的双层结构，单层直接列流程动作。
-    -->
-    <div class="hidden min-w-0 flex-1 items-center gap-2 md:flex">
+  <header class="header-container relative flex min-h-[5.5rem] flex-col gap-1 px-3 py-2 md:min-h-[5.75rem] md:px-5">
+    <!-- 桌面端：两条线分两行，避免把小册误接到文章发布流程后面。 -->
+    <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
+      <span class="workflow-lane-label workflow-lane-label--wide">文章线</span>
       <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
-        aria-label="内容流程"
+        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        aria-label="文章创作与分发"
       >
         <button
-          v-for="step in workflowSteps"
+          v-for="step in articleWorkflowSteps"
           :key="step.id"
           type="button"
-          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-200"
+          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
           :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
           :aria-current="isStepActive(step) ? 'step' : undefined"
           @click="openStep(step)"
@@ -129,19 +126,39 @@ function openPluginDownload() {
       </nav>
     </div>
 
-    <!--
-      移动端：扁平化 5 步流程（横向滚动）+ 右侧汉堡菜单
-    -->
-    <div class="flex min-w-0 flex-1 items-center justify-between gap-2 md:hidden">
+    <div class="hidden w-full min-w-0 items-center gap-2 pr-28 md:flex">
+      <span class="workflow-lane-label workflow-lane-label--wide">小册线</span>
       <nav
         class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
-        aria-label="内容流程"
+        aria-label="小册体系创作与分发"
       >
         <button
-          v-for="step in workflowSteps"
+          v-for="step in bookletWorkflowSteps"
           :key="step.id"
           type="button"
-          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-200"
+          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
+          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
+          :aria-current="isStepActive(step) ? 'step' : undefined"
+          @click="openStep(step)"
+        >
+          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+          <span>{{ step.label }}</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- 移动端：两行横向滚动，右侧保留菜单。 -->
+    <div class="flex w-full min-w-0 items-center justify-between gap-2 md:hidden">
+      <span class="workflow-lane-label">文章</span>
+      <nav
+        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        aria-label="文章创作与分发"
+      >
+        <button
+          v-for="step in articleWorkflowSteps"
+          :key="step.id"
+          type="button"
+          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
           :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
           @click="openStep(step)"
         >
@@ -169,8 +186,28 @@ function openPluginDownload() {
       </Menubar>
     </div>
 
+    <div class="flex w-full min-w-0 items-center gap-2 md:hidden">
+      <span class="workflow-lane-label">小册</span>
+      <nav
+        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        aria-label="小册体系创作与分发"
+      >
+        <button
+          v-for="step in bookletWorkflowSteps"
+          :key="step.id"
+          type="button"
+          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
+          :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
+          @click="openStep(step)"
+        >
+          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+          <span>{{ step.label }}</span>
+        </button>
+      </nav>
+    </div>
+
     <!-- 右侧：辅助入口 -->
-    <div class="hidden shrink-0 items-center gap-1 md:flex">
+    <div class="header-actions hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
         <!--
           下载发布插件：跳到 SyncBlog Plugin GitHub release 页。
@@ -247,9 +284,10 @@ function openPluginDownload() {
   --header-tab-weight: 500;
   --header-tab-leading: 1.25;
 
-  background: hsl(var(--background) / 0.95);
-  border-bottom: 1px solid hsl(var(--border));
-  backdrop-filter: blur(12px);
+  background: hsl(var(--card) / 0.94);
+  border-bottom: 1px solid hsl(var(--border) / 0.85);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.65), 0 8px 24px hsl(var(--shadow-soft) / 0.04);
+  backdrop-filter: blur(14px) saturate(130%);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
 }
@@ -262,10 +300,38 @@ function openPluginDownload() {
   }
 }
 
-/* —— 流程步骤 Tab：玻璃高亮 + 渐变下划线 —— */
+.workflow-lane-label {
+  display: inline-flex;
+  height: 1.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.7);
+  background: hsl(var(--muted) / 0.42);
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.workflow-lane-label--wide {
+  width: 3.65rem;
+  justify-content: center;
+}
+
+.header-actions {
+  position: absolute;
+  top: 0.625rem;
+  right: 1.25rem;
+}
+
+/* —— 流程步骤 Tab：低噪声活动态 —— */
 .step-tab {
+  border: 1px solid transparent;
+
   &:hover {
-    background: hsl(var(--accent) / 0.45);
+    border-color: hsl(var(--border) / 0.72);
+    background: hsl(var(--muted) / 0.48);
   }
 
   &:focus-visible {
@@ -276,26 +342,22 @@ function openPluginDownload() {
 }
 
 .step-tab--active {
-  background: linear-gradient(180deg, hsl(var(--accent) / 0.7) 0%, hsl(var(--accent) / 0.25) 100%);
-  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.5), 0 1px 0 0 hsl(var(--background) / 0.4);
-  backdrop-filter: blur(6px) saturate(140%);
+  border-color: hsl(var(--primary) / 0.26);
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5);
 }
 
 .step-tab--active::after {
   content: '';
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    hsl(var(--foreground) / 0.85) 25%,
-    hsl(var(--foreground) / 0.85) 75%,
-    transparent 100%
-  );
+  left: 4px;
+  top: 50%;
+  width: 2px;
+  height: 1rem;
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  transform: translateY(-50%);
 }
 
 .menubar {

@@ -56,6 +56,21 @@ interface TimelineEntry {
 
 const timelineEntries: TimelineEntry[] = [
   {
+    id: `fork-2026-06-14-publishlab`,
+    source: `fork`,
+    kind: `milestone`,
+    date: `2026-06-14`,
+    title: `PublishLab 写作变现体系接入`,
+    subtitle: `把 publishlab.cc 的内容产品化方向并入当前工作台：PublishLab 负责选题、变现、小册生产，Syncblog 继续负责排版发布与多平台分发。`,
+    items: [
+      `新增 PublishLab 小册线三页面入口：调研选题、小册策划、章节生产分别承载独立工作。`,
+      `迁移完整写作变现调研 Markdown，覆盖 5 种变现机制、8 个内容平台、小说平台、微信读书、传统出版和数据来源。`,
+      `迁移《边缘智能体开发实战》完整 16 节小册内容，支持整本复制、章节复制和生成编辑器文稿。`,
+      `顶部工作流拆成文章线与小册线，保持 Syncblog 分发定位不变。`,
+    ],
+    tags: [`PublishLab`, `写作变现`, `小册`, `内容产品化`, `Syncblog`],
+  },
+  {
     id: `fork-2026-06-10`,
     source: `fork`,
     kind: `milestone`,

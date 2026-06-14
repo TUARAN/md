@@ -42,7 +42,7 @@ defineExpose({
     <div
       id="preview"
       ref="previewRef"
-      class="preview-wrapper w-full p-5 flex justify-center"
+      class="preview-wrapper flex w-full justify-center p-4 md:p-5"
     >
       <div
         id="output-wrapper"
@@ -50,7 +50,7 @@ defineExpose({
         :class="{ output_night: !backLight }"
       >
         <div
-          class="preview border-x shadow-xl mx-auto"
+          class="preview mx-auto border-x"
           :class="[
             effectivePreviewWidth,
             effectivePreviewWidth === 'w-[375px]' ? 'max-w-full' : '',

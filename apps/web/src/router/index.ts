@@ -13,6 +13,9 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *   /                            → 重定向到 /edit
  *   /edit                        编辑器主页(name=sync) — 排版分发 / 预览 / 发布准备
  *   /workflow/data               name=data       选择素材
+ *   /workflow/booklet/research   name=booklet-research 小册调研选题
+ *   /workflow/booklet/plan       name=booklet-plan     小册策划
+ *   /workflow/booklet/writing    name=booklet-writing  小册章节生产
  *   /workflow/creation           name=creation   AI 创作
  *   /workflow/import             name=import     外站接入
  *   /workflow/distribution       name=distribution  数据策略
@@ -45,6 +48,9 @@ const SyncPage = () => import('@/views/SyncPage.vue')
 
 // 非默认 workflow 页一律懒加载,首屏只装编辑器
 const WorkflowDataPage = () => import('@/components/workflow/WorkflowDataPage.vue')
+const WorkflowBookletResearchPage = () => import('@/components/workflow/WorkflowBookletResearchPage.vue')
+const WorkflowBookletPlanPage = () => import('@/components/workflow/WorkflowBookletPlanPage.vue')
+const WorkflowBookletWritingPage = () => import('@/components/workflow/WorkflowBookletWritingPage.vue')
 const WorkflowCreationPage = () => import('@/components/workflow/WorkflowCreationPage.vue')
 const WorkflowImportPage = () => import('@/components/workflow/WorkflowImportPage.vue')
 const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDistributionPage.vue')
@@ -57,13 +63,14 @@ const SettingsPage = () => import('@/views/SettingsPage.vue')
 const ChangelogPage = () => import('@/views/ChangelogPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
-export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `creation`, `import`, `distribution`, `stats`] as const
+export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `creation`, `import`, `distribution`, `stats`] as const
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
 /** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
 const LEGACY_HASH_TO_ROUTE: Record<string, WorkflowRouteName> = {
   'content-sync': `sync`,
   'data': `data`,
+  'monetize': `booklet-plan`,
   'creation': `creation`,
   'import': `import`,
   'matrix': `distribution`,
@@ -79,8 +86,12 @@ const routes: RouteRecordRaw[] = [
       // 主入口:编辑器永远在根路径,/edit 是规范 URL
       { path: ``, redirect: { name: `sync` } },
       { path: `edit`, name: `sync`, component: SyncPage },
-      // 4 个 workflow 步骤搬到 /workflow/*。Phase 3.2 会把它们拆出 EditorLayout。
+      // workflow 步骤搬到 /workflow/*。Phase 3.2 会把它们拆出 EditorLayout。
       { path: `workflow/data`, name: `data`, component: WorkflowDataPage },
+      { path: `workflow/booklet/research`, name: `booklet-research`, component: WorkflowBookletResearchPage },
+      { path: `workflow/booklet/plan`, name: `booklet-plan`, component: WorkflowBookletPlanPage },
+      { path: `workflow/booklet/writing`, name: `booklet-writing`, component: WorkflowBookletWritingPage },
+      { path: `workflow/monetize`, redirect: { name: `booklet-plan` } },
       { path: `workflow/creation`, name: `creation`, component: WorkflowCreationPage },
       { path: `workflow/import`, name: `import`, component: WorkflowImportPage },
       { path: `workflow/distribution`, name: `distribution`, component: WorkflowDistributionPage },
@@ -91,6 +102,7 @@ const routes: RouteRecordRaw[] = [
   // 老路径兼容(Phase 3.1):保留 1 个月后清掉
   { path: `/sync`, redirect: `/edit` },
   { path: `/data`, redirect: `/workflow/data` },
+  { path: `/monetize`, redirect: `/workflow/booklet/plan` },
   { path: `/creation`, redirect: `/workflow/creation` },
   { path: `/import`, redirect: `/workflow/import` },
   { path: `/distribution`, redirect: `/workflow/distribution` },

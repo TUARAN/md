@@ -45,17 +45,17 @@ const paddingClass = computed(() => ({
 }[props.padding]))
 
 const radiusClass = computed(() => ({
-  md: `rounded-xl`,
-  lg: `rounded-[18px]`,
-  xl: `rounded-[22px]`,
+  md: `rounded-md`,
+  lg: `rounded-lg`,
+  xl: `rounded-lg`,
 }[props.radius]))
 
 const toneClass = computed(() => ({
-  neutral: `border border-border/80 bg-white/80 dark:bg-card`,
+  neutral: `border border-border/80 bg-card`,
   primary: `border border-primary/25 bg-primary/[0.05] dark:bg-primary/10`,
   success: `border border-emerald-200/80 bg-emerald-50/50 dark:border-border dark:bg-card`,
   warning: `border border-amber-200/80 bg-amber-50/50 dark:border-border dark:bg-card`,
-  muted: `border border-border/60 bg-muted/30 dark:bg-card/60`,
+  muted: `border border-border/60 bg-muted/30 dark:bg-card/70`,
 }[props.tone]))
 
 const shadowClass = computed(() => (props.flat ? `` : `shadow-sm`))

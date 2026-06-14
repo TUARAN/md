@@ -22,7 +22,7 @@ const { mode } = useAppMode()
   <div class="container flex flex-col" :data-app-mode="mode">
     <EditorHeader />
 
-    <main class="container-main bg-muted/40 flex min-h-0 flex-1 flex-col dark:bg-muted/15">
+    <main class="container-main flex min-h-0 flex-1 flex-col bg-[hsl(var(--surface-subtle))] dark:bg-background">
       <RouterView v-slot="{ Component }">
         <KeepAlive>
           <component :is="Component" />

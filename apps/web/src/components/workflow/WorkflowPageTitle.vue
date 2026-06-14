@@ -8,7 +8,7 @@
   >
     <span
       v-if="$slots.icon"
-      class="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-[1.15rem]"
+      class="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/10 text-primary [&_svg]:size-[1.15rem]"
     >
       <slot name="icon" />
     </span>

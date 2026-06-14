@@ -304,11 +304,13 @@ body {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 6px;
-  background-color: #dadada;
+  background-color: hsl(var(--muted-foreground) / 0.28);
+  border: 1px solid hsl(var(--background) / 0.7);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background-color: #424242;
+  background-color: hsl(var(--muted-foreground) / 0.35);
+  border-color: hsl(var(--background) / 0.55);
 }
 
 // Utools 模式下隐藏所有滚动条
@@ -335,30 +337,31 @@ body {
   overflow-y: auto;
   margin: 0;
   padding: 2px;
-  border-radius: 4px;
+  border: 1px solid hsl(var(--border) / 0.8);
+  border-radius: 8px;
   max-height: 20em;
   min-width: 200px;
   font-size: 12px;
   font-family: monospace;
 
-  color: #333333;
-  background-color: #ffffff;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.12), 0 2px 4px 0 rgba(0, 0, 0, 0.08);
+  color: hsl(var(--popover-foreground));
+  background-color: hsl(var(--popover));
+  box-shadow: 0 14px 34px hsl(var(--shadow-soft) / 0.16), 0 2px 8px hsl(var(--shadow-soft) / 0.08);
 }
 
 .CodeMirror-hint {
   margin-top: 10px;
   padding: 4px 6px;
-  border-radius: 2px;
+  border-radius: 5px;
   white-space: pre;
-  color: #000000;
+  color: hsl(var(--popover-foreground));
   cursor: pointer;
 
   &:first-of-type {
     margin-top: 0;
   }
   &:hover {
-    background: #f0f0f0;
+    background: hsl(var(--accent) / 0.75);
   }
 }
 .search-match {
