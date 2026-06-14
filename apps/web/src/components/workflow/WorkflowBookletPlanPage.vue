@@ -84,7 +84,7 @@ function createTierPost(tier: PublishLabProductTier) {
             <template #icon>
               <BadgeDollarSign />
             </template>
-            小册策划
+            内容策划
           </WorkflowPageTitle>
           <p class="max-w-3xl text-sm leading-relaxed text-muted-foreground">
             把一组文章、教程或方法论定成可售卖的内容产品，明确产品形态、生产管线、渠道和 4 周执行计划。

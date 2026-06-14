@@ -298,7 +298,7 @@ function onMatrixDataSourceToggle(event: Event) {
         <template #icon>
           <Megaphone />
         </template>
-        矩阵管理
+        矩阵运营
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         管理各平台账号矩阵：发布节奏、账号动作、访问检测和复盘策略。当前

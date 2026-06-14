@@ -126,7 +126,7 @@ async function copyPrompt() {
 
 function openAssistantWithPrompt() {
   if (!creationDraftMarkdown.value.trim()) {
-    toast.error(`请先粘贴素材，或从找素材页送入材料`)
+    toast.error(`请先粘贴素材，或从素材采集页送入材料`)
     return
   }
   queueAiAssistantDraftMarkdown(remixPrompt.value)
@@ -141,7 +141,7 @@ function openAssistantWithPrompt() {
         <template #icon>
           <PenLine />
         </template>
-        写文章
+        文章创作
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
         借助 AI 把素材或初稿改成不同平台需要的表达风格，快速生成提示词与可继续编辑的成稿。
@@ -202,7 +202,7 @@ function openAssistantWithPrompt() {
         <Textarea
           v-model="creationDraftMarkdown"
           class="min-h-[320px] flex-1 resize-none rounded-2xl border-gray-200 bg-white/90 font-mono text-sm leading-relaxed shadow-sm focus-visible:ring-indigo-500 dark:border-border dark:bg-background"
-          placeholder="从「找素材」页送入资讯材料；也可以在这里粘贴原文、提纲或参考资料。"
+          placeholder="从「素材采集」页送入资讯材料；也可以在这里粘贴原文、提纲或参考资料。"
         />
       </section>
 

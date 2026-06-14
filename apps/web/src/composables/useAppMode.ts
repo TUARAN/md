@@ -25,23 +25,25 @@ export interface AppModeInfo {
   stepLabel: string
 }
 
-// 与 editor-header 的三条 workflow 线命名保持一致
+// 标签与 editor-header 的车道内 chip 保持一致。也会用于浏览器标签页标题
+// (`${APP_NAME} · ${stepLabel}`,见 App.vue);跨车道的通用阶段名(策划 /
+// 矩阵运营 / 数据闭环)在标题里会跨车道重名,这是有意取舍——优先和顶栏一致。
 const WORKFLOW_STEP_LABELS: Record<string, string> = {
-  'data': `找素材`,
+  'data': `素材采集`,
   'booklet-research': `调研选题`,
-  'booklet-plan': `小册策划`,
+  'booklet-plan': `内容策划`,
   'booklet-writing': `章节生产`,
-  'booklet-operation': `小册运营层`,
-  'booklet-loop': `小册闭环层`,
+  'booklet-operation': `矩阵运营`,
+  'booklet-loop': `数据闭环`,
   'repo-idea': `项目选题`,
-  'repo-plan': `仓库策划`,
-  'repo-build': `代码脚手架`,
-  'repo-operation': `仓库运营层`,
-  'repo-loop': `仓库闭环层`,
-  'creation': `写文章`,
+  'repo-plan': `规格策划`,
+  'repo-build': `工程搭建`,
+  'repo-operation': `矩阵运营`,
+  'repo-loop': `数据闭环`,
+  'creation': `文章创作`,
   'import': `外站接入`,
-  'distribution': `矩阵管理`,
-  'stats': `数据复盘`,
+  'distribution': `矩阵运营`,
+  'stats': `数据闭环`,
 }
 
 export function useAppMode() {

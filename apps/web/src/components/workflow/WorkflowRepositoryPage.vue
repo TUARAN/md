@@ -44,7 +44,7 @@ const repositoryStages: RepositoryStage[] = [
   },
   {
     id: `repo-plan`,
-    title: `仓库策划`,
+    title: `规格策划`,
     subtitle: `把项目想法拆成 README、目录结构和里程碑`,
     icon: Github,
     goal: `让大模型先产出仓库规格说明，包含 README 信息架构、模块拆分、技术栈、开发任务和发布清单。`,
@@ -53,7 +53,7 @@ const repositoryStages: RepositoryStage[] = [
   },
   {
     id: `repo-build`,
-    title: `代码脚手架`,
+    title: `工程搭建`,
     subtitle: `生成首版代码、示例、测试和发布说明`,
     icon: Code2,
     goal: `把仓库规格转成可运行的起始工程，优先生成核心文件、示例命令、测试用例和下一步迭代清单。`,
@@ -62,7 +62,7 @@ const repositoryStages: RepositoryStage[] = [
   },
   {
     id: `repo-operation`,
-    title: `运营层`,
+    title: `矩阵运营`,
     subtitle: `让 GitHub 项目获得第一批真实用户和反馈`,
     icon: TrendingUp,
     goal: `把项目发布出去并持续运营：README 转化、示例演示、Release 节奏、Issue 模板、社区入口和传播素材。`,
@@ -71,7 +71,7 @@ const repositoryStages: RepositoryStage[] = [
   },
   {
     id: `repo-loop`,
-    title: `闭环层`,
+    title: `数据闭环`,
     subtitle: `用 issue、star、使用数据反推下一轮迭代`,
     icon: Repeat2,
     goal: `把开源项目运营反馈转成可执行迭代：问题归类、路线图、贡献者任务、版本复盘和下一版优先级。`,
@@ -150,7 +150,7 @@ function openStage(stage: RepositoryStage) {
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div class="min-w-0 space-y-3">
           <div class="inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-            RepoLab · 仓库线
+            RepoLab · 开源线
           </div>
           <WorkflowPageTitle>
             <template #icon>
@@ -162,7 +162,7 @@ function openStage(stage: RepositoryStage) {
             从一个项目想法出发，让大模型帮你完成开源项目选题、仓库规格、README、Issue 拆解、首版代码脚手架、发布运营和迭代闭环。
           </p>
           <p class="text-sm font-medium text-foreground">
-            仓库线服务于「做一个可发布、可运营、可迭代的 GitHub 项目」，和文章线、小册线并列。
+            开源线服务于「做一个可发布、可运营、可迭代的 GitHub 项目」，和文章线、小册线并列。
           </p>
         </div>
 

@@ -35,8 +35,8 @@ const { currentPostId } = storeToRefs(postStore)
 const lifecycleStages: BookletLifecycleStage[] = [
   {
     id: `booklet-operation`,
-    title: `小册运营层`,
-    badge: `PublishLab · 运营层`,
+    title: `矩阵运营`,
+    badge: `PublishLab · 矩阵运营`,
     icon: TrendingUp,
     summary: `把小册从“写完”推进到“有人看到、有人购买、有人反馈”，设计预热、转化、交付和复购动作。`,
     outputs: [`首发预热节奏`, `销售页文案`, `样章分发计划`, `社群交付 SOP`],
@@ -44,8 +44,8 @@ const lifecycleStages: BookletLifecycleStage[] = [
   },
   {
     id: `booklet-loop`,
-    title: `小册闭环层`,
-    badge: `PublishLab · 闭环层`,
+    title: `数据闭环`,
+    badge: `PublishLab · 数据闭环`,
     icon: Repeat2,
     summary: `用销量、完读率、问题反馈和复购信号反推下一版小册，把内容产品变成可迭代资产。`,
     outputs: [`销售复盘表`, `用户问题池`, `版本迭代清单`, `下一期选题假设`],
@@ -139,7 +139,7 @@ function openStage(stage: BookletLifecycleStage) {
             为什么要有这一层
           </div>
           <p class="mt-3 text-sm leading-relaxed text-muted-foreground">
-            小册不是写完就结束。运营层负责让产品被看见和购买，闭环层负责用真实反馈继续改目录、改交付、改下一期选题。
+            小册不是写完就结束。矩阵运营负责让产品被看见和购买，数据闭环负责用真实反馈继续改目录、改交付、改下一期选题。
           </p>
         </PanelShell>
       </div>
