@@ -10,7 +10,7 @@ import WorkflowSectionTitle from './WorkflowSectionTitle.vue'
 const copied = ref(false)
 const editorOrigin = computed(() => (typeof window !== `undefined` ? window.location.origin : `https://md.doocs.org`))
 
-const importExampleCode = computed(() => `// 1. 打开 Syncblog 编辑器
+const importExampleCode = computed(() => `// 1. 打开 PublishLab 编辑器
 const editor = window.open('${editorOrigin.value}/edit', 'syncblog-editor')
 
 // 2. 等待编辑器就绪后推送 Markdown
@@ -53,7 +53,7 @@ async function copyImportExample() {
   <WorkflowPageShell>
     <template #header>
       <div class="mb-3 inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-        Syncblog · 文章线
+        PublishLab · 文章线
       </div>
       <WorkflowPageTitle>
         <template #icon>
@@ -62,7 +62,7 @@ async function copyImportExample() {
         外站接入
       </WorkflowPageTitle>
       <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        从你的采集站、博客后台、浏览器插件或自动化脚本，把已经生成的 Markdown 直接送入 Syncblog 编辑器。
+        从你的采集站、博客后台、浏览器插件或自动化脚本，把已经生成的 Markdown 直接送入 PublishLab 编辑器。
       </p>
     </template>
 
@@ -88,7 +88,7 @@ async function copyImportExample() {
               1. 打开编辑器
             </p>
             <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
-              外站通过 <code class="rounded bg-muted px-1 py-0.5">window.open()</code> 打开 Syncblog 编辑器，获得可通信的窗口对象。
+              外站通过 <code class="rounded bg-muted px-1 py-0.5">window.open()</code> 打开 PublishLab 编辑器，获得可通信的窗口对象。
             </p>
           </div>
           <div class="rounded-xl border border-border/70 bg-muted/20 p-3">

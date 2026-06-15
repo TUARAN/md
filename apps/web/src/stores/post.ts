@@ -33,7 +33,7 @@ export const usePostStore = defineStore(`post`, () => {
   const posts = store.reactive<Post[]>(addPrefix(`posts`), [
     {
       id: uuidv4(),
-      title: `认识一下：Syncblog`,
+      title: `认识一下：PublishLab`,
       content: DEFAULT_CONTENT,
       history: [
         { datetime: new Date().toLocaleString(`zh-cn`), content: DEFAULT_CONTENT },
