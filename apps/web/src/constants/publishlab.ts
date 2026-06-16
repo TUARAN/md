@@ -63,11 +63,11 @@ export interface PublishLabBooklet {
 }
 
 export const PUBLISH_LAB_BRAND = {
-  name: `PublishLab`,
+  name: `内容同步智能体`,
   domain: `publishlab.cc`,
-  positioning: `写作变现与内容产品化实验室`,
-  summary: `PublishLab 负责从选题、写作、小册生产到商业化路径设计；Syncblog 继续负责多平台分发、同步和复盘。`,
-  promise: `把写作从一篇文章推进为可售卖、可复用、可分发的内容产品。`,
+  positioning: `AI 内容分发与多平台同步智能体`,
+  summary: `内容同步智能体让 AI 参与你的内容分发，一键将同一篇内容发布至 30+ 平台；多平台发布与同步由 Syncblog 模块承担。`,
+  promise: `写好一篇内容，即可一键同步发布到 30+ 平台，让分发不再是重复劳动。`,
 }
 
 export const PUBLISH_LAB_PRODUCT_TIERS: PublishLabProductTier[] = [

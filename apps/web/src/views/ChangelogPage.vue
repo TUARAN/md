@@ -56,6 +56,20 @@ interface TimelineEntry {
 
 const timelineEntries: TimelineEntry[] = [
   {
+    id: `fork-2026-06-17-content-sync-agent`,
+    source: `fork`,
+    kind: `milestone`,
+    date: `2026-06-17`,
+    title: `品牌升级为「内容同步智能体」`,
+    subtitle: `主品牌从 PublishLab 升级为「内容同步智能体」，定位收敛为：让 AI 参与你的内容分发，一键将内容发布至 30+ 平台；Syncblog 继续作为多平台发布与同步的能力模块。`,
+    items: [
+      `更新站点标题、首屏 splash、SEO 描述与浏览器扩展名称为「内容同步智能体」。`,
+      `主 slogan 统一为「让 AI 参与你的内容分发，一键发布至 30+ 平台」。`,
+      `同步更新工作流页面徽标、示例文章、计费声明与 README 等用户可见文案。`,
+    ],
+    tags: [`内容同步智能体`, `品牌升级`, `内容分发`, `Syncblog`],
+  },
+  {
     id: `fork-2026-06-14-publishlab`,
     source: `fork`,
     kind: `milestone`,

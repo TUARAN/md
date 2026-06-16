@@ -2,30 +2,30 @@
  * 产品品牌与定位（用户可见文案集中处）
  *
  * 品牌层级：
- * - 母品牌 PublishLab —— AI 写作 / 协作 / 出版一站式平台，覆盖选题→写作→排版→分发→商业化全链路。
- * - 子模块 Syncblog —— 其中「多平台分发与同步」能力的模块名（含 Syncblog 发布插件）。
- *   仅在分发相关场景出现，对外主品牌一律用 PublishLab。
+ * - 主品牌 内容同步智能体 —— 让 AI 参与你的内容分发，一键将同一篇内容发布至 30+ 平台。
+ * - 子模块 Syncblog —— 承载「多平台发布与同步」的能力模块名（含 Syncblog 发布插件）。
+ *   仅在插件 / 分发实现层出现，对外主品牌一律用 内容同步智能体。
  */
-export const APP_NAME = `PublishLab`
+export const APP_NAME = `内容同步智能体`
 
-/** 母品牌中文定位（用于较长文案与 SEO） */
-export const APP_NAME_CN = `AI 写作 / 协作 / 出版一站式平台`
+/** 主品牌中文定位（用于较长文案与 SEO） */
+export const APP_NAME_CN = `AI 内容分发同步智能体`
 
 /** 分发子模块名（多平台同步能力 + 发布插件） */
 export const SYNC_MODULE_NAME = `Syncblog`
 
 /** 当前阶段能力重点 */
-export const APP_FOCUS = `从选题、写作到多平台分发的全链路内容创作`
+export const APP_FOCUS = `让 AI 参与内容分发，一键将内容发布至 30+ 平台`
 
 /** 对外主 slogan */
-export const APP_SLOGAN = `AI 写作 / 协作 / 出版一站式平台`
+export const APP_SLOGAN = `让 AI 参与你的内容分发，一键发布至 30+ 平台`
 
 /** 顶栏右上角一行品牌文案（含产品名与定位） */
 export const APP_HEADER_BRAND_LINE
-  = `PublishLab · AI 写作 / 协作 / 出版一站式平台`
+  = `内容同步智能体 · 一键发布至 30+ 平台`
 
 /** 首屏 / 关于里补充说明 */
-export const APP_TAGLINE = `PublishLab 是面向博主与创作团队的 AI 写作 / 协作 / 出版一站式平台，覆盖从选题、写作、排版到多平台分发与商业化的全链路；其中多平台分发与同步由 Syncblog 模块承担。`
+export const APP_TAGLINE = `内容同步智能体是面向博主与创作团队的 AI 内容分发工具：让 AI 参与你的内容分发，写好一篇内容即可一键同步发布至微信公众号、知乎、掘金等 30+ 平台；多平台发布与同步由 Syncblog 模块承担。`
 
 /** 目标流程：从采编到运营的全链路 */
 export const APP_WORKFLOW_VISION

@@ -97,7 +97,7 @@ function createSectionPost(section: PublishLabBookletSection) {
     <template #header>
       <div class="min-w-0 space-y-3">
         <div class="inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-          PublishLab · 小册线
+          内容同步智能体 · 小册线
         </div>
         <WorkflowPageTitle>
           <template #icon>

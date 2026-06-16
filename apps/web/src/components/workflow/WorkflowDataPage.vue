@@ -9,7 +9,7 @@ import WorkflowPageTitle from './WorkflowPageTitle.vue'
   <WorkflowPageShell>
     <template #header>
       <div class="mb-3 inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-        PublishLab · 文章线
+        内容同步智能体 · 文章线
       </div>
       <WorkflowPageTitle>
         <template #icon>

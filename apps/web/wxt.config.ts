@@ -24,7 +24,7 @@ export default defineConfig({
   srcDir: `src`,
   modulesDir: `src/modules`,
   manifest: ({ mode, browser }) => ({
-    name: `PublishLab`,
+    name: `内容同步智能体`,
     version,
     icons: {
       256: mode === `development` ? `/mpmd/icon-256-gray.png` : `/mpmd/icon-256.png`,
@@ -56,7 +56,7 @@ export default defineConfig({
           default_icon: {
             256: `mpmd/icon-256.png`,
           },
-          default_title: `PublishLab`,
+          default_title: `内容同步智能体`,
         }
       : undefined,
     commands: {

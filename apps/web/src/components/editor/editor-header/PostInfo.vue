@@ -273,7 +273,7 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
             <div class="flex-1 space-y-3">
               <div class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-muted/20 px-3 py-2 text-sm">
                 <span class="text-muted-foreground">
-                  已登录账号会写入你的创作名片；登录 PublishLab 后可查看个人标签，登录新平台后可点「重新检测账号」刷新。
+                  已登录账号会写入你的创作名片；登录内容同步智能体后可查看个人标签，登录新平台后可点「重新检测账号」刷新。
                 </span>
                 <div class="flex flex-wrap items-center gap-2">
                   <Button
