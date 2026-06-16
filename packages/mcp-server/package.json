@@ -3,7 +3,7 @@
   "type": "module",
   "version": "2.2.0",
   "private": true,
-  "description": "MCP server for 博主联盟同步工具（基于 doocs/md）— Markdown 渲染与 AI 服务信息",
+  "description": "MCP server for 内容同步智能体（基于 doocs/md）— Markdown 渲染与 AI 服务信息",
   "bin": {
     "md-mcp": "src/index.ts"
   },

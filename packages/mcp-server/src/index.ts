@@ -40,7 +40,7 @@ const themeOptions = [
 /**
  * @md MCP Server
  *
- * Exposes the 博主联盟同步工具 / doocs-md markdown rendering engine and AI service configuration
+ * Exposes the 内容同步智能体 / doocs-md markdown rendering engine and AI service configuration
  * to AI agents via the Model Context Protocol (MCP).
  *
  * Tools provided:
@@ -88,7 +88,7 @@ server.registerTool(
   `render_markdown`,
   {
     description:
-      `Render Markdown text to styled HTML using the 博主联盟同步工具 renderer (doocs/md-based). `
+      `Render Markdown text to styled HTML using the 内容同步智能体 renderer (doocs/md-based). `
       + `The output is ready to be used in WeChat Official Accounts (公众号) and other platforms. `
       + `Supports standard Markdown plus: KaTeX math, Mermaid diagrams, PlantUML, footnotes, alerts, `
       + `ruby annotations, sliders, and table-of-contents.`,
@@ -185,7 +185,7 @@ server.registerTool(
   `list_themes`,
   {
     description:
-      `List all available visual themes for the 博主联盟同步工具 Markdown UI. `
+      `List all available visual themes for the 内容同步智能体 Markdown UI. `
       + `Each theme changes colours, typography, and spacing of the rendered output.`,
   },
   () => {
@@ -214,7 +214,7 @@ server.registerTool(
   `list_colors`,
   {
     description:
-      `List all available primary accent colors for the 博主联盟同步工具 Markdown UI. `
+      `List all available primary accent colors for the 内容同步智能体 Markdown UI. `
       + `Each color is applied via CSS variable --md-primary-color and affects headings, links, alerts, etc. `
       + `You can also pass any custom hex color string directly to render_markdown.`,
   },
@@ -244,7 +244,7 @@ server.registerTool(
   `list_ai_services`,
   {
     description:
-      `List all built-in AI service providers supported by 博主联盟同步工具. `
+      `List all built-in AI service providers supported by 内容同步智能体. `
       + `Each entry includes the provider name, OpenAI-compatible endpoint URL, and available models. `
       + `Use this to help users pick the right AI service and model.`,
   },
@@ -275,7 +275,7 @@ server.registerTool(
   `explain_extensions`,
   {
     description:
-      `Describe all Markdown extensions supported by 博主联盟同步工具 beyond standard CommonMark. `
+      `Describe all Markdown extensions supported by 内容同步智能体 beyond standard CommonMark. `
       + `Returns the extension name, a description, and a usage example for each.`,
   },
   () => {
@@ -352,7 +352,7 @@ server.registerTool(
   `get_renderer_options`,
   {
     description:
-      `Describe every configuration option accepted by the 博主联盟同步工具 renderer. `
+      `Describe every configuration option accepted by the 内容同步智能体 renderer. `
       + `Use this to understand what parameters are available when calling render_markdown.`,
   },
   () => {

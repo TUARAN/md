@@ -2,7 +2,7 @@
   "name": "@doocs/md-cli",
   "version": "2.1.3",
   "type": "module",
-  "description": "博主联盟同步工具 — 全链路内容运营工作流，当前阶段聚焦内容分发与同步（本地预览与导出）。",
+  "description": "内容同步智能体 — 全链路内容运营工作流，当前阶段聚焦内容分发与同步（本地预览与导出）。",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

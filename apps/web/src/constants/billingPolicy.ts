@@ -1,7 +1,7 @@
 /**
  * 计费与额度政策 — 用户可见声明集中处。
  *
- * 原则：PublishLab 工具本身永久免费；登录用于身份与免费额度；
+ * 原则：内容同步智能体工具本身永久免费；登录用于身份与免费额度；
  * 充值仅为向大模型服务商中转购买 API 算力，平台不收取差价。
  */
 
@@ -16,7 +16,7 @@ export const TOPUP_DAILY_AI_QUOTA = 1000
 
 /** 平台免费声明（短） */
 export const PLATFORM_FREE_STATEMENT
-  = `PublishLab 编辑器、主题、导出与多平台同步等核心功能永久免费，不收取使用费。`
+  = `内容同步智能体的编辑器、主题、导出与多平台同步等核心功能永久免费，不收取使用费。`
 
 /** 登录用途声明 */
 export const LOGIN_PURPOSE_STATEMENT
