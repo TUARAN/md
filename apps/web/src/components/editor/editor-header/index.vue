@@ -101,16 +101,46 @@ const activeLaneSteps = computed(() =>
   WORKFLOW_LANES.find(lane => lane.id === activeLaneId.value)?.steps ?? articleWorkflowSteps,
 )
 
+/** 每条线记住用户上次选的二级步骤（localStorage 持久化，切换线路时恢复） */
+const LANE_STEP_MEMORY_KEY = `workflow-lane-step-memory`
+
+function loadLaneStepMemory(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(LANE_STEP_MEMORY_KEY) ?? `{}`)
+  } catch {
+    return {}
+  }
+}
+
+function saveLaneStepMemory(memory: Record<string, string>) {
+  localStorage.setItem(LANE_STEP_MEMORY_KEY, JSON.stringify(memory))
+}
+
+const laneStepMemory = ref<Record<string, string>>(loadLaneStepMemory())
+
+/** 根据 routeName 找到所属的线 */
+function findLaneByStep(routeName: string): LaneId | undefined {
+  return WORKFLOW_LANES.find(lane => lane.steps.some(s => s.routeName === routeName))?.id
+}
+
 function selectLane(id: LaneId) {
   activeLaneId.value = id
   const lane = WORKFLOW_LANES.find(l => l.id === id)
-  if (lane && lane.steps.length > 0) {
-    openWorkflowStep(lane.steps[0])
-  }
+  if (!lane) return
+  // 优先回到该线上次选的步骤，没有记忆则回退第一个
+  const remembered = laneStepMemory.value[id]
+  const step = lane.steps.find(s => s.routeName === remembered) ?? lane.steps[0]
+  openWorkflowStep(step)
 }
 
 function openWorkflowStep(step: WorkflowStep) {
   const stepId = step.routeName
+  // 记住该步骤所属线的最后选择
+  const laneId = findLaneByStep(stepId)
+  if (laneId) {
+    laneStepMemory.value[laneId] = stepId
+    saveLaneStepMemory(laneStepMemory.value)
+  }
   if (stepId === `data`) {
     const url = getDataAcquisitionNavUrl()
     if (url) {
