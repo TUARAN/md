@@ -109,7 +109,7 @@ pnpm web dev
 > VITE_LAUNCH_EDITOR=cursor
 > ```
 >
-> 多平台同步功能需在 Chrome 中安装 [SyncBlog Plugin](https://github.com/TUARAN/syncblog-plugin/releases/latest)。
+> 多平台同步功能需在 Chrome 中安装 [SyncBlog Plugin](/syncblog-plugin.zip)。
 
 ## 代码规范
 

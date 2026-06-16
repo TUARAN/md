@@ -48,16 +48,16 @@ export function getDataAcquisitionNavUrl(): string {
 }
 
 /**
- * SyncBlog 发布插件官方 release 页。
+ * SyncBlog 发布插件下载地址。
  * 集中常量，避免「下载发布插件」按钮、对话框文案各自硬编码。
  * 部署方可用 `VITE_SYNCBLOG_PLUGIN_RELEASE_URL` 指向镜像 / 私有发行。
  *
- * 注：GitHub releases/latest 是 HTML 页，不是 zip 直链。zip 命名带版本号，
- * 没有"稳定 latest zip 直链"，所以这里跳到 release 页让用户选 asset。
+ * 默认从站点根路径 `/syncblog-plugin.zip` 下载（zip 由 `pnpm package:syncblog-plugin` 构建，
+ * 产物在 apps/web/public/ 及 apps/web/dist/，随站点一起部署）。
  */
 export function getSyncblogPluginReleaseUrl(): string {
   const raw = import.meta.env.VITE_SYNCBLOG_PLUGIN_RELEASE_URL as string | undefined
   if (typeof raw === `string` && /^https?:\/\//i.test(raw.trim()))
     return raw.trim()
-  return `https://github.com/TUARAN/syncblog-plugin/releases/latest`
+  return `/syncblog-plugin.zip`
 }

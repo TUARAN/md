@@ -134,9 +134,8 @@ function openSettings() {
 }
 
 /**
- * 「下载发布插件」入口：新开 SyncBlog 发布插件 release 页。
- * 这里不直接 trigger zip 下载——release zip 名带版本号，没有稳定 latest 直链；
- * 用户也常需要看 release notes（兼容性、新平台支持）再决定是否升级。
+ * 「下载发布插件」入口：新开 Tab 下载站点自托管的 SyncBlog Plugin zip。
+ * 部署方可通过 `VITE_SYNCBLOG_PLUGIN_RELEASE_URL` 覆盖为私有/镜像地址。
  */
 function openPluginDownload() {
   window.open(getSyncblogPluginReleaseUrl(), `_blank`, `noopener,noreferrer`)
@@ -242,7 +241,7 @@ function openPluginDownload() {
     <div class="header-actions hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
         <!--
-          下载发布插件：跳到 SyncBlog Plugin GitHub release 页。
+          下载发布插件：下载站点自托管的 SyncBlog Plugin zip。
           位置：放在最左（日志、设置之前），新用户第一次使用就需要它。
         -->
         <Tooltip>
@@ -250,12 +249,13 @@ function openPluginDownload() {
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              class="h-8 w-8 shrink-0 text-muted-foreground/80 hover:text-foreground"
+              size="xs"
+              class="shrink-0 gap-1.5 text-muted-foreground/80 hover:text-foreground"
               aria-label="下载发布插件"
               @click="openPluginDownload"
             >
-              <Download class="h-4 w-4" />
+              <Download class="h-3.5 w-3.5" />
+              <span class="text-xs">下载插件</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" :side-offset="6" class="text-xs">
@@ -268,12 +268,13 @@ function openPluginDownload() {
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              class="h-8 w-8 shrink-0 text-muted-foreground/80 hover:text-foreground"
+              size="xs"
+              class="shrink-0 gap-1.5 text-muted-foreground/80 hover:text-foreground"
               aria-label="更新日志"
               @click="openChangelog"
             >
-              <ScrollText class="h-4 w-4" />
+              <ScrollText class="h-3.5 w-3.5" />
+              <span class="text-xs">更新日志</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" :side-offset="6" class="text-xs">
@@ -286,12 +287,13 @@ function openPluginDownload() {
             <Button
               type="button"
               variant="ghost"
-              size="icon"
-              class="h-8 w-8 shrink-0 text-muted-foreground/80 hover:text-foreground"
+              size="xs"
+              class="shrink-0 gap-1.5 text-muted-foreground/80 hover:text-foreground"
               aria-label="设置"
               @click="openSettings"
             >
-              <Settings class="h-4 w-4" />
+              <Settings class="h-3.5 w-3.5" />
+              <span class="text-xs">设置</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent side="bottom" :side-offset="6" class="text-xs">
