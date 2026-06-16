@@ -103,6 +103,10 @@ const activeLaneSteps = computed(() =>
 
 function selectLane(id: LaneId) {
   activeLaneId.value = id
+  const lane = WORKFLOW_LANES.find(l => l.id === id)
+  if (lane && lane.steps.length > 0) {
+    openWorkflowStep(lane.steps[0])
+  }
 }
 
 function openWorkflowStep(step: WorkflowStep) {
