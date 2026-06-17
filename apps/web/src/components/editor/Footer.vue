@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { StateEffect } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { ArrowUpDown, BookOpen, ChevronRight, ChevronsUpDown, Clock, Columns2, Eye, FileText, Keyboard, ListTree, Monitor, Moon, PenLine, Pilcrow, Search, Smartphone, Sun, Type } from 'lucide-vue-next'
+import { ArrowUpDown, BookOpen, ChevronRight, ChevronsUpDown, Clock, Columns2, Eye, FileText, Focus, Keyboard, ListTree, Monitor, Moon, Palette, PenLine, Pilcrow, Search, Smartphone, Sun, Type } from 'lucide-vue-next'
 import {
   Popover,
   PopoverContent,
@@ -26,7 +26,7 @@ const { readingTime } = storeToRefs(renderStore)
 const { editor } = storeToRefs(editorStore)
 const { currentPost } = storeToRefs(postStore)
 const { isDark } = storeToRefs(uiStore)
-const { isMobile, viewMode, previewDevice, enableScrollSync } = storeToRefs(uiStore)
+const { isMobile, viewMode, previewDevice, enableScrollSync, isOpenRightSlider, isFocusMode } = storeToRefs(uiStore)
 
 // 相对时间格式化（复用）
 function formatRelativeTime(date: Date | string) {
@@ -563,6 +563,44 @@ const showDeviceToggle = computed(() => viewMode.value !== `edit` && !isMobile.v
           </TooltipTrigger>
           <TooltipContent side="top" :side-offset="6" class="text-xs text-muted-foreground">
             <p>{{ enableScrollSync ? '关闭同步滚动' : '开启同步滚动' }}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <!-- 样式面板（原浮动 Dock 内的开关，收拢到此与其他视图开关统一） -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              :aria-label="isOpenRightSlider ? '隐藏样式面板' : '样式面板'"
+              class="flex cursor-pointer items-center rounded-sm px-1.5 py-0.5 transition-all duration-200"
+              :class="isOpenRightSlider
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
+              @click="isOpenRightSlider = !isOpenRightSlider"
+            >
+              <Palette class="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" :side-offset="6" class="text-xs text-muted-foreground">
+            <p>{{ isOpenRightSlider ? '隐藏样式面板' : '样式面板' }}</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <!-- 专注模式（原浮动 Dock 内的开关；底栏始终可见，专注态下也能退出） -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <button
+              :aria-label="isFocusMode ? '退出专注模式' : '专注模式'"
+              class="flex cursor-pointer items-center rounded-sm px-1.5 py-0.5 transition-all duration-200"
+              :class="isFocusMode
+                ? 'bg-accent text-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-foreground'"
+              @click="uiStore.toggleFocusMode()"
+            >
+              <Focus class="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top" :side-offset="6" class="text-xs text-muted-foreground">
+            <p>{{ isFocusMode ? '退出专注模式' : '专注模式' }}</p>
           </TooltipContent>
         </Tooltip>
 

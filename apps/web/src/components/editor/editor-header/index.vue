@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BadgeDollarSign, BarChart3, BookOpen, ChevronRight, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, Repeat2, ScrollText, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
+import { BadgeDollarSign, BarChart3, BookOpen, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, Repeat2, ScrollText, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
 import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -107,7 +107,8 @@ const LANE_STEP_MEMORY_KEY = `workflow-lane-step-memory`
 function loadLaneStepMemory(): Record<string, string> {
   try {
     return JSON.parse(localStorage.getItem(LANE_STEP_MEMORY_KEY) ?? `{}`)
-  } catch {
+  }
+  catch {
     return {}
   }
 }
@@ -126,7 +127,8 @@ function findLaneByStep(routeName: string): LaneId | undefined {
 function selectLane(id: LaneId) {
   activeLaneId.value = id
   const lane = WORKFLOW_LANES.find(l => l.id === id)
-  if (!lane) return
+  if (!lane)
+    return
   // 优先回到该线上次选的步骤，没有记忆则回退第一个
   const remembered = laneStepMemory.value[id]
   const step = lane.steps.find(s => s.routeName === remembered) ?? lane.steps[0]
@@ -196,22 +198,21 @@ function openPluginDownload() {
       </div>
       <div class="lane-divider" aria-hidden="true" />
       <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
         aria-label="当前线步骤"
       >
-        <template v-for="(step, index) in activeLaneSteps" :key="step.id">
-          <button
-            type="button"
-            class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-3 text-sm font-semibold transition-all duration-150"
-            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'font-medium text-muted-foreground hover:text-foreground'"
-            :aria-current="isStepActive(step) ? 'step' : undefined"
-            @click="openStep(step)"
-          >
-            <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-            <span>{{ step.label }}</span>
-          </button>
-          <ChevronRight v-if="index < activeLaneSteps.length - 1" class="step-arrow" aria-hidden="true" />
-        </template>
+        <button
+          v-for="step in activeLaneSteps"
+          :key="step.id"
+          type="button"
+          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-sm transition-colors duration-150"
+          :class="isStepActive(step) ? 'step-tab--active' : 'text-muted-foreground hover:text-foreground'"
+          :aria-current="isStepActive(step) ? 'step' : undefined"
+          @click="openStep(step)"
+        >
+          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+          <span>{{ step.label }}</span>
+        </button>
       </nav>
     </div>
 
@@ -253,21 +254,20 @@ function openPluginDownload() {
 
     <div class="flex w-full min-w-0 items-center md:hidden">
       <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap"
+        class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
         aria-label="当前线步骤"
       >
-        <template v-for="(step, index) in activeLaneSteps" :key="step.id">
-          <button
-            type="button"
-            class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 rounded-md px-2.5 text-[12px] font-medium transition-all duration-150"
-            :class="isStepActive(step) ? 'step-tab--active text-foreground' : 'text-muted-foreground hover:text-foreground'"
-            @click="openStep(step)"
-          >
-            <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-            <span>{{ step.label }}</span>
-          </button>
-          <ChevronRight v-if="index < activeLaneSteps.length - 1" class="step-arrow step-arrow--mobile" aria-hidden="true" />
-        </template>
+        <button
+          v-for="step in activeLaneSteps"
+          :key="step.id"
+          type="button"
+          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 px-2.5 text-[12px] transition-colors duration-150"
+          :class="isStepActive(step) ? 'step-tab--active' : 'text-muted-foreground hover:text-foreground'"
+          @click="openStep(step)"
+        >
+          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
+          <span>{{ step.label }}</span>
+        </button>
       </nav>
     </div>
 
@@ -368,42 +368,29 @@ function openPluginDownload() {
   }
 }
 
-.step-arrow {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex-shrink: 0;
-  color: hsl(var(--muted-foreground) / 0.48);
-}
-
-.step-arrow--mobile {
-  width: 0.75rem;
-  height: 0.75rem;
-}
-
-/* —— 线切换 tab：pill 分段控件 —— */
+/* —— 线切换：中性 segmented control（激活段=抬升的浅色面，不用强调色）—— */
 .lane-tabs {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   gap: 0.125rem;
   padding: 0.1875rem;
-  border-radius: 999px;
-  border: 1px solid hsl(var(--border) / 0.7);
-  background: hsl(var(--muted) / 0.42);
+  border-radius: calc(var(--radius) + 0.125rem);
+  border: 1px solid hsl(var(--border) / 0.6);
+  background: hsl(var(--muted) / 0.55);
 }
 
 .lane-tab {
   display: inline-flex;
-  height: 1.75rem;
+  height: 1.625rem;
   flex-shrink: 0;
   align-items: center;
-  border-radius: 999px;
-  padding: 0 0.875rem;
+  border-radius: calc(var(--radius) - 0.0625rem);
+  padding: 0 0.75rem;
   font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-weight: 500;
   color: hsl(var(--muted-foreground));
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
     color: hsl(var(--foreground));
@@ -422,14 +409,15 @@ function openPluginDownload() {
   font-size: 0.75rem;
 }
 
-/* 一级菜单激活：实心主色,与二级 step 的浅色描边态拉开层级 */
+/* 激活段：抬升的中性面 + 强字重，靠层次而非颜色区分 */
 .lane-tab--active {
-  background: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-  box-shadow: 0 1px 3px hsl(var(--primary) / 0.32);
+  background: hsl(var(--surface-elevated, var(--card)));
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  box-shadow: 0 1px 2px hsl(var(--shadow-soft) / 0.16), 0 0 0 1px hsl(var(--border) / 0.45);
 
   &:hover {
-    color: hsl(var(--primary-foreground));
+    color: hsl(var(--foreground));
   }
 }
 
@@ -438,7 +426,7 @@ function openPluginDownload() {
   width: 1px;
   height: 1.25rem;
   flex-shrink: 0;
-  background: hsl(var(--border) / 0.85);
+  background: hsl(var(--border) / 0.7);
 }
 
 .header-actions {
@@ -447,13 +435,13 @@ function openPluginDownload() {
   right: 1.25rem;
 }
 
-/* —— 流程步骤 Tab：低噪声活动态 —— */
+/* —— 流程步骤：下划线 Tab，中性活动态 —— */
 .step-tab {
-  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  font-weight: 500;
 
   &:hover {
-    border-color: hsl(var(--border) / 0.72);
-    background: hsl(var(--muted) / 0.48);
+    background: hsl(var(--muted) / 0.4);
   }
 
   &:focus-visible {
@@ -464,22 +452,9 @@ function openPluginDownload() {
 }
 
 .step-tab--active {
-  border-color: hsl(var(--primary) / 0.26);
-  background: hsl(var(--primary) / 0.1);
-  color: hsl(var(--primary));
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5);
-}
-
-.step-tab--active::after {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  width: 2px;
-  height: 1rem;
-  border-radius: 999px;
-  background: hsl(var(--primary));
-  transform: translateY(-50%);
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  border-bottom-color: hsl(var(--foreground));
 }
 
 .menubar {
