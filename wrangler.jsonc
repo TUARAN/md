@@ -1,0 +1,47 @@
+/**
+ * 部署配置（仓库根目录）
+ * 路径均为相对于仓库根目录。
+ * 开发配置请使用 apps/web/wrangler.jsonc
+ */
+{
+  "$schema": "apps/web/node_modules/wrangler/config-schema.json",
+  "name": "md",
+  "compatibility_date": "2025-09-06",
+  "main": "apps/web/worker/index.ts",
+  "assets": {
+    "directory": "apps/web/dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    {
+      "pattern": "syncblog.cn",
+      "custom_domain": true
+    }
+  ],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "IMGBED_GITHUB_USERNAME": "bucketio",
+    "IMGBED_GITHUB_BRANCH": "main",
+    "IMGBED_GITHUB_REPO_COUNT": "20",
+    "IMGBED_USE_CDN": "1",
+    "EMAIL_PROVIDER": "resend"
+  },
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "syncblog",
+      "database_id": "1fe27887-b592-473e-b75f-6763f5e88bc4",
+      "migrations_dir": "apps/web/migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["0 4 * * *"]
+  }
+}
