@@ -7,7 +7,7 @@
  * 提供。`<KeepAlive>` 保证用户在 6 个 workflow 路由间切换时编辑器实例不重建,
  * codemirror 内容、光标、滚动位置、面板尺寸全部保留。
  */
-import { Copy, FileText, Plug } from 'lucide-vue-next'
+import { Copy, Plug } from 'lucide-vue-next'
 import { provide } from 'vue'
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
@@ -28,7 +28,6 @@ import {
 import {
   EditorWorkflowSyncRail,
   WorkflowPageShell,
-  WorkflowPageTitle,
 } from '@/components/workflow'
 import { useCursorSync } from '@/composables/useCursorSync'
 import { EDITOR_WECHAT_COPY_KEY, useEditorWechatCopy } from '@/composables/useEditorWechatCopy'
@@ -237,31 +236,24 @@ onUnmounted(() => {
 
     <WorkflowPageShell :scroll-body="false">
       <template #header>
+        <!-- 顶栏已标注当前步骤「排版发布」，此处不再重复大标题，只保留功能行：外站接入 + 同步轨道，给编辑器让出垂直空间 -->
         <div
-          class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
+          class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-6"
         >
-          <div class="flex min-w-0 flex-col gap-1">
-            <WorkflowPageTitle>
-              <template #icon>
-                <FileText />
-              </template>
-              排版发布
-            </WorkflowPageTitle>
-            <p class="max-w-2xl text-xs leading-relaxed text-muted-foreground">
-              在左侧写 Markdown，右侧预览公众号排版；需要分发时，用发布插件把文章写入知乎、公众号、掘金等平台草稿。
+          <div class="flex min-w-0 items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+              @click="openImportEntry"
+            >
+              <Plug class="size-3.5" />
+              外站接入
+            </Button>
+            <p class="hidden min-w-0 truncate text-xs text-muted-foreground xl:block">
+              在左侧写 Markdown，右侧预览公众号排版；需要分发时用发布插件写入知乎、公众号、掘金等平台草稿。
             </p>
-            <div class="mt-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                class="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-                @click="openImportEntry"
-              >
-                <Plug class="size-3.5" />
-                外站接入
-              </Button>
-            </div>
           </div>
 
           <div class="min-w-0 shrink-0">

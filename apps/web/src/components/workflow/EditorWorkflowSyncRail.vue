@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Focus, Image as ImageIcon, MoreHorizontal, Palette } from 'lucide-vue-next'
-import { storeToRefs } from 'pinia'
+import { Image as ImageIcon, MoreHorizontal } from 'lucide-vue-next'
 import { inject } from 'vue'
 import EditDropdown from '@/components/editor/editor-header/EditDropdown.vue'
 import FileDropdown from '@/components/editor/editor-header/FileDropdown.vue'
@@ -17,7 +16,6 @@ import { useUIStore } from '@/stores/ui'
 
 const wechatCopy = inject(EDITOR_WECHAT_COPY_KEY, null)
 const uiStore = useUIStore()
-const { isOpenRightSlider, isFocusMode } = storeToRefs(uiStore)
 
 function openAIImage() {
   uiStore.toggleAIImageDialog(true)
@@ -51,42 +49,6 @@ function handleCopy(mode: string) {
         </div>
 
         <div class="dock-divider" aria-hidden="true" />
-
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <button
-              class="dock-icon-btn"
-              :class="{ 'dock-icon-btn--active': isOpenRightSlider }"
-              type="button"
-              :aria-label="isOpenRightSlider ? '隐藏样式面板' : '显示样式面板'"
-              :aria-pressed="isOpenRightSlider"
-              @click="isOpenRightSlider = !isOpenRightSlider"
-            >
-              <Palette class="size-[15px]" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" :side-offset="8" class="text-xs">
-            {{ isOpenRightSlider ? '隐藏样式面板' : '样式面板' }}
-          </TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <button
-              class="dock-icon-btn"
-              :class="{ 'dock-icon-btn--active': isFocusMode }"
-              type="button"
-              :aria-label="isFocusMode ? '退出专注模式' : '进入专注模式'"
-              :aria-pressed="isFocusMode"
-              @click="uiStore.toggleFocusMode()"
-            >
-              <Focus class="size-[15px]" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" :side-offset="8" class="text-xs">
-            {{ isFocusMode ? '退出专注模式' : '专注模式' }}
-          </TooltipContent>
-        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger as-child>
@@ -205,12 +167,6 @@ function handleCopy(mode: string) {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
-}
-
-.dock-icon-btn--active {
-  background: hsl(var(--foreground) / 0.1);
-  color: hsl(var(--foreground));
-  box-shadow: inset 0 0 0 1px hsl(var(--border) / 0.6);
 }
 
 .dock-icon-btn--menu[data-state='open'] {
