@@ -5,7 +5,7 @@ SyncBlog Plugin 浏览器扩展
 --------
 - SyncBlog Plugin：对外统一名称，用于编辑器文案、manifest 和插件下载说明。
 - csync-extension.zip：旧版下载文件名，仍由打包脚本生成，兼容历史链接和已写入的站点路径。
-- window.$syncblogPlugin：新版页面桥接对象；旧版 window.$cose / window.$pluginSyncer 保留兼容。
+- window.$syncblogPlugin：下载版插件向 SyncBlog 网页注入的唯一页面桥接对象。
 
 用户下载安装
 ------------
@@ -24,7 +24,7 @@ SyncBlog Plugin 浏览器扩展
   pnpm package:syncblog-plugin
 
 该命令会生成主下载包 syncblog-plugin.zip，同时生成 csync-extension.zip 作为旧链接兼容。
-产物在 apps/web/public/ 和 apps/web/dist/。
+产物在 apps/web/public/ 和 apps/web/dist/；Web / Cloudflare 构建会先自动生成它们。
 
 备选 · 从 Git 仓库直接加载（开发用）
 ------------------------------------

@@ -1,13 +1,13 @@
 /**
  * SyncBlog Plugin 页面桥接（fork 自上游 1.0.3 的 inject-web-api，已启用 syncArticle）。
- * 全局仍暴露为 window.$pluginSyncer，兼容旧版 md 发布逻辑。
+ * 全局暴露为 window.$syncblogPlugin，供 SyncBlog Web 端直接调用。
  */
 
 ;(function () {
   'use strict'
 
-  if (window.$pluginSyncer && typeof window.$pluginSyncer._cleanup === 'function') {
-    window.$pluginSyncer._cleanup()
+  if (window.$syncblogPlugin && typeof window.$syncblogPlugin._cleanup === 'function') {
+    window.$syncblogPlugin._cleanup()
   }
 
   const VERSION = '1.0.4-syncblog'
@@ -88,7 +88,7 @@
       catch { /* ignore */ }
     })
 
-    try { delete window.$pluginSyncer }
+    try { delete window.$syncblogPlugin }
     catch { /* ignore */ }
 
     window.removeEventListener('message', onChannelInit)
@@ -121,9 +121,9 @@
       teardown()
     }
 
-    console.log('[SyncBlog Plugin] $pluginSyncer MessageChannel connected')
+    console.log('[SyncBlog Plugin] $syncblogPlugin MessageChannel connected')
 
-    if (!window.$pluginSyncer) {
+    if (!window.$syncblogPlugin) {
       exposeGlobal()
     }
   }
@@ -207,7 +207,7 @@
       _cleanup: cleanup,
     }
 
-    Object.defineProperty(window, '$pluginSyncer', {
+    Object.defineProperty(window, '$syncblogPlugin', {
       value: api,
       writable: false,
       configurable: true,
@@ -217,5 +217,5 @@
 
   exposeGlobal()
 
-  console.log(`[SyncBlog Plugin] $pluginSyncer API ready (${VERSION}), waiting for channel…`)
+  console.log(`[SyncBlog Plugin] $syncblogPlugin API ready (${VERSION}), waiting for channel…`)
 })()

@@ -26,19 +26,6 @@ function withCanonicalType(account: PostAccount): PostAccount {
   return { ...account, type, title: getPlatformTitle(type) }
 }
 
-function getInitialPlatforms(): PostAccount[] {
-  const publishExtension = getPublishExtension()
-  if (publishExtension !== undefined && typeof publishExtension.getPlatforms === `function`) {
-    return publishExtension.getPlatforms().map(p => ({
-      ...withCanonicalType(p),
-      checked: false,
-      loggedIn: false,
-      isChecking: true,
-    }))
-  }
-  return []
-}
-
 function finishDetectionWithToast() {
   const socialAccountsStore = useSocialAccountsStore()
   socialAccountsStore.cacheFromPostAccounts(allAccounts.value)
@@ -56,10 +43,6 @@ function startLoginDetection(options?: { silent?: boolean }) {
 
   const publishExtension = getPublishExtension()
   if (publishExtension !== undefined) {
-    const initialPlatforms = getInitialPlatforms()
-    if (initialPlatforms.length > 0)
-      allAccounts.value = initialPlatforms
-
     isCheckingLogin.value = true
     let settled = false
     let timeoutId: ReturnType<typeof setTimeout>
@@ -79,26 +62,10 @@ function startLoginDetection(options?: { silent?: boolean }) {
 
     timeoutId = setTimeout(settle, PUBLISH_EXTENSION_DETECTION_TIMEOUT_MS)
 
-    if (typeof publishExtension.getAccountsProgressive === `function`) {
-      publishExtension.getAccountsProgressive(
-        (account: PostAccount) => {
-          const canonical = withCanonicalType(account)
-          const idx = allAccounts.value.findIndex(a => a.type === canonical.type)
-          if (idx !== -1)
-            allAccounts.value[idx] = { ...canonical, checked: false, isChecking: false }
-        },
-        settle,
-      )
-    }
-    else if (typeof publishExtension.getAccounts === `function`) {
-      publishExtension.getAccounts((resp: PostAccount[]) => {
-        allAccounts.value = resp.map(a => ({ ...withCanonicalType(a), checked: false, isChecking: false }))
-        settle()
-      })
-    }
-    else {
+    publishExtension.getAccounts((resp: PostAccount[]) => {
+      allAccounts.value = resp.map(a => ({ ...withCanonicalType(a), checked: false, isChecking: false }))
       settle()
-    }
+    })
     return
   }
 

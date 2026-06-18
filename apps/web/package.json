@@ -8,9 +8,9 @@
   "scripts": {
     "start": "pnpm run dev",
     "dev": "vite",
-    "build": "run-p type-check \"build:only {@}\" --",
+    "build": "pnpm --workspace-root package:syncblog-plugin && run-p type-check \"build:only {@}\" --",
     "build:only": "vite build",
-    "build:h5-netlify": "run-p type-check \"build:h5-netlify:only {@}\" --",
+    "build:h5-netlify": "pnpm --workspace-root package:syncblog-plugin && run-p type-check \"build:h5-netlify:only {@}\" --",
     "build:h5-netlify:only": "cross-env SERVER_ENV=NETLIFY vite build",
     "build:utools": "cross-env SERVER_ENV=UTOOLS vite build --outDir ../utools/dist --emptyOutDir",
     "build:cli": "pnpm run build && npx shx rm -rf packages/md-cli/dist && npx shx rm -rf dist/**/*.map && npx shx cp -r dist packages/md-cli/ && cd packages/md-cli && npm pack",
