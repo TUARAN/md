@@ -29,7 +29,6 @@
     "lint": "eslint . --fix",
     "type-check": "pnpm --filter @md/web type-check",
     "package:syncblog-plugin": "node ./scripts/package-syncblog-plugin.mjs",
-    "package:csync": "pnpm package:syncblog-plugin",
     "postinstall": "simple-git-hooks",
     "inspector": "pnpx node-modules-inspector",
     "utools:package": "node ./scripts/package-utools.mjs"

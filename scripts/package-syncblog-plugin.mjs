@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
@@ -8,16 +8,25 @@ const { ZipArchive } = require(`archiver`)
 
 const root = path.resolve(import.meta.dirname, `..`)
 const sourceDir = path.join(root, `apps/web/vendor/syncblog-plugin`)
+const manifest = JSON.parse(await readFile(path.join(sourceDir, `manifest.json`), `utf8`))
+const version = String(manifest.version)
 const outputs = [
   path.join(root, `apps/web/public/syncblog-plugin.zip`),
-  path.join(root, `apps/web/public/syncblog-plugin-v1.0.4.zip`),
-  path.join(root, `apps/web/public/csync-extension.zip`),
-  path.join(root, `apps/web/public/csync-extension-v1.0.4.zip`),
+  path.join(root, `apps/web/public/syncblog-plugin-v${version}.zip`),
   path.join(root, `apps/web/dist/syncblog-plugin.zip`),
-  path.join(root, `apps/web/dist/syncblog-plugin-v1.0.4.zip`),
-  path.join(root, `apps/web/dist/csync-extension.zip`),
-  path.join(root, `apps/web/dist/csync-extension-v1.0.4.zip`),
+  path.join(root, `apps/web/dist/syncblog-plugin-v${version}.zip`),
 ]
+
+async function removeStaleArchives(directory) {
+  const currentVersionName = `syncblog-plugin-v${version}.zip`
+  const entries = await readdir(directory).catch(() => [])
+  await Promise.all(entries
+    .filter(name => (
+      name.startsWith(`csync-extension`)
+      || (name.startsWith(`syncblog-plugin-v`) && name !== currentVersionName)
+    ) && name.endsWith(`.zip`))
+    .map(name => rm(path.join(directory, name), { force: true })))
+}
 
 async function zipExtension(outputPath) {
   await mkdir(path.dirname(outputPath), { recursive: true })
@@ -33,6 +42,9 @@ async function zipExtension(outputPath) {
     archive.finalize()
   })
 }
+
+await removeStaleArchives(path.join(root, `apps/web/public`))
+await removeStaleArchives(path.join(root, `apps/web/dist`))
 
 for (const output of outputs) {
   await zipExtension(output)
