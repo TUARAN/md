@@ -208,10 +208,10 @@ async function syncWechatContent(tab, content, helpers) {
   // 步骤1：等待首页加载完成
   console.log('[COSE] 微信公众号等待页面加载')
   await waitForTab(tab.id)
-
+  
   // 注入公共工具函数（waitFor, setInputValue）
   await injectUtils(chrome, tab.id)
-
+  
   // 步骤2：使用 MutationObserver 监听获取 token
   console.log('[COSE] 开始检测 token...')
   const [tokenResult] = await chrome.scripting.executeScript({
@@ -222,13 +222,13 @@ async function syncWechatContent(tab, content, helpers) {
         const checkToken = () => {
           const urlMatch = window.location.href.match(/token=(\d+)/)
           if (urlMatch) return urlMatch[1]
-
+          
           const links = document.querySelectorAll('a[href*="token"]')
           for (const link of links) {
             const match = link.href?.match(/token=(\d+)/)
             if (match) return match[1]
           }
-
+          
           const scripts = document.querySelectorAll('script:not([src])')
           for (const script of scripts) {
             const content = script.textContent
@@ -260,21 +260,21 @@ async function syncWechatContent(tab, content, helpers) {
     },
     world: 'MAIN'
   })
-
+  
   const token = tokenResult?.result
-
+  
   if (!token) {
     console.error('[COSE] 无法从页面获取 token')
     return { success: false, message: '无法获取微信公众号 token，请确保已登录', tabId: tab.id }
   }
-
+  
   // 步骤3：跳转到编辑器页面
   const editorUrl = `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit_v2&action=edit&isNew=1&type=10&token=${token}&lang=zh_CN`
   console.log('[COSE] 获取到 token:', token, '跳转到编辑器')
-
+  
   await chrome.tabs.update(tab.id, { url: editorUrl })
   await waitForTab(tab.id)
-
+  
   // 使用剪贴板 HTML（带完整样式）或降级到 body
   const htmlContent = content.wechatHtml || content.body
   console.log('[COSE] 微信 HTML 内容长度:', htmlContent?.length || 0)
@@ -311,10 +311,10 @@ async function syncWechatContent(tab, content, helpers) {
   }
 
   console.log('[COSE] 编辑器已就绪，开始注入内容...')
-
+  
   // 页面跳转后需要重新注入工具函数（waitFor, setInputValue）
   await injectUtils(chrome, tab.id)
-
+  
   // 步骤5：填充内容
   let result
   try {
@@ -331,7 +331,7 @@ async function syncWechatContent(tab, content, helpers) {
 
   const fillResult = result?.[0]?.result
   console.log('[COSE] 微信填充结果:', JSON.stringify(fillResult, null, 2))
-
+  
   if (!fillResult?.success) {
     console.error('[COSE] 微信内容填充失败:', fillResult?.error)
     return { success: false, message: fillResult?.error || '内容填充失败', tabId: tab.id }
@@ -352,3 +352,4 @@ async function syncWechatContent(tab, content, helpers) {
 
 // 导出
 export { WechatPlatform, fillWechatContent, syncWechatContent }
+

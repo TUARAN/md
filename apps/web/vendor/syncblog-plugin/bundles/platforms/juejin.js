@@ -87,3 +87,4 @@ async function syncJuejinContent(tab, content, helpers) {
 
 // 导出
 export { JuejinPlatform, fillJuejinContent, syncJuejinContent }
+
