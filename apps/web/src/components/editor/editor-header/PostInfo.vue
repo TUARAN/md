@@ -96,6 +96,17 @@ function toggleCategorySelectAll(accounts: PostAccount[]) {
   loggedInAccounts.forEach(a => a.checked = !allSelected)
 }
 
+// 跨所有分类的「一键全选」：勾选全部已登录账号；若已全部勾选则一键清空
+const loggedInAccounts = computed(() => allAccounts.value.filter(a => a.loggedIn))
+const isAllSelected = computed(() =>
+  loggedInAccounts.value.length > 0 && loggedInAccounts.value.every(a => a.checked),
+)
+
+function toggleSelectAll() {
+  const target = !isAllSelected.value
+  loggedInAccounts.value.forEach(a => a.checked = target)
+}
+
 async function prePost() {
   if (extensionInstalled.value && allAccounts.value.length === 0)
     startLoginDetection({ silent: true })
@@ -276,6 +287,16 @@ async function openPlatformWrite(account: PostAccount, ev: MouseEvent) {
                   已登录账号会写入你的创作名片；登录内容同步智能体后可查看个人标签，登录新平台后可点「重新检测账号」刷新。
                 </span>
                 <div class="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    :disabled="loggedInAccounts.length === 0"
+                    @click="toggleSelectAll"
+                  >
+                    <Check class="mr-2 h-4 w-4" />
+                    {{ isAllSelected ? '取消全选' : '一键全选' }}
+                  </Button>
                   <Button
                     type="button"
                     variant="outline"
