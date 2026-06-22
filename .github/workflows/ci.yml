@@ -30,8 +30,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Package CSYNC extension
-        run: pnpm package:csync
+      - name: Package SyncBlog plugin
+        run: pnpm package:syncblog-plugin
 
       - name: Type check
         run: pnpm --filter @md/web type-check
