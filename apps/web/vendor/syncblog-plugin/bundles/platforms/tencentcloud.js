@@ -38,24 +38,24 @@ function findSwitchToMDButton() {
 async function ensureMarkdownEditor() {
     // 等待页面加载完成
     await new Promise(resolve => setTimeout(resolve, 1000))
-
+    
     const switchBtn = findSwitchToMDButton()
-
+    
     if (switchBtn) {
         // 找到了"切换 MD 编辑器"按钮，说明当前是富文本编辑器，需要切换
         console.log('[COSE] TencentCloud 检测到富文本编辑器，正在切换到 MD 编辑器...')
         switchBtn.click()
-
+        
         // 等待切换完成
         await new Promise(resolve => setTimeout(resolve, 1500))
-
+        
         // 验证切换是否成功：检查 CodeMirror 是否存在
         const cm = document.querySelector('.CodeMirror')
         if (cm && cm.CodeMirror) {
             console.log('[COSE] TencentCloud 成功切换到 MD 编辑器')
             return true
         }
-
+        
         // 如果 CodeMirror 还没加载，再等待一下
         await new Promise(resolve => setTimeout(resolve, 1000))
         const cmRetry = document.querySelector('.CodeMirror')
@@ -63,19 +63,19 @@ async function ensureMarkdownEditor() {
             console.log('[COSE] TencentCloud 成功切换到 MD 编辑器（延迟加载）')
             return true
         }
-
+        
         console.error('[COSE] TencentCloud 切换失败：CodeMirror 未加载')
         return false
     } else {
         // 没有找到"切换 MD 编辑器"按钮，说明已经是 MD 编辑器
         console.log('[COSE] TencentCloud 当前已是 MD 编辑器')
-
+        
         // 验证 CodeMirror 是否存在
         const cm = document.querySelector('.CodeMirror')
         if (cm && cm.CodeMirror) {
             return true
         }
-
+        
         // 等待 CodeMirror 加载
         await new Promise(resolve => setTimeout(resolve, 1000))
         const cmRetry = document.querySelector('.CodeMirror')
@@ -112,7 +112,7 @@ async function fillTencentCloudContent(content, waitFor, setInputValue) {
     const contentToFill = markdown || body || ''
 
     console.log('[COSE] TencentCloud 开始同步...')
-
+    
     // 第一步：确保进入 MD 编辑器模式
     const isMarkdownMode = await ensureMarkdownEditor()
     if (!isMarkdownMode) {
