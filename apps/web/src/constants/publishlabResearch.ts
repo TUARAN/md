@@ -3,7 +3,7 @@
 
 export const PUBLISH_LAB_RESEARCH_MARKDOWN = `# 中国写作变现 · 深度调研 2025-2026
 
-来源:内容同步智能体 — https://publishlab.cc/research
+来源:AI分发大师 — https://publishlab.cc/research
 
 5 种变现机制 · 8 个内容平台 · 6 大小说网站 · 掘金小册 · 微信读书 · 583 家传统出版社
 
@@ -253,5 +253,5 @@ export const PUBLISH_LAB_RESEARCH_MARKDOWN = `# 中国写作变现 · 深度调�
 
 ---
 
-*由内容同步智能体整理 — 让 AI 参与你的内容分发，一键发布至 30+ 平台*
+*由AI分发大师整理 — 让 AI 参与你的内容分发，一键发布至 30+ 平台*
 `

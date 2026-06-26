@@ -6,6 +6,7 @@ export { default as WorkflowBookletWritingPage } from './WorkflowBookletWritingP
 export { default as WorkflowCreationPage } from './WorkflowCreationPage.vue'
 export { default as WorkflowDataPage } from './WorkflowDataPage.vue'
 export { default as WorkflowDistributionPage } from './WorkflowDistributionPage.vue'
+export { default as WorkflowOpinionPage } from './WorkflowOpinionPage.vue'
 export { default as WorkflowPageShell } from './WorkflowPageShell.vue'
 export { default as WorkflowPageTitle } from './WorkflowPageTitle.vue'
 export { default as WorkflowRailPanel } from './WorkflowRailPanel.vue'

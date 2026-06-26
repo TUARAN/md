@@ -4,7 +4,7 @@
   "version": "2.2.0",
   "private": false,
   "packageManager": "pnpm@10.15.0",
-  "description": "Syncblog — 一文多发，30 分钟完成 30+ 平台同步。面向博主与创作团队的全链路内容运营工作流，当前阶段聚焦 Markdown 编辑、渲染与多平台分发同步。",
+  "description": "AI分发大师 — 观点、文章、小册、项目一键分发至 30+ 平台。面向博主与创作团队的全链路内容运营工作流，当前阶段聚焦短观点改写、Markdown 编辑、渲染与多平台分发同步。",
   "homepage": "https://syncblog.cn",
   "repository": {
     "type": "git",

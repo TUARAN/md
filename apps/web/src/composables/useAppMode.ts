@@ -29,6 +29,10 @@ export interface AppModeInfo {
 // (`${APP_NAME} · ${stepLabel}`,见 App.vue);跨车道的通用阶段名(策划 /
 // 矩阵运营 / 数据闭环)在标题里会跨车道重名,这是有意取舍——优先和顶栏一致。
 const WORKFLOW_STEP_LABELS: Record<string, string> = {
+  'opinion-idea': `观点提炼`,
+  'opinion-rewrite': `短内容改写`,
+  'opinion-distribution': `观点分发`,
+  'opinion-loop': `互动复盘`,
   'data': `素材采集`,
   'booklet-research': `调研选题`,
   'booklet-plan': `内容策划`,

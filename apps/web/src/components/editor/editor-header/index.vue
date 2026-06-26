@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BadgeDollarSign, BarChart3, BookOpen, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, Repeat2, ScrollText, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
+import { BadgeDollarSign, BarChart3, BookOpen, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, MessageCircle, Repeat2, ScrollText, Send, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
 import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
@@ -44,11 +44,19 @@ function handleCopy(mode: string) {
 }
 
 /*
- * 顶栏导航分三条线,通过 tab 切换显示哪条线的步骤(不再三行平铺):
+ * 顶栏导航分四条线,通过 tab 切换显示哪条线的步骤(不再三行平铺):
+ * - 观点线:百字短内容,先在微博、沸点、X 等渠道验证观点
  * - 文章线:素材采集、文章创作、排版发布、矩阵运营、数据闭环
  * - 小册线:成体系内容产品,从选题到销售运营再到复盘闭环
  * - 开源线:围绕 GitHub 项目从选题、规格策划、工程搭建到运营迭代
  */
+const opinionWorkflowSteps = [
+  { id: `opinion-idea` as const, label: `观点提炼`, icon: MessageCircle, routeName: `opinion-idea` },
+  { id: `opinion-rewrite` as const, label: `短内容改写`, icon: Sparkles, routeName: `opinion-rewrite` },
+  { id: `opinion-distribution` as const, label: `观点分发`, icon: Send, routeName: `opinion-distribution` },
+  { id: `opinion-loop` as const, label: `互动复盘`, icon: Repeat2, routeName: `opinion-loop` },
+] as const
+
 const articleWorkflowSteps = [
   { id: `data` as const, label: `素材采集`, icon: Database, routeName: `data` },
   { id: `creation` as const, label: `文章创作`, icon: Sparkles, routeName: `creation` },
@@ -73,10 +81,11 @@ const repositoryWorkflowSteps = [
   { id: `repo-loop` as const, label: `数据闭环`, icon: Repeat2, routeName: `repo-loop` },
 ] as const
 
-type WorkflowStep = (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number] | (typeof repositoryWorkflowSteps)[number]
+type WorkflowStep = (typeof opinionWorkflowSteps)[number] | (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number] | (typeof repositoryWorkflowSteps)[number]
 
-/** 三条线收进一个 tab 切换器:点 tab 切换显示哪条线的步骤,点步骤才跳路由 */
+/** 四条线收进一个 tab 切换器:点 tab 切换显示哪条线的步骤,点步骤才跳路由 */
 const WORKFLOW_LANES = [
+  { id: `opinion` as const, label: `观点`, steps: opinionWorkflowSteps },
   { id: `article` as const, label: `文章`, steps: articleWorkflowSteps },
   { id: `booklet` as const, label: `小册`, steps: bookletWorkflowSteps },
   { id: `opensource` as const, label: `开源`, steps: repositoryWorkflowSteps },

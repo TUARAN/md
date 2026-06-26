@@ -63,10 +63,10 @@ export interface PublishLabBooklet {
 }
 
 export const PUBLISH_LAB_BRAND = {
-  name: `内容同步智能体`,
+  name: `AI分发大师`,
   domain: `publishlab.cc`,
   positioning: `AI 内容分发与多平台同步智能体`,
-  summary: `内容同步智能体让 AI 参与你的内容分发，一键将同一篇内容发布至 30+ 平台；多平台发布与同步由 Syncblog 模块承担。`,
+  summary: `AI分发大师让 AI 参与你的内容分发，一键将同一篇内容发布至 30+ 平台；多平台发布与同步由 Syncblog 模块承担。`,
   promise: `写好一篇内容，即可一键同步发布到 30+ 平台，让分发不再是重复劳动。`,
 }
 

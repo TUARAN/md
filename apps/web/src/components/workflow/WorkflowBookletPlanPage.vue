@@ -68,7 +68,7 @@ async function createEditorPost(title: string, markdown: string) {
 }
 
 function createTierPost(tier: PublishLabProductTier) {
-  createEditorPost(`内容同步智能体 · ${tier.name}变现方案`, buildPublishLabTierMarkdown(tier))
+  createEditorPost(`AI分发大师 · ${tier.name}变现方案`, buildPublishLabTierMarkdown(tier))
 }
 </script>
 
@@ -78,7 +78,7 @@ function createTierPost(tier: PublishLabProductTier) {
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div class="min-w-0 space-y-3">
           <div class="inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-            内容同步智能体 · 小册线
+            AI分发大师 · 小册线
           </div>
           <WorkflowPageTitle>
             <template #icon>
@@ -103,7 +103,7 @@ function createTierPost(tier: PublishLabProductTier) {
               <span class="mt-1 size-2 rounded-full bg-primary" />
               <div>
                 <div class="font-semibold text-foreground">
-                  内容同步智能体
+                  AI分发大师
                 </div>
                 <div class="text-xs leading-relaxed text-muted-foreground">
                   负责小册、课程、训练营等系统内容资产。

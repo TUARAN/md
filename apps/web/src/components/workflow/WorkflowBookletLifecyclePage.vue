@@ -36,7 +36,7 @@ const lifecycleStages: BookletLifecycleStage[] = [
   {
     id: `booklet-operation`,
     title: `矩阵运营`,
-    badge: `内容同步智能体 · 小册线`,
+    badge: `AI分发大师 · 小册线`,
     icon: TrendingUp,
     summary: `把小册从“写完”推进到“有人看到、有人购买、有人反馈”，设计预热、转化、交付和复购动作。`,
     outputs: [`首发预热节奏`, `销售页文案`, `样章分发计划`, `社群交付 SOP`],
@@ -45,7 +45,7 @@ const lifecycleStages: BookletLifecycleStage[] = [
   {
     id: `booklet-loop`,
     title: `数据闭环`,
-    badge: `内容同步智能体 · 小册线`,
+    badge: `AI分发大师 · 小册线`,
     icon: Repeat2,
     summary: `用销量、完读率、问题反馈和复购信号反推下一版小册，把内容产品变成可迭代资产。`,
     outputs: [`销售复盘表`, `用户问题池`, `版本迭代清单`, `下一期选题假设`],

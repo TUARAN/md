@@ -12,6 +12,10 @@ import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router
  *
  *   /                            → 重定向到 /edit
  *   /edit                        编辑器主页(name=sync) — 文章线「排版发布」步骤
+ *   /workflow/opinion/idea       name=opinion-idea         观点提炼
+ *   /workflow/opinion/rewrite    name=opinion-rewrite      短内容改写
+ *   /workflow/opinion/distribution name=opinion-distribution 观点分发
+ *   /workflow/opinion/loop       name=opinion-loop         互动复盘
  *   /workflow/article/data       name=data       素材采集
  *   /workflow/article/creation   name=creation   文章创作
  *   /workflow/article/distribution name=distribution  矩阵运营
@@ -57,6 +61,7 @@ const SyncPage = () => import('@/views/SyncPage.vue')
 
 // 非默认 workflow 页一律懒加载,首屏只装编辑器
 const WorkflowDataPage = () => import('@/components/workflow/WorkflowDataPage.vue')
+const WorkflowOpinionPage = () => import('@/components/workflow/WorkflowOpinionPage.vue')
 const WorkflowBookletResearchPage = () => import('@/components/workflow/WorkflowBookletResearchPage.vue')
 const WorkflowBookletPlanPage = () => import('@/components/workflow/WorkflowBookletPlanPage.vue')
 const WorkflowBookletWritingPage = () => import('@/components/workflow/WorkflowBookletWritingPage.vue')
@@ -74,11 +79,12 @@ const SettingsPage = () => import('@/views/SettingsPage.vue')
 const ChangelogPage = () => import('@/views/ChangelogPage.vue')
 
 /** workflow 步骤路由名,与 stores/ui.ts 中的 `WorkflowAppPage` 一一对应 */
-export const WORKFLOW_ROUTE_NAMES = [`sync`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `booklet-operation`, `booklet-loop`, `repo-idea`, `repo-plan`, `repo-build`, `repo-operation`, `repo-loop`, `creation`, `import`, `distribution`, `stats`] as const
+export const WORKFLOW_ROUTE_NAMES = [`sync`, `opinion-idea`, `opinion-rewrite`, `opinion-distribution`, `opinion-loop`, `data`, `booklet-research`, `booklet-plan`, `booklet-writing`, `booklet-operation`, `booklet-loop`, `repo-idea`, `repo-plan`, `repo-build`, `repo-operation`, `repo-loop`, `creation`, `import`, `distribution`, `stats`] as const
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
 /** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
 const LEGACY_HASH_TO_ROUTE: Record<string, WorkflowRouteName> = {
+  'opinion': `opinion-idea`,
   'content-sync': `sync`,
   'data': `data`,
   'monetize': `booklet-plan`,
@@ -99,6 +105,12 @@ const routes: RouteRecordRaw[] = [
       { path: ``, redirect: { name: `sync` } },
       { path: `edit`, name: `sync`, component: SyncPage },
       // workflow 步骤搬到 /workflow/<lane>/*。Phase 3.2 会把它们拆出 EditorLayout。
+      // 观点线：百字短内容先行，适配微博 / 沸点 / X 等短内容渠道
+      { path: `workflow/opinion`, redirect: { name: `opinion-idea` } },
+      { path: `workflow/opinion/idea`, name: `opinion-idea`, component: WorkflowOpinionPage },
+      { path: `workflow/opinion/rewrite`, name: `opinion-rewrite`, component: WorkflowOpinionPage },
+      { path: `workflow/opinion/distribution`, name: `opinion-distribution`, component: WorkflowOpinionPage },
+      { path: `workflow/opinion/loop`, name: `opinion-loop`, component: WorkflowOpinionPage },
       // 文章线（排版发布 = 编辑器主页 /edit,故父级 redirect 到 sync）
       { path: `workflow/article`, redirect: { name: `sync` } },
       { path: `workflow/article/data`, name: `data`, component: WorkflowDataPage },
@@ -137,6 +149,7 @@ const routes: RouteRecordRaw[] = [
 
   // 老路径兼容(Phase 3.1):保留 1 个月后清掉
   { path: `/sync`, redirect: `/edit` },
+  { path: `/opinion`, redirect: `/workflow/opinion/idea` },
   { path: `/data`, redirect: `/workflow/article/data` },
   { path: `/monetize`, redirect: `/workflow/booklet/plan` },
   { path: `/repository`, redirect: `/workflow/opensource/plan` },

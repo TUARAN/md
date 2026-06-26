@@ -66,7 +66,7 @@ async function createEditorPost(title: string, markdown: string) {
     <template #header>
       <div class="min-w-0 space-y-3">
         <div class="inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-          内容同步智能体 · 小册线
+          AI分发大师 · 小册线
         </div>
         <WorkflowPageTitle>
           <template #icon>
@@ -91,7 +91,7 @@ async function createEditorPost(title: string, markdown: string) {
               <Copy class="mr-1.5 size-3.5" />
               复制 Markdown
             </Button>
-            <Button type="button" size="sm" @click="createEditorPost('内容同步智能体 · 写作变现深度调研', PUBLISH_LAB_RESEARCH_MARKDOWN)">
+            <Button type="button" size="sm" @click="createEditorPost('AI分发大师 · 写作变现深度调研', PUBLISH_LAB_RESEARCH_MARKDOWN)">
               <FileText class="mr-1.5 size-3.5" />
               生成调研草稿
             </Button>

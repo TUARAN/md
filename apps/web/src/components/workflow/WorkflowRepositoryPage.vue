@@ -150,7 +150,7 @@ function openStage(stage: RepositoryStage) {
       <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div class="min-w-0 space-y-3">
           <div class="inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-            内容同步智能体 · 开源线
+            AI分发大师 · 开源线
           </div>
           <WorkflowPageTitle>
             <template #icon>

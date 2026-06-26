@@ -56,6 +56,20 @@ interface TimelineEntry {
 
 const timelineEntries: TimelineEntry[] = [
   {
+    id: `fork-2026-06-26-ai-distribution-master`,
+    source: `fork`,
+    kind: `milestone`,
+    date: `2026-06-26`,
+    title: `品牌升级为「AI分发大师」并新增观点线`,
+    subtitle: `主品牌升级为「AI分发大师」，产品边界扩展为观点、文章、小册、项目四类内容分发；观点线参考 Wechatsync 的本地登录态、草稿优先和多平台同步思路，面向微博、沸点、X、知乎想法等短内容渠道。`,
+    items: [
+      `顶部工作流新增「观点」车道，包含观点提炼、短内容改写、观点分发和互动复盘。`,
+      `新增观点分发工作台，可生成微博、掘金沸点、X、小红书、知乎想法等平台版本，并可生成 Markdown 草稿回到编辑器继续排版。`,
+      `同步更新站点品牌常量、README、默认示例和主要工作流页面徽标。`,
+    ],
+    tags: [`AI分发大师`, `观点线`, `短内容分发`, `Wechatsync`, `Syncblog`],
+  },
+  {
     id: `fork-2026-06-17-content-sync-agent`,
     source: `fork`,
     kind: `milestone`,
