@@ -72,6 +72,12 @@ const WorkflowImportPage = () => import('@/components/workflow/WorkflowImportPag
 const WorkflowDistributionPage = () => import('@/components/workflow/WorkflowDistributionPage.vue')
 const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.vue')
 
+// 分发优先 IA：分发台主视角。compose = 默认落地的「内容 + 平台网格」一键同步页（观点）；
+// 小册 / 项目 各有专门分发台；文章用编辑器 sync。
+const DistributionComposer = () => import('@/components/distribute/DistributionComposer.vue')
+const BookletDistribute = () => import('@/components/distribute/BookletDistribute.vue')
+const ProjectDistribute = () => import('@/components/distribute/ProjectDistribute.vue')
+
 const CreatorOfferPage = () => import('@/views/CreatorOfferPage.vue')
 const ImportDocsPage = () => import('@/views/ImportDocsPage.vue')
 const PricingPage = () => import('@/views/PricingPage.vue')
@@ -101,8 +107,8 @@ const routes: RouteRecordRaw[] = [
     path: `/`,
     component: EditorLayout,
     children: [
-      // 主入口:编辑器永远在根路径,/edit 是规范 URL
-      { path: ``, redirect: { name: `sync` } },
+      // 主入口:分发优先 —— 默认落地「内容同步」一键分发页;编辑器在 /edit。
+      { path: ``, redirect: { name: `distribute-compose` } },
       { path: `edit`, name: `sync`, component: SyncPage },
       // workflow 步骤搬到 /workflow/<lane>/*。Phase 3.2 会把它们拆出 EditorLayout。
       // 观点线：百字短内容先行，适配微博 / 沸点 / X 等短内容渠道
@@ -139,6 +145,14 @@ const routes: RouteRecordRaw[] = [
       { path: `workflow/repository/operation`, redirect: { name: `repo-operation` } },
       { path: `workflow/repository/loop`, redirect: { name: `repo-loop` } },
       { path: `workflow/import`, name: `import`, component: WorkflowImportPage },
+      // 分发优先 IA：内容类型「分发台」落地路由。观点 → opinion-distribution，
+      // 文章 → sync(编辑器)，小册 / 项目用下面两个新分发台。
+      { path: `distribute/compose`, name: `distribute-compose`, component: DistributionComposer },
+      { path: `distribute/booklet`, name: `distribute-booklet`, component: BookletDistribute },
+      { path: `distribute/project`, name: `distribute-project`, component: ProjectDistribute },
+      { path: `distribute/opinion`, redirect: { name: `distribute-compose` } },
+      { path: `distribute/article`, redirect: { name: `sync` } },
+      { path: `distribute`, redirect: { name: `distribute-compose` } },
       // 旧扁平文章线路径兼容(2026-06 收拢到 /workflow/article/*),保留一段时间后清掉
       { path: `workflow/data`, redirect: { name: `data` } },
       { path: `workflow/creation`, redirect: { name: `creation` } },

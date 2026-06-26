@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { BadgeDollarSign, BarChart3, BookOpen, Code2, Database, Download, FileText, GitBranch, Github, Megaphone, Menu, MessageCircle, Repeat2, ScrollText, Send, Settings, Sparkles, Target, TrendingUp } from 'lucide-vue-next'
-import { computed, inject, ref, watch } from 'vue'
+import type { ContentTypeId } from '@/constants/contentTypes'
+import { Download, Menu, ScrollText, Settings } from 'lucide-vue-next'
+import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,9 +10,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import AssistDrawer from '@/components/workflow/AssistDrawer.vue'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
-import { getDataAcquisitionNavUrl, getSyncblogPluginReleaseUrl } from '@/constants/branding'
+import { getSyncblogPluginReleaseUrl } from '@/constants/branding'
+import { CONTENT_TYPES, contentTypeOfRoute } from '@/constants/contentTypes'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
 import FileDropdown from './FileDropdown.vue'
@@ -28,8 +31,6 @@ const uiStore = useUIStore()
 const router = useRouter()
 const route = useRoute()
 
-/** 当前 workflow 步骤 id,由路由名派生(代替老的 ui.workflowAppPage 状态) */
-const workflowAppPage = computed(() => String(route.name ?? `sync`))
 const {
   aboutDialogVisible,
   editorStateDialogVisible,
@@ -44,130 +45,22 @@ function handleCopy(mode: string) {
 }
 
 /*
- * 顶栏导航分四条线,通过 tab 切换显示哪条线的步骤(不再三行平铺):
- * - 观点线:百字短内容,先在微博、沸点、X 等渠道验证观点
- * - 文章线:素材采集、文章创作、排版发布、矩阵运营、数据闭环
- * - 小册线:成体系内容产品,从选题到销售运营再到复盘闭环
- * - 开源线:围绕 GitHub 项目从选题、规格策划、工程搭建到运营迭代
+ * 分发优先 IA：顶栏唯一主导航是「内容类型切换」（观点 / 文章 / 小册 / 项目），
+ * 每种类型直达它的分发台。过去占顶栏的上游步骤（提炼 / 创作 / 选题 / 复盘）
+ * 降级到「助手」（见 AssistDrawer），不再平铺在顶栏。
  */
-const opinionWorkflowSteps = [
-  { id: `opinion-idea` as const, label: `观点提炼`, icon: MessageCircle, routeName: `opinion-idea` },
-  { id: `opinion-rewrite` as const, label: `短内容改写`, icon: Sparkles, routeName: `opinion-rewrite` },
-  { id: `opinion-distribution` as const, label: `观点分发`, icon: Send, routeName: `opinion-distribution` },
-  { id: `opinion-loop` as const, label: `互动复盘`, icon: Repeat2, routeName: `opinion-loop` },
-] as const
 
-const articleWorkflowSteps = [
-  { id: `data` as const, label: `素材采集`, icon: Database, routeName: `data` },
-  { id: `creation` as const, label: `文章创作`, icon: Sparkles, routeName: `creation` },
-  { id: `sync` as const, label: `排版发布`, icon: FileText, routeName: `sync` },
-  { id: `distribution` as const, label: `矩阵运营`, icon: Megaphone, routeName: `distribution` },
-  { id: `stats` as const, label: `数据闭环`, icon: BarChart3, routeName: `stats` },
-] as const
+/** 当前路由所属的内容类型（找不到回退 article，即编辑器分发台） */
+const activeContentType = computed<ContentTypeId>(() => contentTypeOfRoute(String(route.name ?? `sync`)))
 
-const bookletWorkflowSteps = [
-  { id: `booklet-research` as const, label: `调研选题`, icon: Target, routeName: `booklet-research` },
-  { id: `booklet-plan` as const, label: `内容策划`, icon: BadgeDollarSign, routeName: `booklet-plan` },
-  { id: `booklet-writing` as const, label: `章节生产`, icon: BookOpen, routeName: `booklet-writing` },
-  { id: `booklet-operation` as const, label: `矩阵运营`, icon: TrendingUp, routeName: `booklet-operation` },
-  { id: `booklet-loop` as const, label: `数据闭环`, icon: Repeat2, routeName: `booklet-loop` },
-] as const
+/** 当前内容类型的一句话定位（桌面端 tab 右侧提示） */
+const activeTagline = computed(() => CONTENT_TYPES.find(t => t.id === activeContentType.value)?.tagline ?? ``)
 
-const repositoryWorkflowSteps = [
-  { id: `repo-idea` as const, label: `项目选题`, icon: GitBranch, routeName: `repo-idea` },
-  { id: `repo-plan` as const, label: `规格策划`, icon: Github, routeName: `repo-plan` },
-  { id: `repo-build` as const, label: `工程搭建`, icon: Code2, routeName: `repo-build` },
-  { id: `repo-operation` as const, label: `矩阵运营`, icon: TrendingUp, routeName: `repo-operation` },
-  { id: `repo-loop` as const, label: `数据闭环`, icon: Repeat2, routeName: `repo-loop` },
-] as const
-
-type WorkflowStep = (typeof opinionWorkflowSteps)[number] | (typeof articleWorkflowSteps)[number] | (typeof bookletWorkflowSteps)[number] | (typeof repositoryWorkflowSteps)[number]
-
-/** 四条线收进一个 tab 切换器:点 tab 切换显示哪条线的步骤,点步骤才跳路由 */
-const WORKFLOW_LANES = [
-  { id: `opinion` as const, label: `观点`, steps: opinionWorkflowSteps },
-  { id: `article` as const, label: `文章`, steps: articleWorkflowSteps },
-  { id: `booklet` as const, label: `小册`, steps: bookletWorkflowSteps },
-  { id: `opensource` as const, label: `开源`, steps: repositoryWorkflowSteps },
-] as const
-
-type LaneId = (typeof WORKFLOW_LANES)[number][`id`]
-
-/** 当前路由属于哪条线(找不到回退文章线,例如编辑器 /edit 即文章线「排版发布」) */
-function laneOfRoute(name: string): LaneId {
-  const hit = WORKFLOW_LANES.find(lane => lane.steps.some(step => step.routeName === name))
-  return hit?.id ?? `article`
-}
-
-/**
- * 当前展示哪条线的步骤:默认跟随路由所属线;用户点 tab 可临时切到别的线查看,
- * 一旦路由变化(点了步骤或外部跳转)又重新跟随路由。
- */
-const activeLaneId = ref<LaneId>(laneOfRoute(workflowAppPage.value))
-watch(workflowAppPage, name => (activeLaneId.value = laneOfRoute(name)))
-
-const activeLaneSteps = computed(() =>
-  WORKFLOW_LANES.find(lane => lane.id === activeLaneId.value)?.steps ?? articleWorkflowSteps,
-)
-
-/** 每条线记住用户上次选的二级步骤（localStorage 持久化，切换线路时恢复） */
-const LANE_STEP_MEMORY_KEY = `workflow-lane-step-memory`
-
-function loadLaneStepMemory(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem(LANE_STEP_MEMORY_KEY) ?? `{}`)
-  }
-  catch {
-    return {}
-  }
-}
-
-function saveLaneStepMemory(memory: Record<string, string>) {
-  localStorage.setItem(LANE_STEP_MEMORY_KEY, JSON.stringify(memory))
-}
-
-const laneStepMemory = ref<Record<string, string>>(loadLaneStepMemory())
-
-/** 根据 routeName 找到所属的线 */
-function findLaneByStep(routeName: string): LaneId | undefined {
-  return WORKFLOW_LANES.find(lane => lane.steps.some(s => s.routeName === routeName))?.id
-}
-
-function selectLane(id: LaneId) {
-  activeLaneId.value = id
-  const lane = WORKFLOW_LANES.find(l => l.id === id)
-  if (!lane)
+function selectContentType(id: ContentTypeId) {
+  const target = CONTENT_TYPES.find(t => t.id === id)
+  if (!target || route.name === target.routeName)
     return
-  // 优先回到该线上次选的步骤，没有记忆则回退第一个
-  const remembered = laneStepMemory.value[id]
-  const step = lane.steps.find(s => s.routeName === remembered) ?? lane.steps[0]
-  openWorkflowStep(step)
-}
-
-function openWorkflowStep(step: WorkflowStep) {
-  const stepId = step.routeName
-  // 记住该步骤所属线的最后选择
-  const laneId = findLaneByStep(stepId)
-  if (laneId) {
-    laneStepMemory.value[laneId] = stepId
-    saveLaneStepMemory(laneStepMemory.value)
-  }
-  if (stepId === `data`) {
-    const url = getDataAcquisitionNavUrl()
-    if (url) {
-      window.open(url, `_blank`, `noopener,noreferrer`)
-      return
-    }
-  }
-  router.push({ name: stepId })
-}
-
-function isStepActive(step: WorkflowStep) {
-  return workflowAppPage.value === step.routeName
-}
-
-function openStep(step: WorkflowStep) {
-  openWorkflowStep(step)
+  router.push({ name: target.routeName })
 }
 
 function openChangelog() {
@@ -189,99 +82,72 @@ function openPluginDownload() {
 
 <template>
   <header class="header-container relative flex min-h-[5.25rem] flex-col gap-1.5 px-3 py-2 md:min-h-[3.5rem] md:px-5">
-    <!-- 桌面端：一行 = 线 tab 切换 + 当前线的步骤（不再三行平铺） -->
-    <div class="hidden w-full min-w-0 items-center gap-3 pr-28 md:flex">
-      <div class="lane-tabs" role="tablist" aria-label="工作流线">
+    <!-- 桌面端：分发优先 IA —— 唯一主导航是内容类型切换（观点 / 文章 / 小册 / 项目） -->
+    <div class="hidden w-full min-w-0 items-center gap-3 pr-[20rem] md:flex">
+      <div class="lane-tabs" role="tablist" aria-label="内容类型">
         <button
-          v-for="lane in WORKFLOW_LANES"
-          :key="lane.id"
+          v-for="t in CONTENT_TYPES"
+          :key="t.id"
           type="button"
           role="tab"
-          class="lane-tab"
-          :class="{ 'lane-tab--active': activeLaneId === lane.id }"
-          :aria-selected="activeLaneId === lane.id"
-          @click="selectLane(lane.id)"
+          class="lane-tab gap-1.5"
+          :class="{ 'lane-tab--active': activeContentType === t.id }"
+          :aria-selected="activeContentType === t.id"
+          @click="selectContentType(t.id)"
         >
-          {{ lane.label }}
+          <component :is="t.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+          <span>{{ t.label }}</span>
         </button>
       </div>
-      <div class="lane-divider" aria-hidden="true" />
-      <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
-        aria-label="当前线步骤"
-      >
-        <button
-          v-for="step in activeLaneSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-9 shrink-0 items-center gap-1.5 px-3 text-sm transition-colors duration-150"
-          :class="isStepActive(step) ? 'step-tab--active' : 'text-muted-foreground hover:text-foreground'"
-          :aria-current="isStepActive(step) ? 'step' : undefined"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
-      </nav>
+      <p class="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground lg:block">
+        {{ activeTagline }}
+      </p>
     </div>
 
-    <!-- 移动端：第一行 = 线 tab + 菜单，第二行 = 当前线步骤横向滚动 -->
+    <!-- 移动端：一行 = 内容类型切换 + 助手 + 编辑器菜单 -->
     <div class="flex w-full min-w-0 items-center justify-between gap-2 md:hidden">
-      <div class="lane-tabs" role="tablist" aria-label="工作流线">
+      <div class="lane-tabs min-w-0 overflow-x-auto" role="tablist" aria-label="内容类型">
         <button
-          v-for="lane in WORKFLOW_LANES"
-          :key="lane.id"
+          v-for="t in CONTENT_TYPES"
+          :key="t.id"
           type="button"
           role="tab"
-          class="lane-tab lane-tab--mobile"
-          :class="{ 'lane-tab--active': activeLaneId === lane.id }"
-          :aria-selected="activeLaneId === lane.id"
-          @click="selectLane(lane.id)"
+          class="lane-tab lane-tab--mobile gap-1"
+          :class="{ 'lane-tab--active': activeContentType === t.id }"
+          :aria-selected="activeContentType === t.id"
+          @click="selectContentType(t.id)"
         >
-          {{ lane.label }}
+          <component :is="t.icon" class="size-3 shrink-0" aria-hidden="true" />
+          <span>{{ t.label }}</span>
         </button>
       </div>
 
-      <Menubar class="shrink-0 border-0 p-0">
-        <MenubarMenu>
-          <MenubarTrigger
-            class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
-          >
-            <Menu class="size-4 pointer-events-none" />
-          </MenubarTrigger>
-          <MenubarContent align="start">
-            <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
-            <EditDropdown :as-sub="true" @copy="handleCopy" />
-            <FormatDropdown :as-sub="true" />
-            <InsertDropdown :as-sub="true" />
-            <StyleDropdown :as-sub="true" />
-            <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-help="handleOpenMarkdownHelp" />
-          </MenubarContent>
-        </MenubarMenu>
-      </Menubar>
-    </div>
-
-    <div class="flex w-full min-w-0 items-center md:hidden">
-      <nav
-        class="step-tabs flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto whitespace-nowrap"
-        aria-label="当前线步骤"
-      >
-        <button
-          v-for="step in activeLaneSteps"
-          :key="step.id"
-          type="button"
-          class="step-tab relative inline-flex h-8 shrink-0 items-center gap-1 px-2.5 text-[12px] transition-colors duration-150"
-          :class="isStepActive(step) ? 'step-tab--active' : 'text-muted-foreground hover:text-foreground'"
-          @click="openStep(step)"
-        >
-          <component :is="step.icon" class="size-3 shrink-0" aria-hidden="true" />
-          <span>{{ step.label }}</span>
-        </button>
-      </nav>
+      <div class="flex shrink-0 items-center gap-1">
+        <AssistDrawer />
+        <Menubar class="shrink-0 border-0 p-0">
+          <MenubarMenu>
+            <MenubarTrigger
+              class="workflow-mobile-menu-trigger inline-flex size-8 shrink-0 items-center justify-center rounded-full border border-border/40 bg-transparent p-0 text-muted-foreground shadow-none transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-muted/50 data-[state=open]:text-foreground"
+            >
+              <Menu class="size-4 pointer-events-none" />
+            </MenubarTrigger>
+            <MenubarContent align="start">
+              <FileDropdown :as-sub="true" @open-editor-state="handleOpenEditorState" />
+              <EditDropdown :as-sub="true" @copy="handleCopy" />
+              <FormatDropdown :as-sub="true" />
+              <InsertDropdown :as-sub="true" />
+              <StyleDropdown :as-sub="true" />
+              <HelpDropdown :as-sub="true" @open-about="handleOpenAbout" @open-markdown-help="handleOpenMarkdownHelp" />
+            </MenubarContent>
+          </MenubarMenu>
+        </Menubar>
+      </div>
     </div>
 
     <!-- 右侧：辅助入口 -->
     <div class="header-actions hidden shrink-0 items-center gap-1 md:flex">
+      <!-- 助手：分发优先 IA 里上游步骤（提炼/创作/选题/复盘）的二级入口 -->
+      <AssistDrawer />
       <TooltipProvider :delay-duration="200">
         <!--
           下载发布插件：下载站点自托管的 SyncBlog Plugin zip。
@@ -369,16 +235,14 @@ function openPluginDownload() {
   z-index: 50;
 }
 
-.step-tabs {
+/* —— 内容类型切换：中性 segmented control（激活段=抬升的浅色面，不用强调色）—— */
+.lane-tabs {
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
-}
 
-/* —— 线切换：中性 segmented control（激活段=抬升的浅色面，不用强调色）—— */
-.lane-tabs {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -430,40 +294,10 @@ function openPluginDownload() {
   }
 }
 
-/* 一级 / 二级之间的分隔 */
-.lane-divider {
-  width: 1px;
-  height: 1.25rem;
-  flex-shrink: 0;
-  background: hsl(var(--border) / 0.7);
-}
-
 .header-actions {
   position: absolute;
   top: 0.625rem;
   right: 1.25rem;
-}
-
-/* —— 流程步骤：下划线 Tab，中性活动态 —— */
-.step-tab {
-  border-bottom: 2px solid transparent;
-  font-weight: 500;
-
-  &:hover {
-    background: hsl(var(--muted) / 0.4);
-  }
-
-  &:focus-visible {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.5);
-  }
-}
-
-.step-tab--active {
-  color: hsl(var(--foreground));
-  font-weight: 600;
-  border-bottom-color: hsl(var(--foreground));
 }
 
 .menubar {
