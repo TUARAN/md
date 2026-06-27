@@ -101,10 +101,12 @@ async function startPromotion() {
   <div class="project-dist-page min-h-0 flex-1 overflow-y-auto">
     <div class="mx-auto w-full max-w-5xl px-4 py-6">
       <header class="mb-5">
-        <p class="text-sm text-muted-foreground">
-          GitHub 项目同步，一键铺到开源发布站、开发者社区、社交渠道和云生态平台
-        </p>
-        <SyncPluginTip />
+        <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <p>
+            GitHub 项目同步，一键铺到开源发布站、开发者社区、社交渠道和云生态平台
+          </p>
+          <SyncPluginTip />
+        </div>
       </header>
 
       <div class="import-bar mb-3 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">

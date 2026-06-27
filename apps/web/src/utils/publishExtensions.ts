@@ -19,6 +19,23 @@ export interface PublishExtensionTask {
   accounts: PostAccount[]
 }
 
+export interface PublishExtensionContent {
+  title?: string
+  body?: string
+  markdown?: string
+  thumb?: string
+  desc?: string
+  wechatHtml?: string | null
+}
+
+export interface PublishExtensionSyncResult {
+  success?: boolean
+  message?: string
+  error?: string
+  tabId?: number
+  [key: string]: unknown
+}
+
 /** Syncblog 同步助手沿用的 COSE 原生页面 API */
 export interface PublishExtensionApi {
   getPlatforms?: () => PostAccount[]
@@ -32,6 +49,10 @@ export interface PublishExtensionApi {
     onProgress: (status: { accounts?: PostAccount[] }) => void,
     onDone: () => void,
   ) => void
+  syncToPlatform?: (
+    platformId: string,
+    content: PublishExtensionContent,
+  ) => Promise<PublishExtensionSyncResult>
 }
 
 /** 只使用下载版 Syncblog 同步助手的 COSE 协议，不再接入 CSDN/CSYNC 插件。 */

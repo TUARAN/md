@@ -120,10 +120,12 @@ async function startSync() {
   <div class="article-dist-page min-h-0 flex-1 overflow-y-auto">
     <div class="mx-auto w-full max-w-5xl px-4 py-6">
       <header class="mb-5">
-        <p class="text-sm text-muted-foreground">
-          长文章，外站写好后导入链接，一键分发到公众号、知乎、掘金、CSDN 等平台
-        </p>
-        <SyncPluginTip />
+        <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <p>
+            长文章，外站写好后导入链接，一键分发到公众号、知乎、掘金、CSDN 等平台
+          </p>
+          <SyncPluginTip />
+        </div>
       </header>
 
       <div class="plugin-strip mb-4 flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">

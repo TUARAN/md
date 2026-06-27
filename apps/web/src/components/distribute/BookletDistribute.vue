@@ -79,10 +79,12 @@ async function startSync() {
   <div class="dist-page min-h-0 flex-1 overflow-y-auto">
     <div class="mx-auto w-full max-w-5xl px-4 py-6">
       <header class="mb-5">
-        <p class="text-sm text-muted-foreground">
-          电子书 / 付费小册 / 网文小说，一键分发到知识付费、小说连载和电子书长尾平台
-        </p>
-        <SyncPluginTip />
+        <div class="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <p>
+            电子书 / 付费小册 / 网文小说，一键分发到知识付费、小说连载和电子书长尾平台
+          </p>
+          <SyncPluginTip />
+        </div>
       </header>
 
       <!-- 电子书链接 -->
