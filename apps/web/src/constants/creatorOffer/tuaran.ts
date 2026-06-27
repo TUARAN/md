@@ -17,7 +17,7 @@ export const TUARAN_OFFER = {
     followers: `约 3.1 万`,
     reads: `约 504 万`,
     platformCount: 14,
-    syncCapability: `30+`,
+    syncCapability: `73`,
   },
 
   services: [

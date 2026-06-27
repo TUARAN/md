@@ -253,5 +253,5 @@ export const PUBLISH_LAB_RESEARCH_MARKDOWN = `# 中国写作变现 · 深度调�
 
 ---
 
-*由AI分发大师整理 — 让 AI 参与你的内容分发，一键发布至 30+ 平台*
+*由AI分发大师整理 — 让 AI 参与你的内容分发，一键同步至 73 平台*
 `

@@ -1,37 +1,40 @@
 <script setup lang="ts">
 /**
- * ProjectDistribute —— GitHub 项目同步台。
+ * ArticleDistribute —— 文章分发台（分发优先视角）
  *
- * 项目线不做正文创作主流程，只负责把项目链接 / 一句话介绍同步到
- * 开源发布站、开发者社区、社交渠道和云生态平台。
+ * 核心理念：文章在你最熟悉的平台写好，这里只做「分发入口」。
+ * 外站接入（URL 导入 / 上传 Word）→ 填标题摘要封面 → 选平台 → 一键同步。
+ * Markdown 排版编辑器作为可选的辅助工具（通过助手进入）。
  */
 import type { DistributionPlatformGroup } from '@/constants/distributionPlatforms'
-import { Github, Link, Send } from 'lucide-vue-next'
+import { Download, Link, PenLine, Send, Upload } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
 import { Switch } from '@/components/ui/switch'
 import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
-import { flattenPlatformGroups, PROJECT_PLATFORM_GROUPS } from '@/constants/distributionPlatforms'
+import { getSyncblogPluginReleaseUrl } from '@/constants/branding'
+import { ARTICLE_PLATFORM_GROUPS, flattenPlatformGroups } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
 import SyncPluginTip from './SyncPluginTip.vue'
 
+const router = useRouter()
 const { platformMatrix } = useWorkflowCreatorContext()
 
-const repoUrl = store.reactive(`project_dist_repo_url`, ``)
-const summary = store.reactive(`project_dist_summary`, ``)
-const directPublish = store.reactive(`project_dist_direct_publish`, false)
-const selected = store.reactive<string[]>(`project_dist_selected_platforms`, [])
+const urlInput = store.reactive(`article_dist_url`, ``)
+const directPublish = store.reactive(`article_dist_direct_publish`, false)
+const selected = store.reactive<string[]>(`article_dist_selected_platforms`, [])
 
-const platformGroups = PROJECT_PLATFORM_GROUPS
-const PROJECT_PLATFORMS = flattenPlatformGroups(platformGroups)
-const platformTypes = PROJECT_PLATFORMS.map(p => p.type)
+const platformGroups = ARTICLE_PLATFORM_GROUPS
+const ARTICLE_PLATFORMS = flattenPlatformGroups(platformGroups)
+const platformTypes = ARTICLE_PLATFORMS.map(p => p.type)
 
 const selectedInScope = computed(() => selected.value.filter(type => platformTypes.includes(type)))
 const allSelected = computed(() => platformTypes.every(type => selected.value.includes(type)))
 const someSelected = computed(() => selectedInScope.value.length > 0 && !allSelected.value)
 
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
-const homeByType = new Map(PROJECT_PLATFORMS.map(p => [p.type, p.homeUrl]))
+const homeByType = new Map(ARTICLE_PLATFORMS.map(p => [p.type, p.homeUrl]))
 
 function viewUrl(type: string): string {
   return matrixByType.value.get(type)?.url || homeByType.get(type) || `#`
@@ -62,32 +65,48 @@ function toggleGroup(group: DistributionPlatformGroup) {
     : Array.from(new Set([...selected.value, ...groupTypes]))
 }
 
-async function startPromotion() {
-  const url = repoUrl.value.trim()
+function handleWordUpload() {
+  toast.info(`Word 上传即将支持`)
+}
+
+function openPluginDownload() {
+  window.open(getSyncblogPluginReleaseUrl(), `_blank`, `noopener,noreferrer`)
+}
+
+async function importUrl() {
+  const url = urlInput.value.trim()
   if (!url) {
-    toast.error(`请先粘贴 GitHub 项目链接`)
+    toast.error(`请输入文章链接`)
+    return
+  }
+  // 打开排版编辑器并带上源链接，后续可扩展为自动抓取
+  router.push({ name: `sync`, query: { importUrl: url } })
+}
+
+async function startSync() {
+  if (!urlInput.value.trim()) {
+    toast.error(`请先导入文章链接`)
     return
   }
   if (!selectedInScope.value.length) {
-    toast.error(`至少勾选一个同步平台`)
+    toast.error(`至少勾选一个平台`)
     return
   }
 
-  const payloadText = [summary.value.trim(), url].filter(Boolean).join(`\n`)
   try {
-    await copyPlain(payloadText)
+    await copyPlain(urlInput.value.trim())
   }
   catch {}
 
   window.postMessage(
-    { source: `ai-distribution-master`, type: `distribute-project`, payload: { url, summary: summary.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
+    { source: `ai-distribution-master`, type: `distribute-article`, payload: { url: urlInput.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
     `*`,
   )
 
   toast.success(
     directPublish.value
-      ? `已发起项目同步：${selectedInScope.value.length} 个平台`
-      : `项目信息已复制，正在打开 ${selectedInScope.value.length} 个平台`,
+      ? `已发起同步：${selectedInScope.value.length} 个平台（需安装发布插件执行直接发布）`
+      : `正在打开 ${selectedInScope.value.length} 个平台发布页`,
   )
 
   if (!directPublish.value) {
@@ -98,41 +117,63 @@ async function startPromotion() {
 </script>
 
 <template>
-  <div class="project-dist-page min-h-0 flex-1 overflow-y-auto">
+  <div class="article-dist-page min-h-0 flex-1 overflow-y-auto">
     <div class="mx-auto w-full max-w-5xl px-4 py-6">
       <header class="mb-5">
         <p class="text-sm text-muted-foreground">
-          GitHub 项目同步，一键铺到开源发布站、开发者社区、社交渠道和云生态平台
+          长文章，外站写好后导入链接，一键分发到公众号、知乎、掘金、CSDN 等平台
         </p>
         <SyncPluginTip />
       </header>
 
-      <div class="import-bar mb-3 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">
-        <Github class="size-4 shrink-0 text-muted-foreground/60" />
-        <input
-          v-model="repoUrl"
-          type="url"
-          placeholder="粘贴 GitHub 项目链接"
-          class="min-w-0 flex-1 border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/55"
-          @keydown.enter="startPromotion"
-        >
-      </div>
-
-      <div class="mb-5 rounded-xl bg-card/60 p-3 ring-1 ring-border/40">
-        <div class="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Link class="size-3.5" />
-          一句话项目简介（可选）
+      <div class="plugin-strip mb-4 flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-foreground">
+            文章分发需要 SyncBlog 发布插件
+          </p>
+          <p class="mt-0.5 text-xs text-muted-foreground">
+            安装后可把文章写入各平台草稿；未安装时只能打开平台发布页手动粘贴。
+          </p>
         </div>
-        <textarea
-          v-model="summary"
-          rows="3"
-          placeholder="例如：一个面向创作者的多平台内容分发工具，支持观点、文章、电子书、项目一键同步。"
-          class="w-full resize-y border-0 bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/55"
-        />
+        <button type="button" class="plugin-download-btn" @click="openPluginDownload">
+          <Download class="size-3.5" />
+          下载插件
+        </button>
       </div>
 
+      <!-- 外站接入输入条 -->
+      <div class="import-bar mb-3 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">
+        <Link class="size-4 shrink-0 text-muted-foreground/60" />
+        <input
+          v-model="urlInput"
+          type="url"
+          placeholder="粘贴文章链接（已在其他平台发布的文章）"
+          class="min-w-0 flex-1 border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/55"
+          @keydown.enter="importUrl"
+        >
+        <button type="button" class="import-btn" @click="importUrl">
+          导入
+        </button>
+        <span class="text-xs text-muted-foreground/40">或</span>
+        <button type="button" class="import-btn-outline" @click="handleWordUpload">
+          <Upload class="size-3.5" />
+          上传 Word
+        </button>
+      </div>
+
+      <!-- 去编辑创作 引导 -->
+      <div class="mb-5 flex items-center gap-2">
+        <span class="text-xs text-muted-foreground/50">还没写好？</span>
+        <button type="button" class="editor-link" @click="router.push({ name: 'sync' })">
+          <PenLine class="size-3.5" />
+          去 Markdown 编辑器创作
+        </button>
+        <span class="text-xs text-muted-foreground/40">— 编辑完后可复制链接回填到这里</span>
+      </div>
+
+      <!-- 同步按钮 + 直接发布开关 -->
       <div class="mb-5 flex items-center gap-4">
-        <button type="button" class="sync-btn" @click="startPromotion">
+        <button type="button" class="sync-btn" @click="startSync">
           开始同步
           <Send class="size-4" />
         </button>
@@ -142,6 +183,7 @@ async function startPromotion() {
         </label>
       </div>
 
+      <!-- 全选 + 平台列表 -->
       <div class="mb-3 flex items-center gap-3">
         <label class="flex cursor-pointer items-center gap-2.5 text-sm font-semibold">
           <input
@@ -152,7 +194,7 @@ async function startPromotion() {
             @change="toggleAll"
           >
           全选
-          <span class="text-xs font-normal text-muted-foreground">已选 {{ selectedInScope.length }} / {{ PROJECT_PLATFORMS.length }}</span>
+          <span class="text-xs font-normal text-muted-foreground">已选 {{ selectedInScope.length }} / {{ ARTICLE_PLATFORMS.length }}</span>
         </label>
       </div>
 
@@ -205,6 +247,56 @@ async function startPromotion() {
 </template>
 
 <style scoped>
+.import-btn {
+  flex-shrink: 0;
+  height: 2rem;
+  padding: 0 0.875rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+.import-btn:hover {
+  opacity: 0.85;
+}
+
+.import-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  height: 2rem;
+  padding: 0 0.875rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.import-btn-outline:hover {
+  background: hsl(var(--muted) / 0.5);
+  color: hsl(var(--foreground));
+}
+
+.editor-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease;
+}
+.editor-link:hover {
+  color: hsl(var(--foreground));
+}
+
 .sync-btn {
   display: inline-flex;
   align-items: center;
@@ -219,6 +311,25 @@ async function startPromotion() {
   transition: opacity 0.15s ease;
 }
 .sync-btn:hover {
+  opacity: 0.9;
+}
+
+.plugin-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  height: 2rem;
+  flex-shrink: 0;
+  padding: 0 0.875rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+.plugin-download-btn:hover {
   opacity: 0.9;
 }
 

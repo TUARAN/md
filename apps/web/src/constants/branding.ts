@@ -1,8 +1,10 @@
+import { ALL_DISTRIBUTION_PLATFORM_COUNT } from '@/constants/distributionPlatforms'
+
 /**
  * 产品品牌与定位（用户可见文案集中处）
  *
  * 品牌层级：
- * - 主品牌 AI分发大师 —— 让 AI 参与你的内容分发，一键将观点、文章、小册、项目发布至 30+ 平台。
+ * - 主品牌 AI分发大师 —— 让 AI 参与你的内容分发，一键将观点、文章、电子书、项目同步至全部平台。
  * - 子模块 Syncblog —— 承载「多平台发布与同步」的能力模块名（含 Syncblog 发布插件）。
  *   仅在插件 / 分发实现层出现，对外主品牌一律用 AI分发大师。
  */
@@ -15,17 +17,17 @@ export const APP_NAME_CN = `AI 内容分发大师`
 export const SYNC_MODULE_NAME = `Syncblog`
 
 /** 当前阶段能力重点 */
-export const APP_FOCUS = `让 AI 参与内容分发，一键将观点、文章、小册、项目发布至 30+ 平台`
+export const APP_FOCUS = `让 AI 参与内容分发，一键将观点、文章、电子书、项目同步至 ${ALL_DISTRIBUTION_PLATFORM_COUNT} 平台`
 
 /** 对外主 slogan */
-export const APP_SLOGAN = `观点、文章、小册、项目，一键分发至 30+ 平台`
+export const APP_SLOGAN = `观点、文章、电子书、项目，一键同步至 ${ALL_DISTRIBUTION_PLATFORM_COUNT} 平台`
 
 /** 顶栏右上角一行品牌文案（含产品名与定位） */
 export const APP_HEADER_BRAND_LINE
-  = `AI分发大师 · 一键发布至 30+ 平台`
+  = `AI分发大师 · 一键同步至 ${ALL_DISTRIBUTION_PLATFORM_COUNT} 平台`
 
 /** 首屏 / 关于里补充说明 */
-export const APP_TAGLINE = `AI分发大师是面向博主与创作团队的 AI 内容分发工具：支持观点、文章、小册、项目四类内容，从百字短观点到 Markdown 长文，都可改写成适合微博、沸点、微信公众号、知乎、掘金、CSDN 等平台的版本；多平台发布与同步由 Syncblog 模块承担。`
+export const APP_TAGLINE = `AI分发大师是面向博主与创作团队的 AI 内容分发工具：支持观点、文章、电子书、项目四类内容，从百字短观点到 Markdown 长文，都可改写成适合微博、沸点、微信公众号、知乎、掘金、CSDN 等平台的版本；多平台发布与同步由 Syncblog 模块承担。`
 
 /** 目标流程：从采编到运营的全链路 */
 export const APP_WORKFLOW_VISION

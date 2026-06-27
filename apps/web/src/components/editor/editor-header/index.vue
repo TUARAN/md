@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { ContentTypeId } from '@/constants/contentTypes'
-import { Download, Menu, ScrollText, Settings } from 'lucide-vue-next'
+import { Menu, ScrollText, Zap } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import UserMenu from '@/components/auth/UserMenu.vue'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -13,7 +14,7 @@ import {
 import AssistDrawer from '@/components/workflow/AssistDrawer.vue'
 import { useEditorHeaderDialogs } from '@/composables/useEditorHeaderDialogs'
 import { EDITOR_WECHAT_COPY_KEY } from '@/composables/useEditorWechatCopy'
-import { getSyncblogPluginReleaseUrl } from '@/constants/branding'
+import { APP_NAME, APP_SLOGAN } from '@/constants/branding'
 import { CONTENT_TYPES, contentTypeOfRoute } from '@/constants/contentTypes'
 import { useUIStore } from '@/stores/ui'
 import EditDropdown from './EditDropdown.vue'
@@ -53,9 +54,6 @@ function handleCopy(mode: string) {
 /** 当前路由所属的内容类型（找不到回退 article，即编辑器分发台） */
 const activeContentType = computed<ContentTypeId>(() => contentTypeOfRoute(String(route.name ?? `sync`)))
 
-/** 当前内容类型的一句话定位（桌面端 tab 右侧提示） */
-const activeTagline = computed(() => CONTENT_TYPES.find(t => t.id === activeContentType.value)?.tagline ?? ``)
-
 function selectContentType(id: ContentTypeId) {
   const target = CONTENT_TYPES.find(t => t.id === id)
   if (!target || route.name === target.routeName)
@@ -66,43 +64,34 @@ function selectContentType(id: ContentTypeId) {
 function openChangelog() {
   router.push({ name: `changelog` })
 }
-
-function openSettings() {
-  router.push({ name: `settings` })
-}
-
-/**
- * 「下载发布插件」入口：新开 Tab 下载站点自托管的 SyncBlog Plugin zip。
- * 部署方可通过 `VITE_SYNCBLOG_PLUGIN_RELEASE_URL` 覆盖为私有/镜像地址。
- */
-function openPluginDownload() {
-  window.open(getSyncblogPluginReleaseUrl(), `_blank`, `noopener,noreferrer`)
-}
 </script>
 
 <template>
-  <header class="header-container relative flex min-h-[5.25rem] flex-col gap-1.5 px-3 py-2 md:min-h-[3.5rem] md:px-5">
-    <!-- 桌面端：分发优先 IA —— 唯一主导航是内容类型切换（观点 / 文章 / 小册 / 项目） -->
-    <div class="hidden w-full min-w-0 items-center gap-3 pr-[20rem] md:flex">
-      <div class="lane-tabs" role="tablist" aria-label="内容类型">
-        <button
-          v-for="t in CONTENT_TYPES"
-          :key="t.id"
-          type="button"
-          role="tab"
-          class="lane-tab gap-1.5"
-          :class="{ 'lane-tab--active': activeContentType === t.id }"
-          :aria-selected="activeContentType === t.id"
-          @click="selectContentType(t.id)"
-        >
-          <component :is="t.icon" class="size-3.5 shrink-0" aria-hidden="true" />
-          <span>{{ t.label }}</span>
-        </button>
-      </div>
-      <p class="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground lg:block">
-        {{ activeTagline }}
-      </p>
+  <header class="header-container relative flex min-h-[3.5rem] flex-col gap-1.5 px-3 py-2 md:px-5">
+    <!-- 桌面端品牌标识 -->
+    <div class="brand-mark hidden items-center gap-1.5 md:flex">
+      <Zap class="size-3.5 text-primary" aria-hidden="true" />
+      <span class="brand-name">{{ APP_NAME }}</span>
+      <span class="brand-divider hidden xl:inline" aria-hidden="true">·</span>
+      <span class="brand-slogan hidden xl:inline">{{ APP_SLOGAN }}</span>
     </div>
+
+    <!-- 桌面端：同一行居中展示内容类型导航 -->
+    <nav class="content-type-nav hidden justify-center md:flex" role="tablist" aria-label="内容类型">
+      <button
+        v-for="t in CONTENT_TYPES"
+        :key="t.id"
+        type="button"
+        role="tab"
+        class="nav-tab gap-1.5"
+        :class="{ 'nav-tab--active': activeContentType === t.id }"
+        :aria-selected="activeContentType === t.id"
+        @click="selectContentType(t.id)"
+      >
+        <component :is="t.icon" class="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{{ t.label }}</span>
+      </button>
+    </nav>
 
     <!-- 移动端：一行 = 内容类型切换 + 助手 + 编辑器菜单 -->
     <div class="flex w-full min-w-0 items-center justify-between gap-2 md:hidden">
@@ -146,32 +135,7 @@ function openPluginDownload() {
 
     <!-- 右侧：辅助入口 -->
     <div class="header-actions hidden shrink-0 items-center gap-1 md:flex">
-      <!-- 助手：分发优先 IA 里上游步骤（提炼/创作/选题/复盘）的二级入口 -->
-      <AssistDrawer />
       <TooltipProvider :delay-duration="200">
-        <!--
-          下载发布插件：下载站点自托管的 SyncBlog Plugin zip。
-          位置：放在最左（日志、设置之前），新用户第一次使用就需要它。
-        -->
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              class="shrink-0 gap-1.5 text-muted-foreground/80 hover:text-foreground"
-              aria-label="下载发布插件"
-              @click="openPluginDownload"
-            >
-              <Download class="h-3.5 w-3.5" />
-              <span class="text-xs">下载插件</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
-            下载 SyncBlog 发布插件
-          </TooltipContent>
-        </Tooltip>
-
         <Tooltip>
           <TooltipTrigger as-child>
             <Button
@@ -191,24 +155,7 @@ function openPluginDownload() {
           </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              class="shrink-0 gap-1.5 text-muted-foreground/80 hover:text-foreground"
-              aria-label="设置"
-              @click="openSettings"
-            >
-              <Settings class="h-3.5 w-3.5" />
-              <span class="text-xs">设置</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
-            设置
-          </TooltipContent>
-        </Tooltip>
+        <UserMenu />
       </TooltipProvider>
     </div>
   </header>
@@ -227,9 +174,9 @@ function openPluginDownload() {
   --header-tab-weight: 500;
   --header-tab-leading: 1.25;
 
-  background: hsl(var(--card) / 0.94);
-  border-bottom: 1px solid hsl(var(--border) / 0.85);
-  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.65), 0 8px 24px hsl(var(--shadow-soft) / 0.04);
+  background: hsl(var(--card) / 0.97);
+  border-bottom: none;
+  box-shadow: none;
   backdrop-filter: blur(14px) saturate(130%);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 50;
@@ -294,10 +241,81 @@ function openPluginDownload() {
   }
 }
 
+.brand-mark {
+  position: absolute;
+  top: 50%;
+  left: 1.25rem;
+  transform: translateY(-50%);
+  max-width: min(32rem, calc(50vw - 8rem));
+  min-width: 0;
+}
+
+.brand-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: hsl(var(--primary));
+  white-space: nowrap;
+}
+
+.brand-divider {
+  color: hsl(var(--muted-foreground) / 0.7);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.brand-slogan {
+  min-width: 0;
+  overflow: hidden;
+  color: hsl(var(--foreground) / 0.68);
+  font-size: 0.8125rem;
+  font-weight: 450;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .header-actions {
   position: absolute;
-  top: 0.625rem;
+  top: 50%;
   right: 1.25rem;
+  transform: translateY(-50%);
+}
+
+.content-type-nav {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border-bottom: 0;
+  gap: 0.25rem;
+  padding: 0 1.25rem;
+}
+
+.nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  background: none;
+  margin-bottom: -1px;
+
+  &:hover {
+    color: hsl(var(--foreground));
+  }
+}
+
+.nav-tab--active {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  border-bottom-color: hsl(var(--foreground));
 }
 
 .menubar {

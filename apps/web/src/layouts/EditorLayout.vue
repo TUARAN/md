@@ -13,6 +13,7 @@
  * mount directly without this shell.
  */
 import EditorHeader from '@/components/editor/editor-header/index.vue'
+import AssistDrawer from '@/components/workflow/AssistDrawer.vue'
 import { useAppMode } from '@/composables/useAppMode'
 
 const { mode } = useAppMode()
@@ -29,6 +30,10 @@ const { mode } = useAppMode()
         </KeepAlive>
       </RouterView>
     </main>
+
+    <div class="assist-float hidden md:block" aria-label="页面助手入口">
+      <AssistDrawer floating />
+    </div>
   </div>
 </template>
 
@@ -41,5 +46,13 @@ const { mode } = useAppMode()
 
 .container-main {
   overflow: hidden;
+}
+
+.assist-float {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  z-index: 60;
+  transform: translateY(-50%);
 }
 </style>

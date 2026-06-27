@@ -7,14 +7,15 @@
  * 切换 / 助手进入）。真正的多平台发布由 SyncBlog 插件承担，本页负责
  * 准备内容、选平台并发起同步。
  */
+import type { DistributionPlatformGroup } from '@/constants/distributionPlatforms'
 import { Image as ImageIcon, Send, Smartphone, Video } from 'lucide-vue-next'
 import { Switch } from '@/components/ui/switch'
 import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
-import { APP_SLOGAN } from '@/constants/branding'
-import { getPlatformHomeUrl, PLATFORM_REGISTRY } from '@/constants/platforms'
+import { flattenPlatformGroups, OPINION_PLATFORM_GROUPS } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
+import SyncPluginTip from './SyncPluginTip.vue'
 
 const { platformMatrix } = useWorkflowCreatorContext()
 
@@ -22,17 +23,21 @@ const content = store.reactive(`composer_content`, ``)
 const directPublish = store.reactive(`composer_direct_publish`, false)
 const selected = store.reactive<string[]>(`composer_selected_platforms`, [])
 
-const platforms = PLATFORM_REGISTRY
+const platformGroups = OPINION_PLATFORM_GROUPS
+const platforms = flattenPlatformGroups(platformGroups)
+const platformTypes = platforms.map(p => p.type)
 
-const allSelected = computed(() => selected.value.length === platforms.length)
-const someSelected = computed(() => selected.value.length > 0 && !allSelected.value)
+const selectedInScope = computed(() => selected.value.filter(type => platformTypes.includes(type)))
+const allSelected = computed(() => platformTypes.every(type => selected.value.includes(type)))
+const someSelected = computed(() => selectedInScope.value.length > 0 && !allSelected.value)
 const charCount = computed(() => content.value.length)
 
 /** 平台 → 已录入的主页 / 账号（有则「查看」跳该链接，否则跳门户首页） */
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
+const homeByType = new Map(platforms.map(p => [p.type, p.homeUrl]))
 
 function viewUrl(type: string): string {
-  return matrixByType.value.get(type)?.url || getPlatformHomeUrl(type)
+  return matrixByType.value.get(type)?.url || homeByType.get(type) || `#`
 }
 
 function toggle(type: string) {
@@ -42,7 +47,22 @@ function toggle(type: string) {
 }
 
 function toggleAll() {
-  selected.value = allSelected.value ? [] : platforms.map(p => p.type)
+  selected.value = allSelected.value ? [] : platformTypes
+}
+
+function isGroupAllSelected(group: DistributionPlatformGroup): boolean {
+  return group.platforms.every(p => selected.value.includes(p.type))
+}
+
+function isGroupSomeSelected(group: DistributionPlatformGroup): boolean {
+  return group.platforms.some(p => selected.value.includes(p.type)) && !isGroupAllSelected(group)
+}
+
+function toggleGroup(group: DistributionPlatformGroup) {
+  const groupTypes = group.platforms.map(p => p.type)
+  selected.value = isGroupAllSelected(group)
+    ? selected.value.filter(type => !groupTypes.includes(type))
+    : Array.from(new Set([...selected.value, ...groupTypes]))
 }
 
 function comingSoon(label: string) {
@@ -54,7 +74,7 @@ async function startSync() {
     toast.error(`先写点内容再同步`)
     return
   }
-  if (!selected.value.length) {
+  if (!selectedInScope.value.length) {
     toast.error(`至少勾选一个平台`)
     return
   }
@@ -67,20 +87,20 @@ async function startSync() {
 
   // 尽力把分发意图广播给可能已安装的 SyncBlog 插件（无插件时无副作用）。
   window.postMessage(
-    { source: `ai-distribution-master`, type: `distribute`, payload: { content: content.value, platforms: selected.value, directPublish: directPublish.value } },
+    { source: `ai-distribution-master`, type: `distribute`, payload: { content: content.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
     `*`,
   )
 
   toast.success(
     directPublish.value
-      ? `已发起同步：${selected.value.length} 个平台（需安装发布插件执行直接发布）`
-      : `内容已复制，正在打开 ${selected.value.length} 个平台发布页`,
+      ? `已发起同步：${selectedInScope.value.length} 个平台（需安装发布插件执行直接发布）`
+      : `内容已复制，正在打开 ${selectedInScope.value.length} 个平台发布页`,
   )
 
   // 预览模式：打开所选平台的发布页，便于粘贴。直接发布模式交给插件，不再开页。
   if (!directPublish.value) {
-    for (const type of selected.value.slice(0, 8))
-      window.open(getPlatformHomeUrl(type), `_blank`, `noopener,noreferrer`)
+    for (const type of selectedInScope.value.slice(0, 8))
+      window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
   }
 }
 </script>
@@ -88,17 +108,15 @@ async function startSync() {
 <template>
   <div class="composer-page min-h-0 flex-1 overflow-y-auto">
     <div class="mx-auto w-full max-w-5xl px-4 py-6">
-      <header class="mb-5 text-center">
-        <h1 class="text-2xl font-bold tracking-tight">
-          内容同步 · 一键分发
-        </h1>
-        <p class="mt-1.5 text-sm text-muted-foreground">
-          {{ APP_SLOGAN }}
+      <header class="mb-5">
+        <p class="text-sm text-muted-foreground">
+          百字短观点，一键发到微博、沸点、X、即刻、知乎想法等短内容渠道
         </p>
+        <SyncPluginTip />
       </header>
 
-      <!-- 输入卡片 -->
-      <div class="rounded-2xl border border-border/80 bg-card p-4 shadow-sm">
+      <!-- 输入区 -->
+      <div class="rounded-2xl bg-card/60 p-4 ring-1 ring-border/40">
         <textarea
           v-model="content"
           rows="5"
@@ -139,7 +157,7 @@ async function startSync() {
             @change="toggleAll"
           >
           全选
-          <span class="text-xs font-normal text-muted-foreground">已选 {{ selected.length }} / {{ platforms.length }}</span>
+          <span class="text-xs font-normal text-muted-foreground">已选 {{ selectedInScope.length }} / {{ platforms.length }}</span>
         </label>
         <button type="button" class="composer-sync" @click="startSync">
           开始同步
@@ -148,30 +166,49 @@ async function startSync() {
       </div>
 
       <!-- 平台网格 -->
-      <div class="mt-3 grid grid-cols-1 gap-x-8 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-3">
-        <label
-          v-for="p in platforms"
-          :key="p.type"
-          class="group flex cursor-pointer items-center gap-2.5 rounded-lg px-1.5 py-2 transition-colors hover:bg-muted/50"
-        >
-          <input
-            type="checkbox"
-            class="composer-check"
-            :checked="selected.includes(p.type)"
-            @change="toggle(p.type)"
-          >
-          <span class="flex size-7 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background text-xs font-semibold text-muted-foreground">
-            {{ p.title.slice(0, 1) }}
-          </span>
-          <span class="min-w-0 flex-1 truncate text-sm font-medium">{{ p.title }}</span>
-          <a
-            :href="viewUrl(p.type)"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="shrink-0 text-xs text-muted-foreground opacity-0 transition-opacity hover:text-primary hover:underline group-hover:opacity-100"
-            @click.stop
-          >查看</a>
-        </label>
+      <div class="mt-2 space-y-2">
+        <section v-for="group in platformGroups" :key="group.id" class="platform-group">
+          <div class="mb-1 flex items-center gap-2">
+            <h2 class="text-xs font-semibold text-foreground">
+              {{ group.title }}
+            </h2>
+            <span class="text-xs text-muted-foreground">({{ group.platforms.length }})</span>
+            <label class="ml-2 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                class="composer-check composer-check--small"
+                :checked="isGroupAllSelected(group)"
+                :indeterminate="isGroupSomeSelected(group)"
+                @change="toggleGroup(group)"
+              >
+              全选
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2 lg:grid-cols-4">
+            <label
+              v-for="p in group.platforms"
+              :key="p.type"
+              class="group flex cursor-pointer items-center gap-1.5 rounded px-1 py-1 transition-colors hover:bg-muted/50"
+            >
+              <input
+                type="checkbox"
+                class="composer-check"
+                :checked="selected.includes(p.type)"
+                @change="toggle(p.type)"
+              >
+              <img :src="p.iconUrl" :alt="p.title" class="size-4 shrink-0 rounded bg-white p-[1px] object-contain">
+              <span class="min-w-0 flex-1 truncate text-[13px] font-medium">{{ p.title }}</span>
+              <a
+                :href="viewUrl(p.type)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="shrink-0 text-xs text-muted-foreground opacity-0 transition-opacity hover:text-primary hover:underline group-hover:opacity-100"
+                @click.stop
+              >查看</a>
+            </label>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -200,6 +237,16 @@ async function startSync() {
   flex-shrink: 0;
   accent-color: hsl(var(--primary));
   cursor: pointer;
+}
+
+.composer-check--small {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.platform-group + .platform-group {
+  padding-top: 0.5rem;
+  border-top: 1px solid hsl(var(--border) / 0.45);
 }
 
 .composer-sync {

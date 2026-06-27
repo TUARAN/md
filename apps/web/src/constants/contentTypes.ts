@@ -2,7 +2,7 @@
  * 内容类型注册表 —— 分发优先 IA 的唯一主导航。
  *
  * 「AI分发大师」把产品反转成一个统一分发台：顶栏只切换**内容类型**
- * （观点 / 文章 / 小册 / 项目），每种类型的主视角就是它的「分发台」。
+ * （观点 / 文章 / 电子书 / 项目），每种类型的主视角就是它的「分发台」。
  * 过去的选题 / 创作 / 复盘等步骤降级为「助手」入口（见 `assistSteps`），
  * 不再占据顶栏。
  *
@@ -55,8 +55,8 @@ export const CONTENT_TYPES: ContentTypeDef[] = [
     id: `article`,
     label: `文章`,
     icon: FileText,
-    routeName: `sync`,
-    tagline: `Markdown 长文，一键排版并发布到公众号、知乎、掘金、CSDN 等平台`,
+    routeName: `distribute-article`,
+    tagline: `长文章，外站写好后导入链接，一键分发到公众号、知乎、掘金、CSDN 等平台`,
     assistSteps: [
       { routeName: `data`, label: `素材采集`, icon: Database, hint: `采集资讯 / 素材作为创作输入` },
       { routeName: `creation`, label: `用模版创作`, icon: Sparkles, hint: `用 AI 模版起草文章 / 小红书风格稿` },
@@ -66,12 +66,12 @@ export const CONTENT_TYPES: ContentTypeDef[] = [
   },
   {
     id: `booklet`,
-    label: `小册`,
+    label: `电子书`,
     icon: BookOpen,
     routeName: `distribute-booklet`,
-    tagline: `成体系的小册，整册发布到长文平台或导出为独立小册站点`,
+    tagline: `电子书、付费小册和网文小说，分发到知识付费、小说连载与电子书长尾平台`,
     assistSteps: [
-      { routeName: `booklet-research`, label: `调研选题`, icon: Target, hint: `验证小册选题与目标读者` },
+      { routeName: `booklet-research`, label: `调研选题`, icon: Target, hint: `验证电子书选题与目标读者` },
       { routeName: `booklet-plan`, label: `内容策划`, icon: BookOpen, hint: `规划章节大纲与定价` },
       { routeName: `booklet-writing`, label: `章节生产`, icon: Sparkles, hint: `逐章产出与打磨内容` },
       { routeName: `booklet-loop`, label: `数据闭环`, icon: TrendingUp, hint: `复盘销售与读者反馈` },
@@ -82,7 +82,7 @@ export const CONTENT_TYPES: ContentTypeDef[] = [
     label: `项目`,
     icon: Github,
     routeName: `distribute-project`,
-    tagline: `GitHub 项目，一键生成各平台推广贴并分发到掘金、微博、即刻、Show HN 等`,
+    tagline: `GitHub 项目，一键同步到开源发布站、开发者社区、社交渠道和云生态平台`,
     assistSteps: [
       { routeName: `repo-idea`, label: `项目选题`, icon: GitBranch, hint: `判断项目卖点与目标人群` },
       { routeName: `repo-plan`, label: `规格策划`, icon: Target, hint: `梳理 README / 文档与发布规格` },
@@ -105,6 +105,8 @@ const ROUTE_TO_CONTENT_TYPE: Record<string, ContentTypeId> = (() => {
   }
   // 导入是跨类型的通用入口，归到文章
   map.import = `article`
+  // sync（编辑器页）仍属于文章类型，从助手进入
+  map.sync = `article`
   // 旧观点分发页（WorkflowOpinionPage 的分发阶段）仍归到观点类型
   map[`opinion-distribution`] = `opinion`
   return map

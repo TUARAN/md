@@ -48,7 +48,7 @@ const WORKFLOW_STEP_LABELS: Record<string, string> = {
   'import': `外站接入`,
   'distribution': `矩阵运营`,
   'stats': `数据闭环`,
-  'distribute-booklet': `小册分发`,
+  'distribute-booklet': `电子书分发`,
   'distribute-project': `项目分发`,
   'distribute-compose': `内容同步`,
 }

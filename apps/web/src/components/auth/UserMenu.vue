@@ -86,7 +86,7 @@ onBeforeUnmount(() => {
     @click="handleLogin"
   >
     <Mail class="h-4 w-4" />
-    <span class="hidden sm:inline">登录 / 注册</span>
+    <span class="hidden sm:inline">注册登录</span>
     <span class="sm:hidden">登录</span>
   </Button>
 

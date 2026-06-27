@@ -1,227 +1,202 @@
 <script setup lang="ts">
-/**
- * BookletDistribute —— 「小册」内容类型的分发台。
- *
- * 小册分发 = 整册发布到长文平台 / 导出为独立小册站点。本页负责把多章节
- * 装配成整册：选发布目标（知乎专栏 / 公众号合集 / 掘金专栏）→ 导出整册
- * Markdown 包，或复制后交给发布插件。静态小册站点生成为后续子步骤。
- */
-import { BookOpen, Copy, Download, GripVertical, Plus, Trash2 } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { PanelShell } from '@/components/ui/layout'
-import { Textarea } from '@/components/ui/textarea'
-import WorkflowPageShell from '@/components/workflow/WorkflowPageShell.vue'
-import WorkflowPageTitle from '@/components/workflow/WorkflowPageTitle.vue'
-import WorkflowSectionTitle from '@/components/workflow/WorkflowSectionTitle.vue'
+import type { DistributionPlatformGroup } from '@/constants/distributionPlatforms'
+import { BookOpen, Send } from 'lucide-vue-next'
+import { Switch } from '@/components/ui/switch'
+import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
 import { APP_NAME } from '@/constants/branding'
-import { useUIStore } from '@/stores/ui'
-import { downloadMD } from '@/utils'
+import { EBOOK_PLATFORM_GROUPS, flattenPlatformGroups } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
+import SyncPluginTip from './SyncPluginTip.vue'
 
-interface Chapter { id: string, title: string, content: string }
+const { platformMatrix } = useWorkflowCreatorContext()
 
-const uiStore = useUIStore()
+const bookletUrl = store.reactive(`booklet_dist_url`, ``)
+const directPublish = store.reactive(`booklet_dist_direct_publish`, false)
+const selected = store.reactive<string[]>(`booklet_dist_platforms`, [])
 
-const bookletTitle = store.reactive(`booklet_distribute_title`, `我的小册`)
-const bookletIntro = store.reactive(`booklet_distribute_intro`, ``)
-const chapters = store.reactive<Chapter[]>(`booklet_distribute_chapters`, [
-  { id: `c1`, title: `第一章`, content: `` },
-])
+const platformGroups = EBOOK_PLATFORM_GROUPS
+const EBOOK_PLATFORMS = flattenPlatformGroups(platformGroups)
+const platformTypes = EBOOK_PLATFORMS.map(p => p.type)
 
-const PUBLISH_TARGETS = [
-  { id: `zhihu-column`, title: `知乎专栏`, hint: `逐章发布到同一专栏，形成系列` },
-  { id: `mp-collection`, title: `公众号合集`, hint: `逐篇推送并加入合集` },
-  { id: `juejin-column`, title: `掘金专栏`, hint: `作为掘金专栏系列文章` },
-] as const
+const selectedInScope = computed(() => selected.value.filter(type => platformTypes.includes(type)))
+const allSelected = computed(() => platformTypes.every(type => selected.value.includes(type)))
+const someSelected = computed(() => selectedInScope.value.length > 0 && !allSelected.value)
 
-const selectedTargets = store.reactive<string[]>(`booklet_distribute_targets`, [`zhihu-column`])
-
-const assembledMarkdown = computed(() => {
-  const parts: string[] = [`# ${bookletTitle.value.trim() || `未命名小册`}`]
-  if (bookletIntro.value.trim())
-    parts.push(bookletIntro.value.trim())
-  parts.push(`## 目录`)
-  parts.push(chapters.value.map((c, i) => `${i + 1}. ${c.title.trim() || `未命名章节`}`).join(`\n`))
-  for (const c of chapters.value) {
-    parts.push(`---`)
-    parts.push(`# ${c.title.trim() || `未命名章节`}`)
-    parts.push(c.content.trim() || `_（本章待补充）_`)
-  }
-  return parts.join(`\n\n`)
-})
-
-const chapterCount = computed(() => chapters.value.length)
-const wordCount = computed(() => chapters.value.reduce((n, c) => n + c.content.replace(/\s/g, ``).length, 0))
-
-function addChapter() {
-  chapters.value = [...chapters.value, { id: `c${Date.now()}`, title: `第 ${chapters.value.length + 1} 章`, content: `` }]
+const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
+const homeByType = new Map(EBOOK_PLATFORMS.map(p => [p.type, p.homeUrl]))
+function viewUrl(type: string): string {
+  return matrixByType.value.get(type)?.url || homeByType.get(type) || `#`
 }
 
-function removeChapter(id: string) {
-  if (chapters.value.length <= 1) {
-    toast.error(`至少保留一个章节`)
+function toggle(type: string) {
+  selected.value = selected.value.includes(type)
+    ? selected.value.filter(t => t !== type)
+    : [...selected.value, type]
+}
+function toggleAll() {
+  selected.value = allSelected.value ? [] : platformTypes
+}
+
+function isGroupAllSelected(group: DistributionPlatformGroup): boolean {
+  return group.platforms.every(p => selected.value.includes(p.type))
+}
+
+function isGroupSomeSelected(group: DistributionPlatformGroup): boolean {
+  return group.platforms.some(p => selected.value.includes(p.type)) && !isGroupAllSelected(group)
+}
+
+function toggleGroup(group: DistributionPlatformGroup) {
+  const groupTypes = group.platforms.map(p => p.type)
+  selected.value = isGroupAllSelected(group)
+    ? selected.value.filter(type => !groupTypes.includes(type))
+    : Array.from(new Set([...selected.value, ...groupTypes]))
+}
+
+async function startSync() {
+  if (!selectedInScope.value.length) {
+    toast.error(`至少勾选一个平台`)
     return
   }
-  chapters.value = chapters.value.filter(c => c.id !== id)
-}
-
-function moveChapter(index: number, dir: -1 | 1) {
-  const next = index + dir
-  if (next < 0 || next >= chapters.value.length)
-    return
-  const copy = [...chapters.value]
-  ;[copy[index], copy[next]] = [copy[next], copy[index]]
-  chapters.value = copy
-}
-
-function toggleTarget(id: string) {
-  selectedTargets.value = selectedTargets.value.includes(id)
-    ? selectedTargets.value.filter(x => x !== id)
-    : [...selectedTargets.value, id]
-}
-
-function exportBundle() {
-  downloadMD(assembledMarkdown.value, bookletTitle.value.trim() || `booklet`)
-  toast.success(`整册 Markdown 已导出`)
-}
-
-async function copyAssembled() {
-  try {
-    await copyPlain(assembledMarkdown.value)
-    toast.success(`整册内容已复制`)
+  try { await copyPlain(bookletUrl.value || APP_NAME) }
+  catch {}
+  window.postMessage(
+    { source: `ai-distribution-master`, type: `distribute-ebook`, payload: { url: bookletUrl.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
+    `*`,
+  )
+  toast.success(directPublish.value
+    ? `已发起电子书分发：${selectedInScope.value.length} 个平台`
+    : `正在打开 ${selectedInScope.value.length} 个平台`)
+  if (!directPublish.value) {
+    for (const type of selectedInScope.value.slice(0, 8))
+      window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
   }
-  catch {
-    toast.error(`复制失败`)
-  }
-}
-
-function openInEditor() {
-  uiStore.creationDraftMarkdown = assembledMarkdown.value
-  toast.success(`已写入草稿，去文章分发台排版发布`)
 }
 </script>
 
 <template>
-  <WorkflowPageShell>
-    <template #header>
-      <div class="mb-3 inline-flex rounded-full border border-border/70 bg-white/70 px-2.5 py-1 text-xs font-medium text-muted-foreground dark:bg-card">
-        {{ APP_NAME }} · 小册分发
-      </div>
-      <WorkflowPageTitle>
-        <template #icon>
-          <BookOpen />
-        </template>
-        小册整册分发
-      </WorkflowPageTitle>
-      <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-        装配多章节，选好发布目标，整册导出 Markdown 包或交给发布插件铺到知乎专栏、公众号合集、掘金专栏。
-        当前 <span class="font-medium text-foreground">{{ chapterCount }}</span> 章 · 约
-        <span class="font-medium text-foreground">{{ wordCount }}</span> 字。
-      </p>
-    </template>
+  <div class="dist-page min-h-0 flex-1 overflow-y-auto">
+    <div class="mx-auto w-full max-w-5xl px-4 py-6">
+      <header class="mb-5">
+        <p class="text-sm text-muted-foreground">
+          电子书 / 付费小册 / 网文小说，一键分发到知识付费、小说连载和电子书长尾平台
+        </p>
+        <SyncPluginTip />
+      </header>
 
-    <div class="grid min-h-0 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)] lg:items-start">
-      <!-- 左：整册信息 + 发布目标 -->
-      <aside class="min-w-0 space-y-4 lg:sticky lg:top-3">
-        <PanelShell tone="neutral" radius="md" padding="md" flat>
-          <WorkflowSectionTitle>
-            整册信息
-          </WorkflowSectionTitle>
-          <div class="mt-3 space-y-3">
-            <div class="space-y-1">
-              <Label class="text-xs">小册标题</Label>
-              <Input v-model="bookletTitle" placeholder="小册名" />
-            </div>
-            <div class="space-y-1">
-              <Label class="text-xs">小册简介</Label>
-              <Textarea v-model="bookletIntro" :rows="3" placeholder="这本小册讲什么、适合谁" />
-            </div>
-          </div>
-        </PanelShell>
-
-        <PanelShell tone="neutral" radius="md" padding="md" flat>
-          <WorkflowSectionTitle>
-            发布目标
-          </WorkflowSectionTitle>
-          <div class="mt-3 space-y-2">
-            <button
-              v-for="t in PUBLISH_TARGETS"
-              :key="t.id"
-              type="button"
-              class="flex w-full items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors"
-              :class="selectedTargets.includes(t.id)
-                ? 'border-primary/45 bg-primary/[0.08] ring-1 ring-primary/15'
-                : 'border-border/70 hover:border-border hover:bg-muted/40'"
-              @click="toggleTarget(t.id)"
-            >
-              <span
-                class="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border text-[10px] font-semibold"
-                :class="selectedTargets.includes(t.id) ? 'border-primary bg-primary text-primary-foreground' : 'border-border/70 text-transparent'"
-              >✓</span>
-              <span class="min-w-0">
-                <span class="block text-sm font-medium" :class="selectedTargets.includes(t.id) ? 'text-primary' : 'text-foreground'">{{ t.title }}</span>
-                <span class="mt-0.5 block text-[11px] text-muted-foreground">{{ t.hint }}</span>
-              </span>
-            </button>
-          </div>
-
-          <div class="mt-4 space-y-2">
-            <Button class="w-full gap-1.5" @click="exportBundle">
-              <Download class="size-4" />
-              导出整册 Markdown 包
-            </Button>
-            <Button variant="outline" class="w-full gap-1.5" @click="copyAssembled">
-              <Copy class="size-4" />
-              复制整册内容
-            </Button>
-            <Button variant="outline" class="w-full gap-1.5" @click="openInEditor">
-              <BookOpen class="size-4" />
-              写入草稿去排版
-            </Button>
-          </div>
-
-          <p class="mt-3 rounded-lg border border-dashed border-border bg-muted/15 px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground">
-            生成独立「小册站点」（VitePress / mdBook）即将推出；当前先用导出 + 发布插件铺到长文平台。
-          </p>
-        </PanelShell>
-      </aside>
-
-      <!-- 右：章节装配 -->
-      <main class="min-w-0 space-y-3">
-        <div class="flex items-center justify-between">
-          <WorkflowSectionTitle>
-            章节装配
-          </WorkflowSectionTitle>
-          <Button variant="outline" size="sm" class="gap-1.5" @click="addChapter">
-            <Plus class="size-3.5" />
-            添加章节
-          </Button>
-        </div>
-
-        <div
-          v-for="(c, i) in chapters"
-          :key="c.id"
-          class="rounded-[16px] border border-border/80 bg-white/80 p-3 dark:bg-card"
+      <!-- 电子书链接 -->
+      <div class="import-bar mb-5 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">
+        <BookOpen class="size-4 shrink-0 text-muted-foreground/60" />
+        <input
+          v-model="bookletUrl"
+          type="url"
+          placeholder="电子书 / 小册 / 小说链接（可选，已发布地址）"
+          class="min-w-0 flex-1 border-0 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/55"
         >
-          <div class="flex items-center gap-2">
-            <span class="flex size-6 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">{{ i + 1 }}</span>
-            <Input v-model="c.title" class="h-8 flex-1" placeholder="章节标题" />
-            <div class="flex shrink-0 items-center gap-0.5">
-              <button type="button" class="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30" :disabled="i === 0" title="上移" @click="moveChapter(i, -1)">
-                <GripVertical class="size-4 rotate-90" />
-              </button>
-              <button type="button" class="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" title="删除章节" @click="removeChapter(c.id)">
-                <Trash2 class="size-4" />
-              </button>
-            </div>
+      </div>
+
+      <!-- 同步按钮 + 直接发布 -->
+      <div class="mb-5 flex items-center gap-4">
+        <button type="button" class="sync-btn" @click="startSync">
+          开始同步
+          <Send class="size-4" />
+        </button>
+        <label class="flex cursor-pointer items-center gap-2">
+          <Switch v-model:checked="directPublish" />
+          <span class="text-sm text-muted-foreground">直接发布</span>
+        </label>
+      </div>
+
+      <!-- 全选 -->
+      <div class="mb-3">
+        <label class="flex cursor-pointer items-center gap-2.5 text-sm font-semibold">
+          <input type="checkbox" class="platform-check" :checked="allSelected" :indeterminate="someSelected" @change="toggleAll">
+          全选
+          <span class="text-xs font-normal text-muted-foreground">已选 {{ selectedInScope.length }} / {{ EBOOK_PLATFORMS.length }}</span>
+        </label>
+      </div>
+
+      <div class="space-y-2">
+        <section v-for="group in platformGroups" :key="group.id" class="platform-group">
+          <div class="mb-1 flex items-center gap-2">
+            <h2 class="text-xs font-semibold text-foreground">
+              {{ group.title }}
+            </h2>
+            <span class="text-xs text-muted-foreground">({{ group.platforms.length }})</span>
+            <label class="ml-2 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+              <input
+                type="checkbox"
+                class="platform-check platform-check--small"
+                :checked="isGroupAllSelected(group)"
+                :indeterminate="isGroupSomeSelected(group)"
+                @change="toggleGroup(group)"
+              >
+              全选
+            </label>
           </div>
-          <Textarea v-model="c.content" :rows="5" class="mt-2 font-mono text-xs" placeholder="本章 Markdown 内容…" />
-        </div>
-      </main>
+
+          <div class="grid grid-cols-1 gap-x-6 gap-y-0 sm:grid-cols-2 lg:grid-cols-4">
+            <label
+              v-for="p in group.platforms"
+              :key="p.type"
+              class="group flex cursor-pointer items-center gap-1.5 rounded px-1 py-1 transition-colors hover:bg-muted/50"
+            >
+              <input type="checkbox" class="platform-check" :checked="selected.includes(p.type)" @change="toggle(p.type)">
+              <img :src="p.iconUrl" :alt="p.title" class="size-4 shrink-0 rounded bg-white p-[1px] object-contain">
+              <span class="min-w-0 flex-1 truncate text-[13px] font-medium">{{ p.title }}</span>
+              <a
+                :href="viewUrl(p.type)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="shrink-0 text-xs text-muted-foreground opacity-0 transition-opacity hover:text-primary hover:underline group-hover:opacity-100"
+                @click.stop
+              >查看</a>
+            </label>
+          </div>
+        </section>
+      </div>
     </div>
-  </WorkflowPageShell>
+  </div>
 </template>
+
+<style scoped>
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 1.5rem;
+  border-radius: 0.75rem;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  font-size: 0.9375rem;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+.sync-btn:hover {
+  opacity: 0.9;
+}
+
+.import-bar {
+  background: hsl(var(--card) / 0.6);
+}
+
+.platform-check {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  accent-color: hsl(var(--primary));
+  cursor: pointer;
+}
+
+.platform-check--small {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.platform-group + .platform-group {
+  padding-top: 0.5rem;
+  border-top: 1px solid hsl(var(--border) / 0.45);
+}
+</style>

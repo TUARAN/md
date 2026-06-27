@@ -75,6 +75,7 @@ const WorkflowStatsPage = () => import('@/components/workflow/WorkflowStatsPage.
 // 分发优先 IA：分发台主视角。compose = 默认落地的「内容 + 平台网格」一键同步页（观点）；
 // 小册 / 项目 各有专门分发台；文章用编辑器 sync。
 const DistributionComposer = () => import('@/components/distribute/DistributionComposer.vue')
+const ArticleDistribute = () => import('@/components/distribute/ArticleDistribute.vue')
 const BookletDistribute = () => import('@/components/distribute/BookletDistribute.vue')
 const ProjectDistribute = () => import('@/components/distribute/ProjectDistribute.vue')
 
@@ -148,10 +149,10 @@ const routes: RouteRecordRaw[] = [
       // 分发优先 IA：内容类型「分发台」落地路由。观点 → opinion-distribution，
       // 文章 → sync(编辑器)，小册 / 项目用下面两个新分发台。
       { path: `distribute/compose`, name: `distribute-compose`, component: DistributionComposer },
+      { path: `distribute/article`, name: `distribute-article`, component: ArticleDistribute },
       { path: `distribute/booklet`, name: `distribute-booklet`, component: BookletDistribute },
       { path: `distribute/project`, name: `distribute-project`, component: ProjectDistribute },
       { path: `distribute/opinion`, redirect: { name: `distribute-compose` } },
-      { path: `distribute/article`, redirect: { name: `sync` } },
       { path: `distribute`, redirect: { name: `distribute-compose` } },
       // 旧扁平文章线路径兼容(2026-06 收拢到 /workflow/article/*),保留一段时间后清掉
       { path: `workflow/data`, redirect: { name: `data` } },
