@@ -7,11 +7,10 @@
  * Markdown 排版编辑器作为可选的辅助工具（通过助手进入）。
  */
 import type { DistributionPlatformGroup } from '@/constants/distributionPlatforms'
-import { Download, Link, PenLine, Send, Upload } from 'lucide-vue-next'
+import { Link, PenLine, Send, Upload } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { Switch } from '@/components/ui/switch'
 import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
-import { getSyncblogPluginReleaseUrl } from '@/constants/branding'
 import { ARTICLE_PLATFORM_GROUPS, flattenPlatformGroups } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
 import { store } from '@/utils/storage'
@@ -69,10 +68,6 @@ function handleWordUpload() {
   toast.info(`Word 上传即将支持`)
 }
 
-function openPluginDownload() {
-  window.open(getSyncblogPluginReleaseUrl(), `_blank`, `noopener,noreferrer`)
-}
-
 async function importUrl() {
   const url = urlInput.value.trim()
   if (!url) {
@@ -127,21 +122,6 @@ async function startSync() {
           <SyncPluginTip />
         </div>
       </header>
-
-      <div class="plugin-strip mb-4 flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="min-w-0">
-          <p class="text-sm font-semibold text-foreground">
-            文章分发需要 SyncBlog 发布插件
-          </p>
-          <p class="mt-0.5 text-xs text-muted-foreground">
-            安装后可把文章写入各平台草稿；未安装时只能打开平台发布页手动粘贴。
-          </p>
-        </div>
-        <button type="button" class="plugin-download-btn" @click="openPluginDownload">
-          <Download class="size-3.5" />
-          下载插件
-        </button>
-      </div>
 
       <!-- 外站接入输入条 -->
       <div class="import-bar mb-3 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">
@@ -313,25 +293,6 @@ async function startSync() {
   transition: opacity 0.15s ease;
 }
 .sync-btn:hover {
-  opacity: 0.9;
-}
-
-.plugin-download-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  height: 2rem;
-  flex-shrink: 0;
-  padding: 0 0.875rem;
-  border-radius: 0.5rem;
-  background: hsl(var(--foreground));
-  color: hsl(var(--background));
-  font-size: 0.8125rem;
-  font-weight: 600;
-  transition: opacity 0.15s ease;
-}
-.plugin-download-btn:hover {
   opacity: 0.9;
 }
 

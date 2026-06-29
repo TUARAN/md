@@ -4,6 +4,7 @@ import { Menu, ScrollText, Zap } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserMenu from '@/components/auth/UserMenu.vue'
+import PluginDownloadDialog from '@/components/distribute/PluginDownloadDialog.vue'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -112,6 +113,7 @@ function openChangelog() {
       </div>
 
       <div class="flex shrink-0 items-center gap-1">
+        <PluginDownloadDialog />
         <AssistDrawer />
         <Menubar class="shrink-0 border-0 p-0">
           <MenubarMenu>
@@ -136,6 +138,8 @@ function openChangelog() {
     <!-- 右侧：辅助入口 -->
     <div class="header-actions hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
+        <PluginDownloadDialog />
+
         <Tooltip>
           <TooltipTrigger as-child>
             <Button
