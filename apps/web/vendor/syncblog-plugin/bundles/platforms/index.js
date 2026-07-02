@@ -34,6 +34,7 @@ import { DouyinPlatform } from './douyin.js'
 import { XiaohongshuPlatform } from './xiaohongshu.js'
 import { ElecfansPlatform } from './elecfans.js'
 import { DoubanPlatform } from './douban.js'
+import { OPINION_HANDLERS } from './opinions.js'
 
 // 合并平台配置
 const PLATFORMS = [
@@ -118,5 +119,27 @@ const SYNC_HANDLERS = {
     wangyihao: syncWangyihaoContent,
 }
 
+// 按内容类型路由的处理器：{ contentType: { platformId: { entryUrl, sync } } }
+// 命中时优先于 SYNC_HANDLERS / 通用填充；未命中的内容类型走文章管线
+// （booklet / project 由调用方组装成链接帖正文）
+const SYNC_HANDLERS_BY_TYPE = {
+    opinion: OPINION_HANDLERS,
+}
+
+// 支持短观点直发的平台：
+// - weibo / juejin / zhihu：有原生信息流发布框处理器（OPINION_HANDLERS）
+// - xiaohongshu / wechat / baijiahao / douban：编辑器形态适合短图文，
+//   观点走文章管线填充可接受
+// 其余平台的发布入口是头条文章 / 专栏 / Articles 等纯长文编辑器，观点直发语义不对
+// 注意：apps/extension/src/inject.js 因为要以经典脚本注入页面主世界、
+// 不能带 import，持有一份同步维护的副本（OPINION_CAPABLE）
+const OPINION_CAPABLE_PLATFORMS = new Set([
+    ...Object.keys(OPINION_HANDLERS),
+    'xiaohongshu',
+    'wechat',
+    'baijiahao',
+    'douban',
+])
+
 // 导出
-export { PLATFORMS, LOGIN_CHECK_CONFIG, SYNC_HANDLERS, getPlatformFiller }
+export { PLATFORMS, LOGIN_CHECK_CONFIG, SYNC_HANDLERS, SYNC_HANDLERS_BY_TYPE, OPINION_CAPABLE_PLATFORMS, getPlatformFiller }

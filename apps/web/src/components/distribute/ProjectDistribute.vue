@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
 import { flattenPlatformGroups, PROJECT_PLATFORM_GROUPS } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
+import { buildLinkPostContent, buildTitleFromContent, distributeWithPlugin, postDistributionIntent } from '@/utils/pluginDistribution'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
 import SyncPluginTip from './SyncPluginTip.vue'
@@ -21,6 +22,7 @@ const repoUrl = store.reactive(`project_dist_repo_url`, ``)
 const summary = store.reactive(`project_dist_summary`, ``)
 const directPublish = store.reactive(`project_dist_direct_publish`, false)
 const selected = store.reactive<string[]>(`project_dist_selected_platforms`, [])
+const syncing = ref(false)
 
 const platformGroups = PROJECT_PLATFORM_GROUPS
 const PROJECT_PLATFORMS = flattenPlatformGroups(platformGroups)
@@ -62,7 +64,21 @@ function toggleGroup(group: DistributionPlatformGroup) {
     : Array.from(new Set([...selected.value, ...groupTypes]))
 }
 
+/** 从仓库链接提取 `owner/repo` 作为默认标题 */
+function repoTitleFromUrl(url: string): string {
+  const match = url.match(/(?:github|gitee|gitcode|gitlab)\.com\/([\w.-]+\/[\w.-]+)/i)
+  return match ? match[1].replace(/\.git$/, ``) : ``
+}
+
+function openSelectedPages() {
+  toast.success(`项目信息已复制，正在打开 ${selectedInScope.value.length} 个平台`)
+  for (const type of selectedInScope.value.slice(0, 8))
+    window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+}
+
 async function startPromotion() {
+  if (syncing.value)
+    return
   const url = repoUrl.value.trim()
   if (!url) {
     toast.error(`请先粘贴 GitHub 项目链接`)
@@ -73,26 +89,58 @@ async function startPromotion() {
     return
   }
 
-  const payloadText = [summary.value.trim(), url].filter(Boolean).join(`\n`)
+  const intro = summary.value.trim()
+  const payloadText = [intro, url].filter(Boolean).join(`\n`)
   try {
     await copyPlain(payloadText)
   }
   catch {}
 
-  window.postMessage(
-    { source: `ai-distribution-master`, type: `distribute-project`, payload: { url, summary: summary.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
-    `*`,
-  )
-
-  toast.success(
-    directPublish.value
-      ? `已发起项目同步：${selectedInScope.value.length} 个平台`
-      : `项目信息已复制，正在打开 ${selectedInScope.value.length} 个平台`,
-  )
+  postDistributionIntent(`project`, { url, summary: intro, platforms: selectedInScope.value, directPublish: directPublish.value })
 
   if (!directPublish.value) {
-    for (const type of selectedInScope.value.slice(0, 8))
-      window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+    openSelectedPages()
+    return
+  }
+
+  syncing.value = true
+  try {
+    const { content, markdown } = buildLinkPostContent({ summary: intro, url })
+    const result = await distributeWithPlugin({
+      contentType: `project`,
+      post: {
+        title: repoTitleFromUrl(url) || (intro ? buildTitleFromContent(intro) : url),
+        content,
+        markdown,
+        desc: intro,
+        url,
+      },
+      platformTypes: selectedInScope.value,
+      homeUrlOf: viewUrl,
+    })
+
+    if (result.status === `no-plugin`) {
+      toast.error(`未检测到 SyncBlog 发布插件，改为打开发布页手动粘贴`)
+      openSelectedPages()
+      return
+    }
+    if (result.status === `no-accounts`) {
+      toast.error(`所选平台当前没有插件处理器，改为打开发布页手动粘贴`)
+      openSelectedPages()
+      return
+    }
+    if (result.unsupported.length > 0)
+      toast.info(`插件暂未覆盖 ${result.unsupported.length} 个平台（如 GitHub / Product Hunt 等需手动发布），已跳过`)
+    if (result.failed.length > 0)
+      toast.error(`插件已处理 ${result.total} 个平台，失败 ${result.failed.length} 个：${result.failed.map(a => a.title).slice(0, 3).join(`、`)}`)
+    else
+      toast.success(`已通过 SyncBlog 插件同步至 ${result.total} 个平台`)
+  }
+  catch (e) {
+    toast.error(e instanceof Error ? `插件同步失败：${e.message}` : `插件同步失败`)
+  }
+  finally {
+    syncing.value = false
   }
 }
 </script>
@@ -134,8 +182,8 @@ async function startPromotion() {
       </div>
 
       <div class="mb-5 flex items-center gap-4">
-        <button type="button" class="sync-btn" @click="startPromotion">
-          开始同步
+        <button type="button" class="sync-btn" :disabled="syncing" @click="startPromotion">
+          {{ syncing ? '同步中' : '开始同步' }}
           <Send class="size-4" />
         </button>
         <label class="flex cursor-pointer items-center gap-2">
@@ -222,6 +270,11 @@ async function startPromotion() {
 }
 .sync-btn:hover {
   opacity: 0.9;
+}
+
+.sync-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .platform-check {

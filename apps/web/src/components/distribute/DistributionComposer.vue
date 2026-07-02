@@ -7,7 +7,6 @@
  * 切换 / 助手进入）。真正的多平台发布由 SyncBlog 插件承担，本页负责
  * 准备内容、选平台并发起同步。
  */
-import type { PostAccount } from '@md/shared/types'
 import type { DistributionPlatformGroup } from '@/constants/distributionPlatforms'
 import { Image as ImageIcon, Send, Smartphone, Video } from 'lucide-vue-next'
 import { Switch } from '@/components/ui/switch'
@@ -15,7 +14,7 @@ import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorConte
 import { flattenPlatformGroups, OPINION_PLATFORM_GROUPS } from '@/constants/distributionPlatforms'
 import { getPlatformTitle } from '@/constants/platforms'
 import { copyPlain } from '@/utils/clipboard'
-import { getPublishExtension } from '@/utils/publishExtensions'
+import { buildDescFromContent, buildTitleFromContent, distributeWithPlugin, postDistributionIntent } from '@/utils/pluginDistribution'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
 import SyncPluginTip from './SyncPluginTip.vue'
@@ -39,7 +38,6 @@ const charCount = computed(() => content.value.length)
 /** 平台 → 已录入的主页 / 账号（有则「查看」跳该链接，否则跳门户首页） */
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
 const homeByType = new Map(platforms.map(p => [p.type, p.homeUrl]))
-const ARTICLE_ONLY_EXTENSION_TITLE_MARKS = [`头条`, `Articles`, `文章`, `专栏`]
 
 function viewUrl(type: string): string {
   return matrixByType.value.get(type)?.url || homeByType.get(type) || `#`
@@ -78,135 +76,47 @@ function platformTitle(type: string): string {
   return platforms.find(p => p.type === type)?.title || getPlatformTitle(type)
 }
 
-function buildOpinionTitle(raw: string): string {
-  const firstLine = raw
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .find(Boolean) || `短观点`
-  const title = firstLine.replace(/\s+/g, ` `)
-  return title.length > 36 ? `${title.slice(0, 36)}...` : title
-}
-
-function buildOpinionDesc(raw: string): string {
-  return raw.replace(/\s+/g, ` `).trim().slice(0, 120)
-}
-
-function extensionAccountMap(accounts: PostAccount[]): Map<string, PostAccount> {
-  const map = new Map<string, PostAccount>()
-  for (const account of accounts) {
-    const type = account.type.trim().toLowerCase()
-    if (!map.has(type))
-      map.set(type, account)
-  }
-  return map
-}
-
-function isArticleOnlyExtensionAccount(account: PostAccount): boolean {
-  if (account.supportTypes?.includes(`opinion`))
-    return false
-  const label = `${account.title} ${account.displayName}`.toLowerCase()
-  return ARTICLE_ONLY_EXTENSION_TITLE_MARKS.some(mark => label.includes(mark.toLowerCase()))
-}
-
-function resolveExtensionAccounts(types: string[]): { accounts: PostAccount[], unsupported: string[] } {
-  const publishExtension = getPublishExtension()
-  const extensionPlatforms = publishExtension?.getPlatforms?.() ?? []
-  const accountMap = extensionAccountMap(extensionPlatforms)
-  const accounts: PostAccount[] = []
-  const unsupported: string[] = []
-
-  for (const type of types) {
-    const account = accountMap.get(type.trim().toLowerCase())
-    if (!account || isArticleOnlyExtensionAccount(account)) {
-      unsupported.push(type)
-      continue
-    }
-    accounts.push({
-      ...account,
-      checked: true,
-      home: account.home || viewUrl(type),
-      displayName: account.displayName || account.title,
-    })
-  }
-
-  return { accounts, unsupported }
-}
-
 function openSelectedPages(types: string[]) {
   for (const type of types.slice(0, 8))
     window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
 }
 
-function postDistributionIntent() {
-  window.postMessage(
-    {
-      source: `ai-distribution-master`,
-      type: `distribute-opinion`,
-      payload: {
-        content: content.value,
-        platforms: selectedInScope.value,
-        directPublish: directPublish.value,
-      },
-    },
-    `*`,
-  )
-}
-
 async function publishWithExtension(): Promise<boolean> {
-  const publishExtension = getPublishExtension()
-  if (typeof publishExtension?.addTask !== `function`) {
+  const result = await distributeWithPlugin({
+    contentType: `opinion`,
+    post: {
+      title: buildTitleFromContent(content.value, `短观点`),
+      content: content.value,
+      markdown: content.value,
+      desc: buildDescFromContent(content.value),
+    },
+    platformTypes: selectedInScope.value,
+    homeUrlOf: viewUrl,
+  })
+
+  if (result.status === `no-plugin`) {
     toast.error(`未检测到 SyncBlog 发布插件，已复制内容并打开发布页`)
     return false
   }
 
-  const { accounts, unsupported } = resolveExtensionAccounts(selectedInScope.value)
-  if (unsupported.length > 0) {
-    toast.info(
-      `插件暂未覆盖 ${unsupported.length} 个观点平台：${unsupported.map(platformTitle).slice(0, 4).join(`、`)}${unsupported.length > 4 ? `等` : ``}`,
-    )
-  }
-
-  if (accounts.length === 0) {
+  if (result.status === `no-accounts`) {
     toast.error(`所选观点平台当前没有插件处理器，已复制内容并打开发布页`)
     return false
   }
 
-  const addTask = publishExtension.addTask.bind(publishExtension)
-  let latestAccounts: PostAccount[] = accounts
+  if (result.unsupported.length > 0) {
+    toast.info(
+      `插件暂未覆盖 ${result.unsupported.length} 个观点平台：${result.unsupported.map(platformTitle).slice(0, 4).join(`、`)}${result.unsupported.length > 4 ? `等` : ``}`,
+    )
+  }
 
-  await new Promise<void>((resolve, reject) => {
-    try {
-      addTask(
-        {
-          post: {
-            title: buildOpinionTitle(content.value),
-            content: content.value,
-            markdown: content.value,
-            thumb: ``,
-            desc: buildOpinionDesc(content.value),
-          },
-          accounts,
-        },
-        (status) => {
-          if (status.accounts)
-            latestAccounts = status.accounts
-        },
-        () => resolve(),
-      )
-    }
-    catch (e) {
-      reject(e)
-    }
-  })
-
-  const failed = latestAccounts.filter(account => account.status === `failed`)
-  if (failed.length > 0) {
+  if (result.failed.length > 0) {
     toast.error(
-      `插件已处理 ${accounts.length} 个平台，失败 ${failed.length} 个：${failed.map(a => a.title).slice(0, 3).join(`、`)}`,
+      `插件已处理 ${result.total} 个平台，失败 ${result.failed.length} 个：${result.failed.map(a => a.title).slice(0, 3).join(`、`)}`,
     )
   }
   else {
-    toast.success(`已通过 SyncBlog 插件同步至 ${accounts.length} 个平台`)
+    toast.success(`已通过 SyncBlog 插件同步至 ${result.total} 个平台`)
   }
 
   return true
@@ -230,7 +140,11 @@ async function startSync() {
   }
   catch {}
 
-  postDistributionIntent()
+  postDistributionIntent(`opinion`, {
+    content: content.value,
+    platforms: selectedInScope.value,
+    directPublish: directPublish.value,
+  })
 
   syncing.value = true
   try {

@@ -3,9 +3,9 @@ import type { DistributionPlatformGroup } from '@/constants/distributionPlatform
 import { BookOpen, Send } from 'lucide-vue-next'
 import { Switch } from '@/components/ui/switch'
 import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
-import { APP_NAME } from '@/constants/branding'
 import { EBOOK_PLATFORM_GROUPS, flattenPlatformGroups } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
+import { buildLinkPostContent, distributeWithPlugin, postDistributionIntent } from '@/utils/pluginDistribution'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
 import SyncPluginTip from './SyncPluginTip.vue'
@@ -13,8 +13,11 @@ import SyncPluginTip from './SyncPluginTip.vue'
 const { platformMatrix } = useWorkflowCreatorContext()
 
 const bookletUrl = store.reactive(`booklet_dist_url`, ``)
+const bookletTitle = store.reactive(`booklet_dist_title`, ``)
+const bookletIntro = store.reactive(`booklet_dist_intro`, ``)
 const directPublish = store.reactive(`booklet_dist_direct_publish`, false)
 const selected = store.reactive<string[]>(`booklet_dist_platforms`, [])
+const syncing = ref(false)
 
 const platformGroups = EBOOK_PLATFORM_GROUPS
 const EBOOK_PLATFORMS = flattenPlatformGroups(platformGroups)
@@ -54,23 +57,77 @@ function toggleGroup(group: DistributionPlatformGroup) {
     : Array.from(new Set([...selected.value, ...groupTypes]))
 }
 
+function openSelectedPages() {
+  toast.success(`书籍信息已复制，正在打开 ${selectedInScope.value.length} 个平台`)
+  for (const type of selectedInScope.value.slice(0, 8))
+    window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+}
+
 async function startSync() {
+  if (syncing.value)
+    return
   if (!selectedInScope.value.length) {
     toast.error(`至少勾选一个平台`)
     return
   }
-  try { await copyPlain(bookletUrl.value || APP_NAME) }
+
+  const url = bookletUrl.value.trim()
+  const title = bookletTitle.value.trim()
+  const intro = bookletIntro.value.trim()
+  if (!title && !url) {
+    toast.error(`先填写书名或已发布链接`)
+    return
+  }
+
+  const shareText = [title, intro, url].filter(Boolean).join(`\n`)
+  try { await copyPlain(shareText) }
   catch {}
-  window.postMessage(
-    { source: `ai-distribution-master`, type: `distribute-ebook`, payload: { url: bookletUrl.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
-    `*`,
-  )
-  toast.success(directPublish.value
-    ? `已发起电子书分发：${selectedInScope.value.length} 个平台`
-    : `正在打开 ${selectedInScope.value.length} 个平台`)
+
+  postDistributionIntent(`booklet`, { url, title, platforms: selectedInScope.value, directPublish: directPublish.value })
+
   if (!directPublish.value) {
-    for (const type of selectedInScope.value.slice(0, 8))
-      window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+    openSelectedPages()
+    return
+  }
+
+  syncing.value = true
+  try {
+    const { content, markdown } = buildLinkPostContent({ summary: intro, url })
+    const result = await distributeWithPlugin({
+      contentType: `booklet`,
+      post: {
+        title: title || url,
+        content,
+        markdown,
+        desc: intro,
+        url,
+      },
+      platformTypes: selectedInScope.value,
+      homeUrlOf: viewUrl,
+    })
+
+    if (result.status === `no-plugin`) {
+      toast.error(`未检测到 SyncBlog 发布插件，改为打开发布页手动粘贴`)
+      openSelectedPages()
+      return
+    }
+    if (result.status === `no-accounts`) {
+      toast.info(`所选平台以知识付费 / 小说站为主，插件暂无处理器，已打开发布页`)
+      openSelectedPages()
+      return
+    }
+    if (result.unsupported.length > 0)
+      toast.info(`插件暂未覆盖 ${result.unsupported.length} 个平台，已跳过`)
+    if (result.failed.length > 0)
+      toast.error(`插件已处理 ${result.total} 个平台，失败 ${result.failed.length} 个：${result.failed.map(a => a.title).slice(0, 3).join(`、`)}`)
+    else
+      toast.success(`已通过 SyncBlog 插件同步至 ${result.total} 个平台`)
+  }
+  catch (e) {
+    toast.error(e instanceof Error ? `插件同步失败：${e.message}` : `插件同步失败`)
+  }
+  finally {
+    syncing.value = false
   }
 }
 </script>
@@ -88,7 +145,7 @@ async function startSync() {
       </header>
 
       <!-- 电子书链接 -->
-      <div class="import-bar mb-5 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">
+      <div class="import-bar mb-3 flex items-center gap-2 rounded-xl bg-card/60 px-3 py-2.5 ring-1 ring-border/40">
         <BookOpen class="size-4 shrink-0 text-muted-foreground/60" />
         <input
           v-model="bookletUrl"
@@ -98,10 +155,26 @@ async function startSync() {
         >
       </div>
 
+      <!-- 书名 + 简介 -->
+      <div class="mb-5 rounded-xl bg-card/60 p-3 ring-1 ring-border/40">
+        <input
+          v-model="bookletTitle"
+          type="text"
+          placeholder="书名 / 小册名（直接发布时用作各平台草稿标题）"
+          class="w-full border-0 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/55"
+        >
+        <textarea
+          v-model="bookletIntro"
+          rows="2"
+          placeholder="一句话简介（可选，将与链接一起填入各平台草稿正文）"
+          class="mt-2 w-full resize-y border-0 bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/55"
+        />
+      </div>
+
       <!-- 同步按钮 + 直接发布 -->
       <div class="mb-5 flex items-center gap-4">
-        <button type="button" class="sync-btn" @click="startSync">
-          开始同步
+        <button type="button" class="sync-btn" :disabled="syncing" @click="startSync">
+          {{ syncing ? '同步中' : '开始同步' }}
           <Send class="size-4" />
         </button>
         <label class="flex cursor-pointer items-center gap-2">
@@ -178,6 +251,11 @@ async function startSync() {
 }
 .sync-btn:hover {
   opacity: 0.9;
+}
+
+.sync-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .import-bar {

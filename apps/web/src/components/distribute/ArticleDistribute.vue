@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { useWorkflowCreatorContext } from '@/composables/useWorkflowCreatorContext'
 import { ARTICLE_PLATFORM_GROUPS, flattenPlatformGroups } from '@/constants/distributionPlatforms'
 import { copyPlain } from '@/utils/clipboard'
+import { buildLinkPostContent, distributeWithPlugin, postDistributionIntent } from '@/utils/pluginDistribution'
 import { store } from '@/utils/storage'
 import { toast } from '@/utils/toast'
 import SyncPluginTip from './SyncPluginTip.vue'
@@ -21,8 +22,11 @@ const router = useRouter()
 const { platformMatrix } = useWorkflowCreatorContext()
 
 const urlInput = store.reactive(`article_dist_url`, ``)
+const titleInput = store.reactive(`article_dist_title`, ``)
+const summaryInput = store.reactive(`article_dist_summary`, ``)
 const directPublish = store.reactive(`article_dist_direct_publish`, false)
 const selected = store.reactive<string[]>(`article_dist_selected_platforms`, [])
+const syncing = ref(false)
 
 const platformGroups = ARTICLE_PLATFORM_GROUPS
 const ARTICLE_PLATFORMS = flattenPlatformGroups(platformGroups)
@@ -78,8 +82,17 @@ async function importUrl() {
   router.push({ name: `sync`, query: { importUrl: url } })
 }
 
+function openSelectedPages() {
+  toast.success(`链接已复制，正在打开 ${selectedInScope.value.length} 个平台发布页`)
+  for (const type of selectedInScope.value.slice(0, 8))
+    window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+}
+
 async function startSync() {
-  if (!urlInput.value.trim()) {
+  if (syncing.value)
+    return
+  const url = urlInput.value.trim()
+  if (!url) {
     toast.error(`请先导入文章链接`)
     return
   }
@@ -88,25 +101,60 @@ async function startSync() {
     return
   }
 
+  const title = titleInput.value.trim()
+  const summary = summaryInput.value.trim()
+  const shareText = [title, summary, url].filter(Boolean).join(`\n`)
+
   try {
-    await copyPlain(urlInput.value.trim())
+    await copyPlain(shareText)
   }
   catch {}
 
-  window.postMessage(
-    { source: `ai-distribution-master`, type: `distribute-article`, payload: { url: urlInput.value, platforms: selectedInScope.value, directPublish: directPublish.value } },
-    `*`,
-  )
-
-  toast.success(
-    directPublish.value
-      ? `已发起同步：${selectedInScope.value.length} 个平台（需安装发布插件执行直接发布）`
-      : `正在打开 ${selectedInScope.value.length} 个平台发布页`,
-  )
+  postDistributionIntent(`article`, { url, title, platforms: selectedInScope.value, directPublish: directPublish.value })
 
   if (!directPublish.value) {
-    for (const type of selectedInScope.value.slice(0, 8))
-      window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+    openSelectedPages()
+    return
+  }
+
+  syncing.value = true
+  try {
+    const { content, markdown } = buildLinkPostContent({ summary, url })
+    const result = await distributeWithPlugin({
+      contentType: `article`,
+      post: {
+        title: title || url,
+        content,
+        markdown,
+        desc: summary,
+        url,
+      },
+      platformTypes: selectedInScope.value,
+      homeUrlOf: viewUrl,
+    })
+
+    if (result.status === `no-plugin`) {
+      toast.error(`未检测到 SyncBlog 发布插件，改为打开发布页手动粘贴`)
+      openSelectedPages()
+      return
+    }
+    if (result.status === `no-accounts`) {
+      toast.error(`所选平台当前没有插件处理器，改为打开发布页手动粘贴`)
+      openSelectedPages()
+      return
+    }
+    if (result.unsupported.length > 0)
+      toast.info(`插件暂未覆盖 ${result.unsupported.length} 个平台，已跳过`)
+    if (result.failed.length > 0)
+      toast.error(`插件已处理 ${result.total} 个平台，失败 ${result.failed.length} 个：${result.failed.map(a => a.title).slice(0, 3).join(`、`)}`)
+    else
+      toast.success(`已通过 SyncBlog 插件同步至 ${result.total} 个平台`)
+  }
+  catch (e) {
+    toast.error(e instanceof Error ? `插件同步失败：${e.message}` : `插件同步失败`)
+  }
+  finally {
+    syncing.value = false
   }
 }
 </script>
@@ -143,6 +191,22 @@ async function startSync() {
         </button>
       </div>
 
+      <!-- 标题 + 摘要（直接发布时作为各平台草稿的标题与链接帖简介） -->
+      <div class="mb-3 rounded-xl bg-card/60 p-3 ring-1 ring-border/40">
+        <input
+          v-model="titleInput"
+          type="text"
+          placeholder="文章标题（直接发布时用作各平台草稿标题，留空则用链接）"
+          class="w-full border-0 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/55"
+        >
+        <textarea
+          v-model="summaryInput"
+          rows="2"
+          placeholder="一句话摘要（可选，将与链接一起填入各平台草稿正文）"
+          class="mt-2 w-full resize-y border-0 bg-transparent text-sm leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/55"
+        />
+      </div>
+
       <!-- 去编辑创作 引导 -->
       <div class="mb-5 flex items-center gap-2">
         <span class="text-xs text-muted-foreground/50">还没写好？</span>
@@ -150,13 +214,13 @@ async function startSync() {
           <PenLine class="size-3.5" />
           去 Markdown 编辑器创作
         </button>
-        <span class="text-xs text-muted-foreground/40">— 编辑完后可复制链接回填到这里</span>
+        <span class="text-xs text-muted-foreground/40">— 编辑完后可复制链接回填到这里；在编辑器里可整篇正文直接同步</span>
       </div>
 
       <!-- 同步按钮 + 直接发布开关 -->
       <div class="mb-5 flex items-center gap-4">
-        <button type="button" class="sync-btn" @click="startSync">
-          开始同步
+        <button type="button" class="sync-btn" :disabled="syncing" @click="startSync">
+          {{ syncing ? '同步中' : '开始同步' }}
           <Send class="size-4" />
         </button>
         <label class="flex cursor-pointer items-center gap-2">
@@ -294,6 +358,11 @@ async function startSync() {
 }
 .sync-btn:hover {
   opacity: 0.9;
+}
+
+.sync-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .platform-check {

@@ -56,6 +56,22 @@ interface TimelineEntry {
 
 const timelineEntries: TimelineEntry[] = [
   {
+    id: `fork-2026-07-02-four-type-distribution`,
+    source: `fork`,
+    kind: `milestone`,
+    date: `2026-07-02`,
+    title: `观点、文章、电子书、项目全线接通插件直接发布`,
+    subtitle: `SyncBlog 同步助手协议升级为按内容类型（contentType）路由：四个分发台不再只是打开发布页，而是真正通过插件把内容填进各平台草稿 / 发布框；同时收窄插件注入范围，修复任意网页可读取账号登录态的安全问题。`,
+    items: [
+      `文章 / 电子书 / 项目分发台接通插件 addTask：以「标题 + 摘要 + 链接」组装链接帖，一键填充 31 个平台的文章草稿；文章与电子书台新增标题、摘要输入。`,
+      `观点直发新增微博、掘金沸点、知乎想法三个原生处理器，直接填充平台信息流发布框，不再绕道文章编辑器；纯长文入口（微博头条、B站专栏等）会明确拒绝观点并提示原因。`,
+      `插件平台注册表声明 supportTypes，各分发台按内容类型过滤可直发平台；修复 X（twitter）、掘金沸点、知乎想法因平台命名不一致而永远无法匹配插件账号的问题。`,
+      `安全修复：插件 content script 注入范围从全部网页收窄到分发台站点与平台域，任意网页不再能通过 $cose 读取 30+ 平台登录态或触发发布任务。`,
+      `同步产物更新至 v1.3.5（vendor 目录与下载 zip 均已重新生成）。`,
+    ],
+    tags: [`分发台`, `SyncBlog 插件`, `contentType 路由`, `观点直发`, `安全修复`],
+  },
+  {
     id: `fork-2026-06-26-ai-distribution-master`,
     source: `fork`,
     kind: `milestone`,

@@ -15,6 +15,10 @@ export interface PublishExtensionTask {
     markdown: string
     thumb: string
     desc: string
+    /** 内容类型：opinion | article | booklet | project，缺省按 article 处理（插件 >= 1.1.0） */
+    contentType?: string
+    /** booklet / project 等链接帖的原始链接（插件 >= 1.1.0） */
+    url?: string
   }
   accounts: PostAccount[]
 }
@@ -25,6 +29,8 @@ export interface PublishExtensionContent {
   markdown?: string
   thumb?: string
   desc?: string
+  contentType?: string
+  url?: string
   wechatHtml?: string | null
 }
 
