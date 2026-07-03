@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ContentTypeId } from '@/constants/contentTypes'
-import { Menu, ScrollText, Zap } from 'lucide-vue-next'
+import { Menu, Plug, ScrollText, Zap } from 'lucide-vue-next'
 import { computed, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserMenu from '@/components/auth/UserMenu.vue'
@@ -64,6 +64,10 @@ function selectContentType(id: ContentTypeId) {
 
 function openChangelog() {
   router.push({ name: `changelog` })
+}
+
+function openImportDocs() {
+  router.push({ name: `import-docs` })
 }
 </script>
 
@@ -139,6 +143,25 @@ function openChangelog() {
     <div class="header-actions hidden shrink-0 items-center gap-1 md:flex">
       <TooltipProvider :delay-duration="200">
         <PluginDownloadDialog />
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              class="shrink-0 gap-1.5 text-muted-foreground/80 hover:text-foreground"
+              aria-label="外站接入文档"
+              @click="openImportDocs"
+            >
+              <Plug class="h-3.5 w-3.5" />
+              <span class="text-xs">外站接入</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" :side-offset="6" class="text-xs">
+            外站接入文档
+          </TooltipContent>
+        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger as-child>

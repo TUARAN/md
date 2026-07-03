@@ -32,6 +32,24 @@ const selectedInScope = computed(() => selected.value.filter(type => platformTyp
 const allSelected = computed(() => platformTypes.every(type => selected.value.includes(type)))
 const someSelected = computed(() => selectedInScope.value.length > 0 && !allSelected.value)
 
+/** 外站接入(MD_IMPORT_PROJECT):页面已挂载时由 App.vue 广播事件实时填入 */
+function handleExternalProjectImport(event: Event) {
+  const detail = (event as CustomEvent<{ url?: unknown, summary?: unknown }>).detail
+  if (typeof detail?.url !== `string` || !detail.url.trim())
+    return
+  repoUrl.value = detail.url
+  summary.value = typeof detail.summary === `string` ? detail.summary : ``
+  toast.success(`已接收外站项目信息`)
+}
+
+onMounted(() => {
+  window.addEventListener(`syncblog:import-project`, handleExternalProjectImport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(`syncblog:import-project`, handleExternalProjectImport)
+})
+
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
 const homeByType = new Map(PROJECT_PLATFORMS.map(p => [p.type, p.homeUrl]))
 

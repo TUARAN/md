@@ -35,6 +35,14 @@ const allSelected = computed(() => platformTypes.every(type => selected.value.in
 const someSelected = computed(() => selectedInScope.value.length > 0 && !allSelected.value)
 const charCount = computed(() => content.value.length)
 
+function handleExternalOpinionImport(event: Event) {
+  const detail = (event as CustomEvent<{ content?: unknown }>).detail
+  if (typeof detail?.content === `string` && detail.content.trim()) {
+    content.value = detail.content
+    toast.success(`已接收外站观点`)
+  }
+}
+
 /** 平台 → 已录入的主页 / 账号（有则「查看」跳该链接，否则跳门户首页） */
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
 const homeByType = new Map(platforms.map(p => [p.type, p.homeUrl]))
@@ -167,6 +175,14 @@ async function startSync() {
     syncing.value = false
   }
 }
+
+onMounted(() => {
+  window.addEventListener(`syncblog:import-opinion`, handleExternalOpinionImport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(`syncblog:import-opinion`, handleExternalOpinionImport)
+})
 </script>
 
 <template>

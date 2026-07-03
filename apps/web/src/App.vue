@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
+import { store } from '@/utils/storage'
 
 const uiStore = useUIStore()
 const postStore = usePostStore()
@@ -23,17 +24,48 @@ const { isDark } = storeToRefs(uiStore)
 const isUtools = ref(false)
 const importReadyTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
-/**
- * 站外文章导入协议(postMessage)。详见 `/docs/import` 接入文档。
- * `MD_IMPORT_ARTICLE` 为通用类型名,`SYNCBLOG_IMPORT_ARTICLE` 为早期 syncblog 集成的兼容别名。
- */
-const IMPORT_MESSAGE_TYPES = new Set([`MD_IMPORT_ARTICLE`, `SYNCBLOG_IMPORT_ARTICLE`])
+// 各分发台的持久化字段。store.reactive 每次调用是独立 ref,这里写入只负责
+// 落盘 localStorage(目标页未挂载时,挂载后同步读到);目标页已挂载时靠
+// 下方 CustomEvent 实时填入。
+const importedOpinionContent = store.reactive(`composer_content`, ``)
+const importedBookletUrl = store.reactive(`booklet_dist_url`, ``)
+const importedBookletTitle = store.reactive(`booklet_dist_title`, ``)
+const importedBookletIntro = store.reactive(`booklet_dist_intro`, ``)
+const importedProjectUrl = store.reactive(`project_dist_repo_url`, ``)
+const importedProjectSummary = store.reactive(`project_dist_summary`, ``)
 
-interface ImportArticleMessage {
+/**
+ * 站外内容导入协议(postMessage)。详见 `/docs/import` 接入文档。
+ * 四种内容类型各有独立消息名,分别落到对应分发台:
+ * - MD_IMPORT_ARTICLE → Markdown 编辑器(文章排版)
+ * - MD_IMPORT_OPINION → 观点分发台
+ * - MD_IMPORT_BOOKLET → 电子书分发台
+ * - MD_IMPORT_PROJECT → 项目分发台
+ * `SYNCBLOG_IMPORT_*` 为早期 syncblog 集成的兼容别名。
+ */
+type ImportKind = `article` | `opinion` | `booklet` | `project`
+const IMPORT_TYPE_TO_KIND: Record<string, ImportKind> = {
+  MD_IMPORT_ARTICLE: `article`,
+  SYNCBLOG_IMPORT_ARTICLE: `article`,
+  MD_IMPORT_OPINION: `opinion`,
+  SYNCBLOG_IMPORT_OPINION: `opinion`,
+  MD_IMPORT_BOOKLET: `booklet`,
+  SYNCBLOG_IMPORT_BOOKLET: `booklet`,
+  MD_IMPORT_PROJECT: `project`,
+  SYNCBLOG_IMPORT_PROJECT: `project`,
+}
+
+interface ImportMessage {
   type?: unknown
   requestId?: unknown
   title?: unknown
   markdown?: unknown
+  opinion?: unknown
+  content?: unknown
+  url?: unknown
+  repoUrl?: unknown
+  intro?: unknown
+  summary?: unknown
   canonicalUrl?: unknown
   tags?: unknown
 }
@@ -72,18 +104,50 @@ function isTrustedImportOrigin(origin: string) {
   }
 }
 
+function pickString(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === `string` && value.trim())
+      return value
+  }
+  return ``
+}
+
 function normalizeImportPayload(data: unknown) {
   if (!data || typeof data !== `object`)
     return null
 
-  const payload = data as ImportArticleMessage
-  if (typeof payload.type !== `string` || !IMPORT_MESSAGE_TYPES.has(payload.type) || typeof payload.markdown !== `string`)
+  const payload = data as ImportMessage
+  const kind = typeof payload.type === `string` ? IMPORT_TYPE_TO_KIND[payload.type] : undefined
+  if (!kind)
+    return null
+
+  const markdown = typeof payload.markdown === `string` ? payload.markdown : ``
+  // 观点正文:opinion 为主,content / markdown 依次降级
+  const opinion = pickString(payload.opinion, payload.content, markdown)
+  // 电子书 / 项目链接:url 为主,项目兼容 repoUrl,再降级 canonicalUrl
+  const url = pickString(payload.url, payload.repoUrl, payload.canonicalUrl).trim()
+  // 电子书简介 / 项目简介:intro 与 summary 互为别名,content 兜底
+  const summary = pickString(payload.intro, payload.summary, payload.content).trim()
+  const title = typeof payload.title === `string` ? payload.title.trim() : ``
+
+  // 每种类型有自己的必填字段,缺了直接拒收
+  if (kind === `article` && !markdown)
+    return null
+  if (kind === `opinion` && !opinion.trim())
+    return null
+  if (kind === `booklet` && !title && !url)
+    return null
+  if (kind === `project` && !url)
     return null
 
   return {
+    kind,
     requestId: typeof payload.requestId === `string` ? payload.requestId : ``,
-    title: typeof payload.title === `string` ? payload.title.trim() : ``,
-    markdown: payload.markdown,
+    title,
+    markdown,
+    opinion,
+    url,
+    summary,
     canonicalUrl: typeof payload.canonicalUrl === `string` ? payload.canonicalUrl.trim() : ``,
     tags: Array.isArray(payload.tags) ? payload.tags.filter((tag): tag is string => typeof tag === `string`) : [],
   }
@@ -100,7 +164,7 @@ function hashString(value: string) {
 }
 
 function getPayloadFingerprint(payload: NormalizedImportPayload) {
-  return hashString(`${payload.title}\u0001${payload.markdown}`)
+  return hashString(`${payload.kind}\u0001${payload.title}\u0001${payload.markdown || payload.opinion || payload.url}\u0001${payload.summary}`)
 }
 
 function isWithinWindow(now: number, ts: number, windowMs: number) {
@@ -148,6 +212,49 @@ function replyImportResult(event: MessageEvent, requestId: string, ok: boolean, 
 }
 
 function applyImport(payload: NormalizedImportPayload): boolean {
+  if (payload.kind === `booklet`) {
+    if (route.name !== `distribute-booklet`)
+      router.replace({ name: `distribute-booklet` })
+
+    // 一次导入 = 一本书的完整信息,三个字段整体覆盖,避免残留上一本的简介 / 链接
+    importedBookletTitle.value = payload.title
+    importedBookletUrl.value = payload.url
+    importedBookletIntro.value = payload.summary
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent(`syncblog:import-booklet`, {
+        detail: { title: payload.title, url: payload.url, intro: payload.summary, tags: payload.tags },
+      }))
+    }, 0)
+    return true
+  }
+
+  if (payload.kind === `project`) {
+    if (route.name !== `distribute-project`)
+      router.replace({ name: `distribute-project` })
+
+    importedProjectUrl.value = payload.url
+    importedProjectSummary.value = payload.summary
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent(`syncblog:import-project`, {
+        detail: { url: payload.url, summary: payload.summary, title: payload.title, tags: payload.tags },
+      }))
+    }, 0)
+    return true
+  }
+
+  if (payload.kind === `opinion`) {
+    if (route.name !== `distribute-compose`)
+      router.replace({ name: `distribute-compose` })
+
+    importedOpinionContent.value = payload.opinion
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent(`syncblog:import-opinion`, {
+        detail: { content: payload.opinion, title: payload.title, canonicalUrl: payload.canonicalUrl, tags: payload.tags },
+      }))
+    }, 0)
+    return true
+  }
+
   // 跨页面导入:确保切到 sync 路由再写入,避免在 creator-offer 公开页静默改稿
   if (route.name !== `sync`)
     router.replace({ name: `sync` })

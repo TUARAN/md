@@ -90,8 +90,11 @@ export const WORKFLOW_ROUTE_NAMES = [`sync`, `opinion-idea`, `opinion-rewrite`, 
 export type WorkflowRouteName = (typeof WORKFLOW_ROUTE_NAMES)[number]
 
 /** 旧版 hash → 新路由名映射,用于兼容老书签 (`matrix` 已并入 `distribution`) */
-const LEGACY_HASH_TO_ROUTE: Record<string, WorkflowRouteName> = {
+const LEGACY_HASH_TO_ROUTE: Record<string, string> = {
   'opinion': `opinion-idea`,
+  'opinion-sync': `distribute-compose`,
+  'booklet-sync': `distribute-booklet`,
+  'project-sync': `distribute-project`,
   'content-sync': `sync`,
   'data': `data`,
   'monetize': `booklet-plan`,
@@ -225,13 +228,15 @@ export const router = createRouter({
 })
 
 /**
- * 兼容旧 hash 书签:访问 `/`(或 base path)且 hash 为旧 anchor 之一时,
- * 改写为对应的命名路由。这一守卫只在 history mode 下有意义。
+ * 兼容旧 hash 书签 / 外站接入锚点:访问 `/`(或 base path)且 hash 为旧 anchor
+ * 之一时,改写为对应的命名路由。这一守卫只在 history mode 下有意义。
+ * 注意 guard 拿到的是 redirect 解析后的目标:`/` 会先重定向到默认落地页
+ * (distribute-compose)并透传 hash,所以这里要把默认落地页也算作入口。
  */
 router.beforeEach((to) => {
   if (!to.hash)
     return true
-  if (to.name && to.name !== `sync`)
+  if (to.name && to.name !== `sync` && to.name !== `distribute-compose`)
     return true
 
   // 仅处理 `/` 或 `/sync` 上挂着的旧 anchor

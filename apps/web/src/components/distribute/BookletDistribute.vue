@@ -27,6 +27,25 @@ const selectedInScope = computed(() => selected.value.filter(type => platformTyp
 const allSelected = computed(() => platformTypes.every(type => selected.value.includes(type)))
 const someSelected = computed(() => selectedInScope.value.length > 0 && !allSelected.value)
 
+/** 外站接入(MD_IMPORT_BOOKLET):页面已挂载时由 App.vue 广播事件实时填入 */
+function handleExternalBookletImport(event: Event) {
+  const detail = (event as CustomEvent<{ title?: unknown, url?: unknown, intro?: unknown }>).detail
+  if (typeof detail?.title !== `string` && typeof detail?.url !== `string`)
+    return
+  bookletTitle.value = typeof detail.title === `string` ? detail.title : ``
+  bookletUrl.value = typeof detail.url === `string` ? detail.url : ``
+  bookletIntro.value = typeof detail.intro === `string` ? detail.intro : ``
+  toast.success(`已接收外站电子书信息`)
+}
+
+onMounted(() => {
+  window.addEventListener(`syncblog:import-booklet`, handleExternalBookletImport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(`syncblog:import-booklet`, handleExternalBookletImport)
+})
+
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
 const homeByType = new Map(EBOOK_PLATFORMS.map(p => [p.type, p.homeUrl]))
 function viewUrl(type: string): string {
