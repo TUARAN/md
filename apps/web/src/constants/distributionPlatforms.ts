@@ -1,9 +1,10 @@
-import { getPlatformHomeUrl } from '@/constants/platforms'
+import { getPlatformHomeUrl, getPlatformLoginUrl } from '@/constants/platforms'
 
 export interface DistributionPlatformOption {
   type: string
   title: string
   homeUrl: string
+  publishUrl: string
   iconUrl: string
 }
 
@@ -93,11 +94,33 @@ export function getDistributionPlatformIcon(type: string): string {
   return PLATFORM_ICON_URLS[type] ?? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(getPlatformHomeUrl(type))}&sz=32`
 }
 
+const PLATFORM_PUBLISH_URLS: Record<string, string> = {
+  'weibo': `https://weibo.com`,
+  'juejin-pin': `https://juejin.cn/pin`,
+  'zhihu-thought': `https://www.zhihu.com`,
+  'x': `https://x.com/compose/post`,
+  'jike': `https://web.okjike.com`,
+  'douban': `https://www.douban.com/note/create`,
+  'toutiao-micro': `https://mp.toutiao.com`,
+  'douyin-note': `https://creator.douyin.com`,
+  'shipinhao-note': `https://channels.weixin.qq.com`,
+  'kuaishou-note': `https://cp.kuaishou.com`,
+}
+
+export function getDistributionPlatformPublishUrl(type: string, fallbackUrl?: string): string {
+  const publishUrl = PLATFORM_PUBLISH_URLS[type] || getPlatformLoginUrl(type)
+  if (publishUrl && publishUrl !== `#`)
+    return publishUrl
+  return fallbackUrl || getPlatformHomeUrl(type)
+}
+
 function platform(type: string, title: string, homeUrl?: string): DistributionPlatformOption {
+  const resolvedHomeUrl = homeUrl || getPlatformHomeUrl(type)
   return {
     type,
     title,
-    homeUrl: homeUrl || getPlatformHomeUrl(type),
+    homeUrl: resolvedHomeUrl,
+    publishUrl: getDistributionPlatformPublishUrl(type, resolvedHomeUrl),
     iconUrl: getDistributionPlatformIcon(type),
   }
 }

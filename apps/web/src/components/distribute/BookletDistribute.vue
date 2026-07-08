@@ -48,8 +48,13 @@ onBeforeUnmount(() => {
 
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
 const homeByType = new Map(EBOOK_PLATFORMS.map(p => [p.type, p.homeUrl]))
+const publishByType = new Map(EBOOK_PLATFORMS.map(p => [p.type, p.publishUrl]))
 function viewUrl(type: string): string {
   return matrixByType.value.get(type)?.url || homeByType.get(type) || `#`
+}
+
+function publishUrl(type: string): string {
+  return publishByType.get(type) || homeByType.get(type) || `#`
 }
 
 function toggle(type: string) {
@@ -79,7 +84,7 @@ function toggleGroup(group: DistributionPlatformGroup) {
 function openSelectedPages() {
   toast.success(`书籍信息已复制，正在打开 ${selectedInScope.value.length} 个平台`)
   for (const type of selectedInScope.value.slice(0, 8))
-    window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+    window.open(publishUrl(type), `_blank`, `noopener,noreferrer`)
 }
 
 async function startSync() {

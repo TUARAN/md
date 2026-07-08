@@ -28,6 +28,8 @@ const importReadyTimer = ref<ReturnType<typeof setInterval> | null>(null)
 // 落盘 localStorage(目标页未挂载时,挂载后同步读到);目标页已挂载时靠
 // 下方 CustomEvent 实时填入。
 const importedOpinionContent = store.reactive(`composer_content`, ``)
+const importedOpinionDirectPublish = store.reactive(`composer_direct_publish`, false)
+const importedOpinionPlatforms = store.reactive<string[]>(`composer_selected_platforms`, [])
 const importedBookletUrl = store.reactive(`booklet_dist_url`, ``)
 const importedBookletTitle = store.reactive(`booklet_dist_title`, ``)
 const importedBookletIntro = store.reactive(`booklet_dist_intro`, ``)
@@ -68,6 +70,7 @@ interface ImportMessage {
   summary?: unknown
   canonicalUrl?: unknown
   tags?: unknown
+  platforms?: unknown
 }
 
 type NormalizedImportPayload = NonNullable<ReturnType<typeof normalizeImportPayload>>
@@ -112,6 +115,19 @@ function pickString(...values: unknown[]): string {
   return ``
 }
 
+function normalizeImportPlatform(type: string, kind: ImportKind): string {
+  const normalized = type.trim().toLowerCase()
+  if (kind === `opinion`) {
+    const aliases: Record<string, string> = {
+      twitter: `x`,
+      juejin: `juejin-pin`,
+      zhihu: `zhihu-thought`,
+    }
+    return aliases[normalized] ?? normalized
+  }
+  return normalized === `twitter` ? `x` : normalized
+}
+
 function normalizeImportPayload(data: unknown) {
   if (!data || typeof data !== `object`)
     return null
@@ -150,6 +166,11 @@ function normalizeImportPayload(data: unknown) {
     summary,
     canonicalUrl: typeof payload.canonicalUrl === `string` ? payload.canonicalUrl.trim() : ``,
     tags: Array.isArray(payload.tags) ? payload.tags.filter((tag): tag is string => typeof tag === `string`) : [],
+    platforms: Array.isArray(payload.platforms)
+      ? Array.from(new Set(payload.platforms
+          .filter((platform): platform is string => typeof platform === `string` && platform.trim().length > 0)
+          .map(platform => normalizeImportPlatform(platform, kind))))
+      : [],
   }
 }
 
@@ -247,9 +268,19 @@ function applyImport(payload: NormalizedImportPayload): boolean {
       router.replace({ name: `distribute-compose` })
 
     importedOpinionContent.value = payload.opinion
+    importedOpinionDirectPublish.value = true
+    if (payload.platforms.length > 0)
+      importedOpinionPlatforms.value = payload.platforms
     window.setTimeout(() => {
       window.dispatchEvent(new CustomEvent(`syncblog:import-opinion`, {
-        detail: { content: payload.opinion, title: payload.title, canonicalUrl: payload.canonicalUrl, tags: payload.tags },
+        detail: {
+          content: payload.opinion,
+          title: payload.title,
+          canonicalUrl: payload.canonicalUrl,
+          tags: payload.tags,
+          platforms: payload.platforms,
+          directPublish: true,
+        },
       }))
     }, 0)
     return true

@@ -36,9 +36,16 @@ const someSelected = computed(() => selectedInScope.value.length > 0 && !allSele
 const charCount = computed(() => content.value.length)
 
 function handleExternalOpinionImport(event: Event) {
-  const detail = (event as CustomEvent<{ content?: unknown }>).detail
+  const detail = (event as CustomEvent<{ content?: unknown, platforms?: unknown, directPublish?: unknown }>).detail
   if (typeof detail?.content === `string` && detail.content.trim()) {
     content.value = detail.content
+    if (Array.isArray(detail.platforms)) {
+      const importedPlatforms = detail.platforms.filter((type): type is string => typeof type === `string` && platformTypes.includes(type))
+      if (importedPlatforms.length > 0)
+        selected.value = Array.from(new Set([...selected.value, ...importedPlatforms]))
+    }
+    if (detail.directPublish === true)
+      directPublish.value = true
     toast.success(`已接收外站观点`)
   }
 }
@@ -46,9 +53,14 @@ function handleExternalOpinionImport(event: Event) {
 /** 平台 → 已录入的主页 / 账号（有则「查看」跳该链接，否则跳门户首页） */
 const matrixByType = computed(() => new Map(platformMatrix.value.map(row => [row.type, row])))
 const homeByType = new Map(platforms.map(p => [p.type, p.homeUrl]))
+const publishByType = new Map(platforms.map(p => [p.type, p.publishUrl]))
 
 function viewUrl(type: string): string {
   return matrixByType.value.get(type)?.url || homeByType.get(type) || `#`
+}
+
+function publishUrl(type: string): string {
+  return publishByType.get(type) || homeByType.get(type) || `#`
 }
 
 function toggle(type: string) {
@@ -86,7 +98,7 @@ function platformTitle(type: string): string {
 
 function openSelectedPages(types: string[]) {
   for (const type of types.slice(0, 8))
-    window.open(viewUrl(type), `_blank`, `noopener,noreferrer`)
+    window.open(publishUrl(type), `_blank`, `noopener,noreferrer`)
 }
 
 async function publishWithExtension(): Promise<boolean> {
@@ -114,8 +126,9 @@ async function publishWithExtension(): Promise<boolean> {
 
   if (result.unsupported.length > 0) {
     toast.info(
-      `插件暂未覆盖 ${result.unsupported.length} 个观点平台：${result.unsupported.map(platformTitle).slice(0, 4).join(`、`)}${result.unsupported.length > 4 ? `等` : ``}`,
+      `插件暂未覆盖 ${result.unsupported.length} 个观点平台，已打开发布页手动粘贴：${result.unsupported.map(platformTitle).slice(0, 4).join(`、`)}${result.unsupported.length > 4 ? `等` : ``}`,
     )
+    openSelectedPages(result.unsupported)
   }
 
   if (result.failed.length > 0) {

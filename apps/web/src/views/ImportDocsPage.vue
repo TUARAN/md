@@ -74,6 +74,7 @@ const messageGroups = computed(() => [
       { name: `title`, type: `string`, required: false, desc: `来源标题,用于内部识别` },
       { name: `requestId`, type: `string`, required: false, desc: `自定义请求标识,原样回传至回执` },
       { name: `canonicalUrl`, type: `string`, required: false, desc: `原文链接,建议拼进 opinion 正文末尾` },
+      { name: `platforms`, type: `string[]`, required: false, desc: `目标平台。观点兼容 weibo / juejin / zhihu / x / twitter 等,导入后自动勾选并走插件填充` },
       { name: `tags`, type: `string[]`, required: false, desc: `标签数组` },
     ],
   },
@@ -141,6 +142,7 @@ function onMessage(event) {
       opinion: '这是一段要分发的观点。\\n\\n原文：https://example.com/post/1', // 必填
       title: '我的文章标题',
       canonicalUrl: 'https://example.com/post/1',
+      platforms: ['weibo', 'juejin', 'zhihu'],
       tags: ['观点', 'AI'],
     }, '${editorOrigin.value}')
 
