@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useEditorStore } from '@/stores/editor'
 import { usePostStore } from '@/stores/post'
 import { useUIStore } from '@/stores/ui'
+import { distributeWithPlugin } from '@/utils/pluginDistribution'
 import { store } from '@/utils/storage'
 
 const uiStore = useUIStore()
@@ -71,6 +72,7 @@ interface ImportMessage {
   canonicalUrl?: unknown
   tags?: unknown
   platforms?: unknown
+  directPublish?: unknown
 }
 
 type NormalizedImportPayload = NonNullable<ReturnType<typeof normalizeImportPayload>>
@@ -171,6 +173,7 @@ function normalizeImportPayload(data: unknown) {
           .filter((platform): platform is string => typeof platform === `string` && platform.trim().length > 0)
           .map(platform => normalizeImportPlatform(platform, kind))))
       : [],
+    directPublish: payload.directPublish === true,
   }
 }
 
@@ -311,7 +314,29 @@ function applyImport(payload: NormalizedImportPayload): boolean {
   return true
 }
 
-function handleImportMessage(event: MessageEvent) {
+async function distributeImportedArticle(payload: NormalizedImportPayload) {
+  const result = await distributeWithPlugin({
+    contentType: `article`,
+    post: {
+      title: payload.title || `未命名文章`,
+      content: payload.markdown,
+      markdown: payload.markdown,
+      desc: payload.summary,
+      url: payload.canonicalUrl,
+    },
+    platformTypes: payload.platforms,
+  })
+
+  if (result.status === `no-plugin`)
+    return { ok: false, reason: `syncblog-plugin-not-installed` }
+  if (result.status === `no-accounts`)
+    return { ok: false, reason: `platform-not-supported` }
+  if (result.failed.length > 0)
+    return { ok: false, reason: result.failed.map(account => account.title).join(`, `) || `platform-sync-failed` }
+  return { ok: true }
+}
+
+async function handleImportMessage(event: MessageEvent) {
   const payload = normalizeImportPayload(event.data)
   if (!payload)
     return
@@ -328,10 +353,32 @@ function handleImportMessage(event: MessageEvent) {
   }
 
   const ok = applyImport(payload)
-  if (ok)
-    markImportProcessed(payload)
+  if (!ok) {
+    replyImportResult(event, payload.requestId, false, `no-active-post`)
+    return
+  }
 
-  replyImportResult(event, payload.requestId, ok, ok ? undefined : `no-active-post`)
+  if (payload.kind === `article` && payload.directPublish && payload.platforms.length > 0) {
+    try {
+      const distribution = await distributeImportedArticle(payload)
+      if (!distribution.ok) {
+        replyImportResult(event, payload.requestId, false, distribution.reason)
+        return
+      }
+    }
+    catch (error) {
+      replyImportResult(
+        event,
+        payload.requestId,
+        false,
+        error instanceof Error ? error.message : `platform-sync-failed`,
+      )
+      return
+    }
+  }
+
+  markImportProcessed(payload)
+  replyImportResult(event, payload.requestId, true)
 }
 
 function postImportReady() {
