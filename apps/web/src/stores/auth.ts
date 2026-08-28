@@ -13,6 +13,7 @@ import { computed, ref } from 'vue'
 
 interface MeResponse {
   user: PublicUser | null
+  platform?: { user: { id: string, name: string }, needsSetup: boolean } | null
 }
 
 interface AuthResponse {
@@ -23,6 +24,8 @@ interface AuthResponse {
 
 export const useAuthStore = defineStore(`auth`, () => {
   const user = ref<PublicUser | null>(null)
+  const platform = ref<MeResponse['platform']>(null)
+  const isPlatform = typeof window !== 'undefined' && window.location.hostname === 'syncblog.2aran.com'
   /** `'idle'` before first refresh; `'loading'` while in flight; `'ready'` after. */
   const status = ref<'idle' | 'loading' | 'ready' | 'error'>(`idle`)
   const error = ref<string | null>(null)
@@ -47,7 +50,7 @@ export const useAuthStore = defineStore(`auth`, () => {
         //   503 — Worker is up but DB/SESSION_SECRET secrets missing
         //   404 — running under `pnpm web dev` (Vite-only, no Worker)
         // Both should resolve to "anonymous" without surfacing an error.
-        if (res.status === 503 || res.status === 404) {
+        if (!isPlatform && (res.status === 503 || res.status === 404)) {
           user.value = null
           status.value = `ready`
           return
@@ -56,6 +59,7 @@ export const useAuthStore = defineStore(`auth`, () => {
       }
       const data = await res.json() as MeResponse
       user.value = data.user
+      platform.value = data.platform || null
       status.value = `ready`
     }
     catch (e) {
@@ -63,11 +67,17 @@ export const useAuthStore = defineStore(`auth`, () => {
       // populated for the UI to optionally surface.
       user.value = null
       error.value = e instanceof Error ? e.message : String(e)
-      status.value = `ready`
+      status.value = isPlatform ? `error` : `ready`
     }
   }
 
   function startLogin(mode: 'login' | 'register' = `login`): void {
+    if (isPlatform) {
+      if (platform.value?.needsSetup)
+        window.dispatchEvent(new Event('platform-setup'))
+      else window.location.assign(`https://2aran.com/login?returnTo=${encodeURIComponent(window.location.href)}`)
+      return
+    }
     authDialogMode.value = mode
     authDialogOpen.value = true
   }
@@ -122,6 +132,10 @@ export const useAuthStore = defineStore(`auth`, () => {
   }
 
   async function logout(): Promise<void> {
+    if (isPlatform) {
+      window.location.assign(`https://2aran.com/api/auth/logout?returnTo=${encodeURIComponent(window.location.href)}`)
+      return
+    }
     try {
       await fetch(`/api/auth/logout`, {
         method: `POST`,
@@ -134,8 +148,24 @@ export const useAuthStore = defineStore(`auth`, () => {
     user.value = null
   }
 
+  async function setupPlatform(email?: string, password?: string): Promise<void> {
+    const response = await fetch(`/api/auth/platform/${email ? 'link' : 'activate'}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(email ? { email, password } : {}),
+    })
+    const data = await response.json() as AuthResponse
+    if (!response.ok)
+      throw new Error(data.error || '关联失败，请重试')
+    await refresh()
+  }
+
   return {
     user,
+    platform,
+    isPlatform,
+    setupPlatform,
     status,
     error,
     authDialogOpen,

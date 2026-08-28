@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthDialog from '@/components/auth/AuthDialog.vue'
+import PlatformAccountBar from '@/components/auth/PlatformAccountBar.vue'
 import ConfirmDialog from '@/components/confirm-dialog/ConfirmDialog.vue'
 import { Toaster } from '@/components/ui/sonner'
 import { useAppMode } from '@/composables/useAppMode'
@@ -451,6 +452,7 @@ onBeforeUnmount(() => {
 
   <ConfirmDialog />
   <AuthDialog />
+  <PlatformAccountBar />
 
   <Toaster
     rich-colors

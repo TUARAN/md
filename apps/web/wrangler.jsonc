@@ -16,6 +16,10 @@
     {
       "pattern": "syncblog.cn",
       "custom_domain": true
+    },
+    {
+      "pattern": "syncblog.2aran.com",
+      "custom_domain": true
     }
   ],
   "observability": {

@@ -6,6 +6,7 @@ import {
 } from '@md/shared/utils/defaultImgbed'
 import { WorkerEntrypoint } from 'cloudflare:workers'
 import { handleBillingApi } from './auth/billingRoutes'
+import { isPlatformRequest, PlatformAuthError, publicProxyHeaders, requirePlatformOrigin } from './auth/platform'
 import { consumeAiQuota } from './auth/quota'
 import { consumeRate, getClientIp, rateLimitedResponse } from './auth/rateLimit'
 import { handleAuthApi, resolveCurrentUser } from './auth/routes'
@@ -60,7 +61,27 @@ export default class extends WorkerEntrypoint<Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
+    try {
+      return await this.handleRequest(request)
+    }
+    catch (error) {
+      if (isPlatformRequest(request)) {
+        return Response.json({ error: error instanceof PlatformAuthError ? error.message : '服务暂不可用，请稍后重试' }, {
+          status: error instanceof PlatformAuthError ? error.status : 503,
+          headers: { 'Cache-Control': 'private, no-store', 'Vary': 'Cookie' },
+        })
+      }
+      throw error
+    }
+  }
+
+  private async handleRequest(request: Request): Promise<Response> {
     const url = new URL(request.url)
+
+    if (isPlatformRequest(request) && (url.pathname.startsWith('/api/') || url.pathname.startsWith('/cgi-bin/'))
+      && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      requirePlatformOrigin(request)
+    }
 
     if (resolveDefaultImgbedPathname(url.pathname))
       return handleDefaultImgbedRequest(request, this.env)
@@ -96,16 +117,12 @@ export default class extends WorkerEntrypoint<Env> {
   private async proxyWeixin(request: Request, url: URL): Promise<Response> {
     const targetUrl = `${MP_HOST}${url.pathname}${url.search}`
 
-    const headers = new Headers(request.headers)
-    headers.delete(`host`)
-    headers.delete(`content-length`)
-    headers.delete(`cf-connecting-ip`)
-    headers.delete(`x-forwarded-for`)
+    const headers = publicProxyHeaders(request)
 
     const init: RequestInit = {
       method: request.method,
       headers,
-      redirect: `follow`,
+      redirect: `manual`,
     }
 
     if (request.method !== `GET` && request.method !== `HEAD`)

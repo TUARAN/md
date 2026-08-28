@@ -16,6 +16,7 @@ import { parseCookies, serializeCookie, SESSION_COOKIE } from './cookies'
 import { sendVerificationEmail } from './email'
 import { consumeEmailCode, generateEmailCode, storeEmailCode, verifyEmailCode } from './emailCode'
 import { hashPassword, verifyPassword } from './password'
+import { handlePlatformAuth, isPlatformRequest, resolvePlatformUser } from './platform'
 import { toPublicUser } from './quota'
 import { consumeRate, getClientIp, rateLimitedResponse } from './rateLimit'
 import { mintSession, SESSION_TTL_SEC, verifySession } from './session'
@@ -120,6 +121,8 @@ export async function resolveCurrentUser(
   env: AuthEnv,
   request: Request,
 ): Promise<UserRecord | null> {
+  if (isPlatformRequest(request))
+    return resolvePlatformUser(env, request)
   if (!env.DB || !env.SESSION_SECRET)
     return null
   const cookies = parseCookies(request.headers.get(`cookie`))
@@ -137,6 +140,8 @@ export async function handleAuthApi(
   request: Request,
   url: URL,
 ): Promise<Response> {
+  if (isPlatformRequest(request))
+    return handlePlatformAuth(env, request, url)
   const path = url.pathname
 
   if (path === `/api/auth/me`) {
