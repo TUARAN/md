@@ -50,16 +50,15 @@ export function getDataAcquisitionNavUrl(): string {
 }
 
 /**
- * SyncBlog 发布插件下载地址。
+ * AI 分发大师插件下载地址（兼容 SyncBlog 协议）。
  * 集中常量，避免「下载发布插件」按钮、对话框文案各自硬编码。
  * 部署方可用 `VITE_SYNCBLOG_PLUGIN_RELEASE_URL` 指向镜像 / 私有发行。
  *
- * 默认从站点根路径 `/syncblog-plugin.zip` 下载（zip 由 `pnpm package:syncblog-plugin` 构建，
- * 产物在 apps/web/public/ 及 apps/web/dist/，随站点一起部署）。
+ * 默认跳转主站 VIP 领取页；安装包由自动发布流程写入私有 R2，不随公开站点部署。
  */
 export function getSyncblogPluginReleaseUrl(): string {
   const raw = import.meta.env.VITE_SYNCBLOG_PLUGIN_RELEASE_URL as string | undefined
   if (typeof raw === `string` && /^https?:\/\//i.test(raw.trim()))
     return raw.trim()
-  return `/syncblog-plugin.zip`
+  return `https://2aran.com/tools/syncblog-publisher`
 }

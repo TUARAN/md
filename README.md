@@ -24,7 +24,7 @@
 
 ## 🌐 在线体验
 
-[https://syncblog.cn](https://syncblog.cn)
+[https://syncblog.2aran.com](https://syncblog.2aran.com)
 
 > **推荐使用 Chrome 浏览器**，效果最佳。
 
@@ -75,13 +75,15 @@
 
 ## 🔌 浏览器扩展（内容同步）
 
-多平台草稿写入依赖 **SyncBlog 发布插件**：
+多平台草稿写入使用同仓库维护的 **AI 分发大师插件**（兼容原 SyncBlog 协议）：
 
 | 插件                                    | 适用场景                                     | 获取方式                                                                  |
 | --------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------- |
-| [SyncBlog Plugin](/syncblog-plugin.zip) | 知乎 / 公众号 / 微博 / 思否 / 掘金 / CSDN 等 | 从站点下载 `.zip`，`chrome://extensions/` → 「开发者模式」→「加载已解压」 |
+| [AI 分发大师插件](https://2aran.com/tools/syncblog-publisher) | 知乎 / 公众号 / 微博 / 思否 / 掘金 / CSDN 等 | 使用人员码领取已打包 ZIP，`chrome://extensions/` → 「开发者模式」→「加载已解压」 |
 
-> 安装 **SyncBlog Plugin** 后刷新页面，即可在内容同步页检测账号并写入草稿。旧版 COSE 桥接对象仍保留兼容，但后续新能力会优先在 SyncBlog Plugin 中迭代。
+> 插件源码与安装说明见 [apps/distribution-extension](apps/distribution-extension/README.md)，设计见 [AI 分发大师插件设计](docs/designs/ai-distribution-master-plugin.md)。站点与插件统一在本仓库维护，主入口为 https://syncblog.2aran.com/ 。
+
+> 安装 **AI 分发大师插件** 后刷新页面，即可在内容同步页检测账号并写入草稿。旧版 COSE 桥接对象仍保留兼容，但后续新能力会优先在 SyncBlog Plugin 中迭代。
 
 ## 🖼️ 支持的图床服务
 
@@ -173,7 +175,7 @@ pnpm web build           # 静态资源
 pnpm web wrangler:deploy # 部署到 Cloudflare（可选）
 ```
 
-在线体验：[syncblog.cn](https://syncblog.cn)
+在线体验：[syncblog.2aran.com](https://syncblog.2aran.com)
 
 ### 📦 方式 1. 本仓库 CLI
 
@@ -217,4 +219,4 @@ docker run -d -p 8080:80 syncblog-md:local
 
 - **功能与缺陷**：[TUARAN/md Issues](https://github.com/TUARAN/md/issues)
 - **上游编辑器**（排版、图床、通用 Markdown 能力）：[doocs/md Issues](https://github.com/doocs/md/issues)
-- **在线站点**：[syncblog.cn](https://syncblog.cn)
+- **在线站点**：[syncblog.2aran.com](https://syncblog.2aran.com)

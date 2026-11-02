@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>AI 分发大师 · Syncblog</title>
+    <link rel="stylesheet" href="master/panel.css" />
+  </head>
+  <body>
+    <div class="workspace">
+      <header class="header">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <div>
+            <h1>AI 分发大师</h1>
+            <p>把创作，送到对的地方。</p>
+          </div>
+        </div>
+        <div class="header-actions"><a class="docs-link" href="docs.html" target="_blank" rel="noopener noreferrer" aria-label="打开文档中心">文档中心 ↗</a>
+        <a
+          class="site-link"
+          href="https://syncblog.2aran.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="打开 Syncblog 创作台"
+          >创作台 ↗</a
+        ></div>
+      </header>
+      <section class="update-bar" aria-label="插件版本更新">
+        <span id="update-status" role="status">正在检测版本…</span>
+        <div class="update-actions">
+          <button id="check-update" type="button" class="text-button">检测更新</button>
+          <button id="apply-update" type="button" class="text-button" hidden>立即更新</button>
+        </div>
+      </section>
+      <a class="docs-inline-link update-help" href="docs.html#updates" target="_blank" rel="noopener noreferrer">更新说明 ↗</a>
+      <div class="context-card">
+        <span class="context-dot" aria-hidden="true"></span>
+        <div><span class="eyebrow">当前网站</span><strong id="current-site">正在识别…</strong></div>
+        <button id="open-platform-tools" type="button" class="text-button">平台工具</button>
+        <button id="refresh-context" class="icon-button" type="button" aria-label="重新识别当前网站" title="重新识别">
+          ↻
+        </button>
+      </div>
+      <nav class="main-nav" aria-label="工作台导航">
+        <button type="button" class="nav-item active" data-view="compose" aria-current="page">创作</button>
+        <button type="button" class="nav-item" data-view="drafts">
+          草稿 <span id="draft-count" class="count">0</span>
+        </button>
+        <button type="button" class="nav-item" data-view="history">记录</button>
+        <button type="button" class="nav-item" data-view="settings">设置</button>
+      </nav>
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+      <main>
+        <section id="view-compose" class="view" aria-label="内容创作">
+          <div class="section-heading">
+            <h2>一份内容，多处生长</h2>
+            <button id="new-draft" type="button" class="text-button">新建</button>
+          </div>
+          <div id="content-types" class="type-tabs" role="group" aria-label="内容类型"></div>
+          <p id="type-description" class="section-description"></p>
+          <section id="rss-picks" aria-label="RSS 精选资讯">
+            <div class="label-row"><h3>RSS 精选</h3><button id="rss-refresh" type="button" class="text-button">刷新</button></div>
+            <select id="rss-source" aria-label="资讯来源"><option value="all">全部</option><option value="ai-hot">AI HOT</option><option value="ruanyifeng">阮一峰</option></select>
+            <p id="rss-status" class="section-description" role="status"></p>
+            <div id="rss-list" class="rss-list"></div>
+          </section>
+          <form id="compose-form" novalidate>
+            <label for="draft-title" id="title-label">标题 <span class="optional">观点可不填</span></label>
+            <input
+              id="draft-title"
+              type="text"
+              maxlength="200"
+              placeholder="给这份内容一个清楚的名字"
+              autocomplete="off"
+            />
+            <div class="label-row">
+              <label for="draft-content" id="content-label">正文</label
+              ><button id="capture" type="button" class="text-button">取当前选区 ↙</button>
+            </div>
+            <textarea
+              id="draft-content"
+              rows="8"
+              maxlength="200000"
+              placeholder="写下你的观点，或粘贴 Markdown 正文…"
+            ></textarea>
+            <div class="editor-footer">
+              <span id="char-count">0 字</span><span id="draft-save-state">内容保存在本机</span>
+            </div>
+            <label for="draft-url" id="url-label">来源链接 <span class="optional">可选</span></label>
+            <input id="draft-url" type="url" placeholder="https://" autocomplete="off" />
+            <div class="draft-actions">
+              <button id="save-draft" class="secondary-button" type="submit">保存草稿</button
+              ><button id="copy-text" class="text-button" type="button">复制正文</button>
+            </div>
+          </form>
+          <details class="ai-card">
+            <summary>
+              <span><span aria-hidden="true">✦</span> AI 适配内容</span
+              ><span class="summary-caption">先预览，再采用</span>
+            </summary>
+            <div class="ai-content">
+              <label for="ai-platform">适配平台</label
+              ><select id="ai-platform"></select>
+              <label for="ai-instruction">改写要求 <span class="optional">可选</span></label>
+              <textarea
+                id="ai-instruction"
+                rows="2"
+                maxlength="2000"
+                placeholder="例如：保留技术细节，语气自然，少用营销词"
+              ></textarea>
+              <button id="generate" type="button" class="secondary-button wide">生成适配版本</button>
+              <p class="help-text">使用你在设置中配置的模型服务，当前正文将发送给该服务。<a class="docs-inline-link" href="docs.html#ai-settings" target="_blank" rel="noopener noreferrer">配置说明 ↗</a></p>
+              <div id="ai-result" class="ai-result" hidden>
+                <label for="ai-preview">生成预览</label
+                ><textarea id="ai-preview" rows="7" aria-label="生成内容预览"></textarea
+                ><button id="adopt-ai" type="button" class="primary-button wide">采用为当前正文</button>
+              </div>
+            </div>
+          </details>
+          <section class="distribution-section" aria-labelledby="distribution-title">
+            <div class="section-heading">
+              <h2 id="distribution-title">准备分发 <a class="docs-inline-link" href="docs.html#distribution" target="_blank" rel="noopener noreferrer">说明 ↗</a></h2>
+              <button id="select-platforms" type="button" class="text-button">全选可用</button>
+            </div>
+            <p class="section-description">按平台能力准备内容，发布前请检查草稿。</p>
+            <div id="platform-list" class="platform-list"></div>
+            <div class="distribution-actions">
+              <button id="fill-current" type="button" class="secondary-button wide">填入当前网站</button
+              ><button id="run-batch" type="button" class="primary-button wide">准备所选平台草稿</button>
+            </div>
+            <p id="batch-hint" class="help-text center">依次处理，结果可在「记录」中查看。</p>
+          </section>
+        </section>
+        <section id="view-drafts" class="view" aria-label="本地草稿" hidden>
+          <div class="section-heading">
+            <h2>本地草稿</h2>
+            <span class="small-muted">仅此浏览器</span>
+          </div>
+          <p class="section-description">观点、文章和链接介绍，都留在这里。</p>
+          <div id="draft-list" class="card-list"></div>
+        </section>
+        <section id="view-history" class="view" aria-label="分发记录" hidden>
+          <div class="section-heading">
+            <h2>分发记录 <a class="docs-inline-link" href="docs.html#states" target="_blank" rel="noopener noreferrer">状态说明 ↗</a></h2>
+            <span class="small-muted">逐个平台确认</span>
+          </div>
+          <p class="section-description">「已准备」表示已填入并回读正文，请打开平台检查保存状态后发布。</p>
+          <div id="job-list" class="card-list"></div>
+          <details class="tool-history"><summary>平台任务记录</summary><div id="history-tool-records"></div></details>
+        </section>
+        <section id="view-tools" class="view" aria-label="平台工具" hidden>
+          <div class="section-heading"><h2>平台工具</h2><button id="tool-back" type="button" class="text-button">返回创作</button></div>
+          <p id="platform-tools-context" class="section-description">全部平台工具</p>
+          <div id="platform-tool-cards" class="card-list">
+            <article id="tool-juejin-card" class="platform-tool-card">
+              <div class="tool-heading"><h3>掘金 · 每日签到</h3><a class="docs-inline-link" href="docs.html#juejin-checkin" target="_blank" rel="noopener noreferrer">签到说明 ↗</a></div><p id="tool-checkin-status" class="help-text">尚无签到记录</p>
+              <button id="tool-checkin" type="button" class="secondary-button wide">立即签到</button>
+              <label class="tool-toggle"><input id="tool-auto-checkin" type="checkbox" /> 自动签到</label>
+              <p class="help-text">开启后，每 15 分钟检查一次。仅在你正在浏览掘金时打开签到页，北京时间每天成功一次。随时可关闭。</p>
+            </article>
+            <article id="tool-xhs-card" class="platform-tool-card">
+              <div class="tool-heading"><h3>小红书 · 笔记管理</h3><a class="docs-inline-link" href="docs.html#xiaohongshu-manager" target="_blank" rel="noopener noreferrer">管理规则 ↗</a></div><p class="help-text">清理低互动笔记的公开展示：按点赞和评论数预览候选，确认后调整可见范围。不会删除笔记。</p>
+              <button id="tool-xhs-manager" type="button" class="secondary-button wide">打开笔记管理 / 清理</button>
+              <p class="help-text">在小红书笔记管理页显示独立工具，可选时间范围、查看候选、开始或停止。请先停用旧小红书插件，避免同时执行。</p>
+            </article>
+          </div>
+          <details class="tool-history" open><summary>平台任务记录</summary><div id="platform-tool-records" role="log"></div></details>
+        </section>
+        <section id="view-settings" class="view" aria-label="模型设置" hidden>
+          <div class="section-heading">
+            <h2>连接你的 AI <a class="docs-inline-link" href="docs.html#ai-settings" target="_blank" rel="noopener noreferrer">说明 ↗</a></h2>
+            <span class="small-muted">本地配置</span>
+          </div>
+          <p class="section-description">支持兼容 Chat Completions 的模型服务。</p>
+          <form id="settings-form" class="settings-card">
+            <label for="ai-endpoint">模型服务地址</label
+            ><input
+              id="ai-endpoint"
+              type="url"
+              required
+              placeholder="https://api.deepseek.com/chat/completions"
+              autocomplete="off"
+            />
+            <p class="help-text">填写完整 HTTPS 接口地址，保存时授权访问该服务域名。</p>
+            <label for="ai-model">模型名称</label
+            ><input
+              id="ai-model"
+              type="text"
+              required
+              maxlength="100"
+              placeholder="例如 deepseek-chat"
+              autocomplete="off"
+            />
+            <label for="ai-key">API Key</label>
+            <div class="key-field">
+              <input id="ai-key" type="password" autocomplete="off" placeholder="输入你的服务密钥" /><button
+                id="toggle-key"
+                type="button"
+                class="text-button"
+                aria-label="显示密钥"
+                aria-pressed="false"
+              >
+                显示
+              </button>
+            </div>
+            <p class="help-text">密钥只保存在扩展本地。网站无法读取；调用 AI 时仅发送到你配置的服务。</p>
+            <button id="save-settings" type="submit" class="primary-button wide">保存模型设置</button>
+          </form>
+          <form id="monitor-form" class="settings-card">
+            <h3>后台监控</h3>
+            <p class="help-text">可选开启设备心跳、批次进度、平台工具与版本监控。后台可下发停止和加载本地新版指令。正文、草稿与模型密钥不上报。<a class="docs-inline-link" href="docs.html#monitor" target="_blank" rel="noopener noreferrer">监控说明 ↗</a></p>
+            <label for="monitor-secret">站长回执密钥</label><input id="monitor-secret" type="password" autocomplete="off" maxlength="200" placeholder="填写站长回执密钥" />
+            <label class="tool-toggle"><input id="monitor-enabled" type="checkbox" /> 开启后台同步与远程停止 / 更新</label>
+            <p id="monitor-status" class="help-text" role="status">尚未上报</p>
+            <button id="monitor-save" type="submit" class="primary-button wide">保存监控设置</button>
+            <button id="monitor-sync" type="button" class="text-button">立即同步</button>
+            <a class="docs-inline-link" href="https://admin.2aran.com/admin/community-actions/monitor?platform=ai-distributor" target="_blank" rel="noopener noreferrer">打开后台监控 ↗</a>
+          </form>
+          <div class="about-card">
+            <span class="brand-mark small" aria-hidden="true">✦</span>
+            <div>
+              <h3>一个插件，接上你的创作台</h3>
+              <p>网站识别、AI 适配、本地草稿与多平台分发，在同一条创作流程里完成。</p>
+              <a href="https://syncblog.2aran.com/" target="_blank" rel="noopener noreferrer">打开 Syncblog 创作台 ↗</a>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer class="footer"><span>Syncblog · AI 分发大师</span><span>创作由你，分发有序。</span></footer>
+    </div>
+    <script type="module" src="master/panel.js"></script>
+  </body>
+</html>

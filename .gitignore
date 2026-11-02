@@ -67,3 +67,7 @@ dev-dist
 # uTools build artifacts
 apps/utools/dist
 apps/utools/release
+
+# AI 分发大师私有发行产物
+apps/web/public/ai-distribution-master*.zip
+/output/

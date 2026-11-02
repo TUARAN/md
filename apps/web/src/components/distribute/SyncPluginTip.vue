@@ -8,9 +8,9 @@ import { Info } from 'lucide-vue-next'
       <Info class="size-3.5" aria-hidden="true" />
     </summary>
     <ul class="plugin-tip__list">
-      <li>Chrome / Edge 浏览器插件，可一键同步动态、文章、短视频到社交媒体或自媒体平台。</li>
+      <li>AI 分发大师是本站配套的 Chrome / Edge 插件，支持观点、文章、电子书与项目介绍的草稿准备。</li>
       <li>使用前需要先在浏览器网页上登录各平台账号，插件才能正常工作。</li>
-      <li>插件仅辅助完成点击、输入、上传等浏览器操作，不托管内容，也不接管账号管理。</li>
+      <li>电子书与项目按介绍和链接分发；准备完成后请打开平台检查草稿，再手动发布。</li>
       <li>想支持更多平台？没问题，联系开发者增加你常用的平台。</li>
     </ul>
   </details>

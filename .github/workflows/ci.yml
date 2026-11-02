@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 concurrency:
@@ -24,17 +23,22 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22.19.0
+          node-version: 22.22.2
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
-      - name: Package SyncBlog plugin
-        run: pnpm package:syncblog-plugin
+      - name: Test distribution plugin
+        run: pnpm test:distribution-plugin
+
+      - name: Lint distribution plugin
+        run: pnpm exec eslint 'apps/distribution-extension/master/**/*.js' 'apps/distribution-extension/tests/**/*.mjs' --no-fix
 
       - name: Type check
-        run: pnpm --filter @md/web type-check
+        run: pnpm type-check
 
       - name: Build web
-        run: pnpm --filter @md/web build
+        run: pnpm web build
+
+      # Distribution ZIPs stay in private R2; never publish them as CI artifacts.
