@@ -269,3 +269,46 @@ test('browser error page is reported once without retrying injection sixty times
   assert.match(target.message, /小红书.*网络错误/)
   assert.equal(attempts, 1)
 })
+
+test('all five platforms wait for committed URL when tabs.create only returns pendingUrl', async () => {
+  const r = await runtime()
+  const create = r.chrome.tabs.create
+  const get = r.chrome.tabs.get
+  const reads = new Map()
+  r.chrome.tabs.create = async (props) => {
+    const tab = await create(props)
+    Object.assign(tab, { pendingUrl: tab.url, url: '', status: 'loading' })
+    return structuredClone(tab)
+  }
+  r.chrome.tabs.get = async (id) => {
+    const tab = await get(id)
+    const count = (reads.get(id) || 0) + 1
+    reads.set(id, count)
+    if (tab.pendingUrl && count >= 2)
+      Object.assign(tab, { url: tab.pendingUrl, pendingUrl: undefined })
+    return structuredClone(tab)
+  }
+  await r.context.handle({ type: 'ADM_RUN', draft: { contentType: 'opinion', content: '正文' }, platformIds: ['twitter', 'juejin', 'xiaohongshu', 'zhihu', 'weibo'] })
+  await complete(r)
+  assert.deepEqual(r.saved[key].jobs[0].targets.map(target => target.status), Array.from({ length: 5 }).fill('prepared'))
+  assert.equal(r.calls.length, 5)
+  assert.ok(r.saved[key].jobs[0].targets.every(target => target.url.startsWith('https://')))
+})
+test('blank navigation timeout is distinct from login redirect and never attempts writing', async () => {
+  const r = await runtime()
+  const create = r.chrome.tabs.create
+  r.chrome.tabs.create = async (props) => { const tab = await create(props); Object.assign(tab, { url: 'about:blank', pendingUrl: props.url, status: 'loading' }); return structuredClone(tab) }
+  await r.context.handle({ type: 'ADM_RUN', draft: { contentType: 'opinion', content: '正文' }, platformIds: ['weibo'] })
+  await complete(r)
+  assert.equal(r.saved[key].jobs[0].targets[0].errorCode, 'PAGE_TIMEOUT')
+  assert.equal(r.calls.length, 0)
+})
+test('a committed off-platform redirect refuses injection', async () => {
+  const r = await runtime()
+  const create = r.chrome.tabs.create
+  r.chrome.tabs.create = async (props) => { const tab = await create(props); tab.url = 'https://login.example.com'; return structuredClone(tab) }
+  await r.context.handle({ type: 'ADM_RUN', draft: { contentType: 'opinion', content: '正文' }, platformIds: ['weibo'] })
+  await complete(r)
+  assert.equal(r.saved[key].jobs[0].targets[0].status, 'manual')
+  assert.equal(r.calls.length, 0)
+})

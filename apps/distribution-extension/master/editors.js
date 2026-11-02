@@ -1,5 +1,10 @@
 // Self-contained: executes in the site's MAIN world, never clicks publish.
-export function fillEditor({ platformId, title, text, contentType, phase = 'fill', inputToken = '' }) {
+export function fillEditor({ platformId, title, text, contentType, phase = 'fill', inputToken = '', expectedHosts = [] }) {
+  if (expectedHosts.length) {
+    const current = new URL(location.href)
+    if (current.protocol !== 'https:' || !expectedHosts.some(host => current.hostname === host || current.hostname.endsWith(`.${host}`)))
+      return { success: false, manual: true, code: 'PAGE_CHANGED', message: '页面在填写前跳转到了其他网站，已停止写入。' }
+  }
   const longform = contentType === 'article' || !['twitter', 'juejin', 'xiaohongshu', 'zhihu', 'weibo'].includes(platformId)
   const shortSelectors = {
     twitter: ['[data-testid="tweetTextarea_0"][contenteditable="true"][role="textbox"]'],
@@ -73,6 +78,20 @@ export function fillEditor({ platformId, title, text, contentType, phase = 'fill
       Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, value)
       el.dispatchEvent(new Event('input', { bubbles: true }))
       el.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+    else if (platformId === 'juejin') {
+      // Same DOM/input path as the existing Juejin pin plugin; never click publish.
+      el.focus()
+      const nodes = []
+      value.split('\n').forEach((line) => {
+        const paragraph = document.createElement('div')
+        if (line)
+          paragraph.textContent = line
+        else paragraph.append(document.createElement('br'))
+        nodes.push(paragraph)
+      })
+      el.replaceChildren(...nodes)
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }))
     }
     else {
       el.focus()

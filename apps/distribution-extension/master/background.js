@@ -202,6 +202,24 @@ async function openJobTarget(message) {
     await chrome.windows.update(tab.windowId, { focused: true })
   return { tabId: tab.id }
 }
+// tabs.create may return an empty/about:blank URL plus pendingUrl. Only a
+// committed platform URL permits injection; editor mounting is checked separately.
+async function waitForPlatformTab(tabId, platformId) {
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const tab = await chrome.tabs.get(tabId)
+    if ((tab.url || '').startsWith('chrome-error:')) {
+      const issue = preparationError(platformId, 'error page')
+      throw Object.assign(new Error(issue.message), { code: issue.code })
+    }
+    if (detectPlatform(tab.url)?.id === platformId && !tab.pendingUrl)
+      return tab
+    if (tab.status === 'complete' && /^https?:/.test(tab.url || '') && !tab.pendingUrl)
+      return tab
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+  const issue = preparationError(platformId, '页面加载超时')
+  throw Object.assign(new Error(issue.message), { code: issue.code })
+}
 async function prepareTarget(job, target, currentTabId) {
   const capability = getCapability(target.platformId, job.draft.contentType)
   if (capability.mode === 'unsupported')
@@ -222,6 +240,8 @@ async function prepareTarget(job, target, currentTabId) {
         if (explicitTabId)
           throw new Error('当前页签已关闭，请重新打开平台')
       }
+      if (tab)
+        tab = await waitForPlatformTab(tab.id, target.platformId)
       if (tab && detectPlatform(tab.url)?.id !== target.platformId)
         throw new Error('当前页面与所选平台不匹配，请回到平台编辑页。')
       if (capability.mode !== 'fill')
@@ -232,6 +252,8 @@ async function prepareTarget(job, target, currentTabId) {
     }
     // Persist tab before navigation/insertion so interrupted work remains inspectable.
     await registerJobTab(job, target, tab)
+    tab = await waitForPlatformTab(tab.id, target.platformId)
+    await updateTarget(job.id, target.id, { url: tab.url })
     if (detectPlatform(tab.url)?.id !== target.platformId)
       return { status: 'manual', tabId: tab.id, message: '页面已跳转，请先完成登录再检查。' }
     // Editors often mount after document load. Retry discovery only, never a partial write.
@@ -240,7 +262,7 @@ async function prepareTarget(job, target, currentTabId) {
       const text = target.platformId === 'xiaohongshu'
         ? [job.draft.content, job.draft.url && !job.draft.content.includes(job.draft.url) ? job.draft.url : ''].filter(Boolean).join('\n\n')
         : buildText(job.draft)
-      const args = { platformId: target.platformId, title: job.draft.title, text, contentType: job.draft.contentType, inputToken: target.id }
+      const args = { platformId: target.platformId, title: job.draft.title, text, contentType: job.draft.contentType, inputToken: target.id, expectedHosts: PLATFORMS.find(platform => platform.id === target.platformId).hosts }
       try {
         const frames = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: fillEditor, args: [args] })
         result = frames[0]?.result

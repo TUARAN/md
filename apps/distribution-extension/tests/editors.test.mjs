@@ -95,3 +95,32 @@ test('native focus guard refuses navigation or an occupied editor', () => {
   assert.match(focus({ token: 'token', url: 'https://x.com/home' }).reason, /跳转/)
   assert.match(focus({ token: 'token', url: 'https://x.com/compose/post' }).reason, /已有内容/)
 })
+
+test('Juejin writes paragraphs through its existing plugin input path and preserves blank lines', () => {
+  const events = []
+  let paragraphs = []
+  const editor = {
+    get innerText() { return paragraphs.map(node => node.textContent || '').join('\n') },
+    getClientRects: () => [1],
+    closest: () => null,
+    focus() {},
+    replaceChildren: (...nodes) => { paragraphs = nodes },
+    dispatchEvent: (event) => { events.push(event) },
+  }
+  const document = {
+    querySelectorAll: selector => selector === '.rich-editor[contenteditable="true"]' ? [editor] : [],
+    createElement: tag => ({ tag, textContent: '', append() {} }),
+  }
+  const context = vm.createContext({ document, HTMLInputElement: class {}, HTMLTextAreaElement: class {}, InputEvent: class { constructor(type, data) { Object.assign(this, { type }, data) } } })
+  const fill = vm.runInContext(`(${fillEditor.toString()})`, context)
+  assert.equal(fill({ platformId: 'juejin', contentType: 'opinion', text: '第一行\n\n第二段\n第三行' }).success, true)
+  assert.equal(editor.innerText, '第一行\n\n第二段\n第三行')
+  assert.equal(events.length, 1)
+  assert.equal(events[0].inputType, 'insertText')
+  assert.match(fill({ platformId: 'juejin', contentType: 'opinion', text: '替换正文' }).message, /已有内容/)
+  assert.equal(events.length, 1)
+})
+test('main-world origin guard refuses a navigation that happened after tab inspection', () => {
+  const fill = vm.runInContext(`(${fillEditor.toString()})`, vm.createContext({ URL, location: { href: 'https://wrong-site.example/editor' } }))
+  assert.equal(fill({ platformId: 'juejin', contentType: 'opinion', text: '正文', expectedHosts: ['juejin.cn'] }).code, 'PAGE_CHANGED')
+})
