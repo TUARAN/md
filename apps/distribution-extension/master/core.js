@@ -34,7 +34,7 @@ export const CONTENT_TYPES = [
 const allTypes = CONTENT_TYPES.map(item => item.id)
 export const PLATFORMS = [
   { id: 'twitter', title: 'X', hosts: ['x.com', 'twitter.com'], types: allTypes, short: 'https://x.com/compose/post', article: 'https://x.com/compose/articles/edit/' },
-  { id: 'juejin', title: '掘金', hosts: ['juejin.cn'], types: allTypes, short: 'https://juejin.cn/pin', article: 'https://juejin.cn/editor/drafts/new?v=2' },
+  { id: 'juejin', title: '掘金', hosts: ['juejin.cn'], types: allTypes, short: 'https://juejin.cn/pins/new', article: 'https://juejin.cn/editor/drafts/new?v=2' },
   { id: 'xiaohongshu', title: '小红书', hosts: ['xiaohongshu.com'], types: allTypes, short: 'https://creator.xiaohongshu.com/publish/publish?from=menu&target=article', article: 'https://creator.xiaohongshu.com/publish/publish?from=menu&target=article' },
   { id: 'zhihu', title: '知乎', hosts: ['zhihu.com'], types: allTypes, short: 'https://www.zhihu.com', article: 'https://zhuanlan.zhihu.com/write' },
   { id: 'weibo', title: '微博', hosts: ['weibo.com'], types: allTypes, short: 'https://weibo.com', article: 'https://card.weibo.com/article/v5/editor#/draft' },
@@ -116,4 +116,15 @@ export function validateSettings(input = {}) {
   if (url.protocol !== 'https:' || url.username || url.password || url.hash || url.search)
     throw new Error('模型服务需使用无查询参数的 HTTPS 地址')
   return { endpoint: url.href, model: String(input.model || '').trim().slice(0, 100), apiKey: String(input.apiKey || '').trim() }
+}
+
+export function preparationError(platformId, message = '') {
+  const name = PLATFORMS.find(item => item.id === platformId)?.title || '平台'
+  if (/error page|net::|ERR_/i.test(message))
+    return { code: 'PAGE_UNAVAILABLE', message: `浏览器没有正常打开${name}页面。请先在该页面处理网络错误，能正常打开后再重试。` }
+  if (/页面加载超时|navigation.*timeout|loading.*timed out/i.test(message))
+    return { code: 'PAGE_TIMEOUT', message: `${name}页面加载超时。请确认已登录且页面正常打开，再重试此平台。` }
+  if (/cannot access|permission/i.test(message))
+    return { code: 'SITE_PERMISSION_REQUIRED', message: `插件暂时无法访问${name}页面。请检查浏览器中的此网站访问权限后重试。` }
+  return { code: 'PREPARATION_FAILED', message: `${name}准备失败：${message || '请检查平台页面后重试。'}` }
 }

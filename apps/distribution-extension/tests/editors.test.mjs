@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import vm from 'node:vm'
-import { fillEditor } from '../master/editors.js'
+import { fillEditor, focusNativeEditor } from '../master/editors.js'
 
 function dom({ body = '', title = '', withTitle = true, codeMirror = true } = {}) {
   class Input {
@@ -74,4 +74,24 @@ test('current Zhihu Draft.js class is recognized and existing content is preserv
   const d = socialEditor('.public-DraftEditor-content[contenteditable="true"]', '原想法')
   assert.match(d.fill({ platformId: 'zhihu', contentType: 'opinion', text: '新想法' }).message, /已有内容/)
   assert.equal(d.editor.innerText, '原想法')
+})
+
+test('Draft.js readback uses block boundaries instead of layout blank lines', () => {
+  const d = socialEditor('[data-testid="tweetTextarea_0"][contenteditable="true"][role="textbox"]', '第一行\n\n\n\n第二行')
+  d.editor.querySelectorAll = () => [{ innerText: '第一行' }, { innerText: '\n' }, { innerText: '第二行' }]
+  assert.equal(d.fill({ platformId: 'twitter', contentType: 'opinion', text: '第一行\n\n第二行', phase: 'verify' }).success, true)
+  assert.equal(d.fill({ platformId: 'twitter', contentType: 'opinion', text: '不同的正文', phase: 'verify' }).success, false)
+})
+test('nested matching editable nodes count as one editor', () => {
+  const child = { innerText: '已填内容', getClientRects: () => [1], closest: () => null }
+  const parent = { ...child, contains: node => node === child }
+  const document = { querySelectorAll: selector => selector === '.rich-input[contenteditable="true"]' ? [parent] : selector === '.pin-editor [contenteditable="true"]' ? [child] : [] }
+  const fill = vm.runInContext(`(${fillEditor.toString()})`, vm.createContext({ document }))
+  assert.equal(fill({ platformId: 'juejin', contentType: 'opinion', text: '已填内容', phase: 'verify' }).success, true)
+})
+test('native focus guard refuses navigation or an occupied editor', () => {
+  const editor = { getAttribute: () => 'token', getClientRects: () => [1], innerText: '已输入' }
+  const focus = vm.runInContext(`(${focusNativeEditor.toString()})`, vm.createContext({ location: { href: 'https://x.com/compose/post' }, document: { querySelectorAll: () => [editor] } }))
+  assert.match(focus({ token: 'token', url: 'https://x.com/home' }).reason, /跳转/)
+  assert.match(focus({ token: 'token', url: 'https://x.com/compose/post' }).reason, /已有内容/)
 })

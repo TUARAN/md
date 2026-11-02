@@ -24,7 +24,7 @@ test('all platform/type combinations declare real capability and HTTPS route', (
   }
   assert.equal(getCapability('twitter', 'opinion').mode, 'fill')
   assert.equal(getCapability('twitter', 'project').url, 'https://x.com/compose/post')
-  assert.equal(getCapability('juejin', 'opinion').url, 'https://juejin.cn/pin')
+  assert.equal(getCapability('juejin', 'opinion').url, 'https://juejin.cn/pins/new')
   assert.equal(getCapability('juejin', 'article').mode, 'fill')
   assert.equal(getCapability('csdn', 'opinion').mode, 'unsupported')
   assert.equal(getCapability('wechat', 'article').mode, 'manual')

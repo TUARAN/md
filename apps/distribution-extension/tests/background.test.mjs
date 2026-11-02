@@ -61,9 +61,9 @@ async function runtime(initial, scriptResults = []) {
   const context = vm.createContext({ chrome, structuredClone, console, crypto, URL, AbortSignal, setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms, 5)), core, handleLegacyMessage: async (message) => {
     calls.push(message); if (release)
       await release; return { success: true, tabId: 22 }
-  }, fillEditor: () => {} })
+  }, fillEditor: () => {}, focusNativeEditor: () => {} })
   const code = source.replace(/^import .+\n/gm, '').replace('export async function handleMessage', 'async function handleMessage')
-  vm.runInContext(`const {buildPayload,buildText,CONTENT_TYPES,detectPlatform,detectSite,getCapability,PLATFORMS,SITE_URL,validateDraft,normalizeDraft,validateSettings}=core;\n${code}\nglobalThis.handle=handleMessage`, context)
+  vm.runInContext(`const {buildPayload,buildText,CONTENT_TYPES,detectPlatform,detectSite,preparationError,getCapability,PLATFORMS,SITE_URL,validateDraft,normalizeDraft,validateSettings}=core;\n${code}\nglobalThis.handle=handleMessage`, context)
   await context.handle({ type: 'ADM_GET_STATE' })
   return { chrome, saved, context, calls, nativeCalls, tabs, groups, occupy: () => { occupied = true }, listener: () => listener, block: (promise) => { release = promise } }
 }
@@ -240,4 +240,32 @@ test('monitor snapshot excludes local content, model keys and page URLs', async 
   for (const secret of ['private-title', 'private-body', 'private-model-key', 'private-source.example.com', 'api.example.com']) assert.ok(!serialized.includes(secret))
   assert.equal(snapshot.snapshot.batches[0].targets[0].status, 'prepared')
   assert.equal(snapshot.events[0].kind, 'distribution')
+})
+
+test('readback waits for framework settling without another write', async () => {
+  const r = await runtime(undefined, [{ needsVerification: true, inputText: '正文' }, { success: false, retryable: true }, { success: true }])
+  await r.context.handle({ type: 'ADM_RUN', draft: { contentType: 'opinion', content: '正文' }, platformIds: ['juejin'] })
+  await complete(r)
+  assert.equal(r.saved[key].jobs[0].targets[0].status, 'prepared')
+  assert.equal(r.nativeCalls.length, 0)
+  assert.deepEqual(r.calls.map(call => call.args[0].phase), [undefined, 'verify', 'verify'])
+})
+test('native input is refused if the editor changed after attaching debugger', async () => {
+  const r = await runtime(undefined, [{ needsNativeInput: true, inputText: '正文', intent: { token: 'test', url: 'https://x.com/compose/post' } }, { ready: false, reason: '页面已跳转' }])
+  await r.context.handle({ type: 'ADM_RUN', draft: { contentType: 'opinion', content: '正文' }, platformIds: ['twitter'] })
+  await complete(r)
+  assert.equal(r.saved[key].jobs[0].targets[0].status, 'failed')
+  assert.equal(r.nativeCalls.filter(call => call.method === 'Input.insertText').length, 0)
+  assert.equal(r.nativeCalls.at(-1), 'detach')
+})
+test('browser error page is reported once without retrying injection sixty times', async () => {
+  const r = await runtime()
+  let attempts = 0
+  r.chrome.scripting.executeScript = async () => { attempts++; throw new Error('Frame with ID 0 is showing error page') }
+  await r.context.handle({ type: 'ADM_RUN', draft: { contentType: 'opinion', content: '正文' }, platformIds: ['xiaohongshu'] })
+  await complete(r)
+  const target = r.saved[key].jobs[0].targets[0]
+  assert.equal(target.errorCode, 'PAGE_UNAVAILABLE')
+  assert.match(target.message, /小红书.*网络错误/)
+  assert.equal(attempts, 1)
 })

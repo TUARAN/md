@@ -1,5 +1,5 @@
-import { buildText, CONTENT_TYPES, detectPlatform, detectSite, getCapability, normalizeDraft, PLATFORMS, validateDraft, validateSettings } from './core.js'
-import { fillEditor } from './editors.js'
+import { buildText, CONTENT_TYPES, detectPlatform, detectSite, getCapability, normalizeDraft, PLATFORMS, preparationError, validateDraft, validateSettings } from './core.js'
+import { fillEditor, focusNativeEditor } from './editors.js'
 import { createMonitor } from './monitor.js'
 import { createUpdater } from './updater.js'
 import './entry-cleanup.js'
@@ -116,12 +116,19 @@ async function updateTarget(jobId, targetId, updates) {
       Object.assign(target, updates, ['prepared', 'manual', 'failed', 'stopped'].includes(updates.status) ? { completedAt: Date.now() } : {})
   })
 }
-async function nativeInsert(tabId, text) {
+async function nativeInsert(tabId, text, intent) {
   const target = { tabId }
   let attached = false
   try {
     await chrome.debugger.attach(target, '1.3')
     attached = true
+    if (intent) {
+      await chrome.debugger.sendCommand(target, 'Page.bringToFront', {})
+      const [{ result }] = await chrome.scripting.executeScript({ target, world: 'MAIN', func: focusNativeEditor, args: [intent] })
+      if (!result?.ready)
+        throw new Error(result?.reason || '无法确认编辑框焦点')
+      for (const type of ['mousePressed', 'mouseReleased']) await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type, x: result.x, y: result.y, button: 'left', clickCount: 1 })
+    }
     await chrome.debugger.sendCommand(target, 'Input.insertText', { text })
   }
   finally {
@@ -206,7 +213,7 @@ async function prepareTarget(job, target, currentTabId) {
   }
   if (currentTabId || capability.mode === 'fill') {
     let tab
-    const obsoleteEntry = (target.platformId === 'xiaohongshu' && target.url?.includes('target=image')) || (target.platformId === 'juejin' && target.url?.includes('/pins'))
+    const obsoleteEntry = (target.platformId === 'xiaohongshu' && target.url?.includes('target=image')) || (target.platformId === 'juejin' && job.draft.contentType !== 'article' && !target.url?.startsWith('https://juejin.cn/pins/new'))
     const explicitTabId = currentTabId
     currentTabId ||= obsoleteEntry ? undefined : target.tabId
     if (currentTabId) {
@@ -233,25 +240,34 @@ async function prepareTarget(job, target, currentTabId) {
       const text = target.platformId === 'xiaohongshu'
         ? [job.draft.content, job.draft.url && !job.draft.content.includes(job.draft.url) ? job.draft.url : ''].filter(Boolean).join('\n\n')
         : buildText(job.draft)
-      const args = { platformId: target.platformId, title: job.draft.title, text, contentType: job.draft.contentType }
+      const args = { platformId: target.platformId, title: job.draft.title, text, contentType: job.draft.contentType, inputToken: target.id }
       try {
         const frames = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: fillEditor, args: [args] })
         result = frames[0]?.result
       }
       catch (error) {
         // Retry navigation/mounting failures only; no editor write has been attempted.
-        if (attempt === 59 || !/error page|cannot access|frame.*removed|no frame|frame.*not found/i.test(error.message))
-          throw new Error(/error page/i.test(error.message) ? '浏览器无法打开平台页面。请检查网络，页面能正常打开后重试此平台。' : `无法访问编辑器：${error.message}`)
+        const issue = preparationError(target.platformId, error.message)
+        if (issue.code !== 'PREPARATION_FAILED' || attempt === 59 || !/frame.*removed|no frame|frame.*not found/i.test(error.message))
+          throw Object.assign(new Error(issue.message), { code: issue.code })
         await new Promise(resolve => setTimeout(resolve, 500))
         continue
       }
-      if (result?.needsNativeInput) {
+      if (result?.needsNativeInput || result?.needsVerification) {
         // Native browser input lets Draft.js process text and links once, without forged input events.
-        try { await nativeInsert(tab.id, result.inputText) }
+        try {
+          if (result.needsNativeInput)
+            await nativeInsert(tab.id, result.inputText, result.intent)
+        }
         catch (error) { throw new Error(`浏览器原生输入失败，未自动重试。请检查页面：${error.message}`) }
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const frames = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: fillEditor, args: [{ ...args, text: result.inputText, phase: 'verify' }] })
-        result = frames[0]?.result
+        const inputText = result.inputText
+        for (let verify = 0; verify < 6; verify++) {
+          await new Promise(resolve => setTimeout(resolve, 250))
+          const frames = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: fillEditor, args: [{ ...args, text: inputText, phase: 'verify' }] })
+          result = frames[0]?.result
+          if (result?.success || !result?.retryable)
+            break
+        }
         break
       }
       if (result?.success || !result?.retryable)
@@ -271,12 +287,12 @@ async function execute(jobId, currentTabId) {
       await mutation
       if (state.jobs.find(j => j.id === jobId)?.stopRequested)
         break
-      await updateTarget(jobId, target.id, { status: 'running', message: '正在准备，请勿重复操作' })
+      await updateTarget(jobId, target.id, { errorCode: '', checkedAt: Date.now(), checkedVersion: chrome.runtime.getManifest?.().version || '', status: 'running', message: '正在准备，请勿重复操作' })
       try {
         await updateTarget(jobId, target.id, await prepareTarget(job, target, currentTabId))
       }
       catch (error) {
-        await updateTarget(jobId, target.id, { status: 'failed', message: error.message || '任务失败，请检查平台页面。' })
+        await updateTarget(jobId, target.id, { status: 'failed', errorCode: error.code || 'PREPARATION_FAILED', message: error.message || '任务失败，请检查平台页面。' })
       }
     }
   }

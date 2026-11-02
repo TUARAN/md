@@ -1,5 +1,5 @@
 // Self-contained: executes in the site's MAIN world, never clicks publish.
-export function fillEditor({ platformId, title, text, contentType, phase = 'fill' }) {
+export function fillEditor({ platformId, title, text, contentType, phase = 'fill', inputToken = '' }) {
   const longform = contentType === 'article' || !['twitter', 'juejin', 'xiaohongshu', 'zhihu', 'weibo'].includes(platformId)
   const shortSelectors = {
     twitter: ['[data-testid="tweetTextarea_0"][contenteditable="true"][role="textbox"]'],
@@ -19,9 +19,10 @@ export function fillEditor({ platformId, title, text, contentType, phase = 'fill
   const find = selector => selector ? [...document.querySelectorAll(selector)].filter(visible) : []
   // CodeMirror instances are accessed in MAIN world, as in the reference Juejin extension.
   const cm = longform && platformId !== 'xiaohongshu' ? find('.CodeMirror').filter(el => el.CodeMirror?.getValue && el.CodeMirror?.setValue) : []
-  const editors = longform && platformId !== 'xiaohongshu'
+  const candidates = longform && platformId !== 'xiaohongshu'
     ? find('textarea[placeholder*="Markdown"], textarea[name="markdown"], #Editor_Edit_EditorBody')
     : [...new Set((shortSelectors[platformId] || []).flatMap(find))]
+  const editors = candidates.filter(el => !cm.some(instance => instance === el || instance.contains?.(el)) && !candidates.some(child => child !== el && el.contains?.(child)))
   if (cm.length + editors.length !== 1) {
     // Open only an explicit compose entry; never click a submit/publish button.
     const labels = platformId === 'juejin' ? ['发布沸点', '写沸点'] : platformId === 'zhihu' ? ['写想法', '分享此刻的想法...', '分享你此刻的想法'] : []
@@ -34,12 +35,24 @@ export function fillEditor({ platformId, title, text, contentType, phase = 'fill
   }
   const editor = cm[0] || editors[0]
   // Rich editor line breaks must be read as rendered text, not concatenated nodes.
-  // eslint-disable-next-line unicorn/prefer-dom-node-text-content
-  const read = el => el.CodeMirror ? el.CodeMirror.getValue() : 'value' in el ? el.value : (el.innerText || el.textContent || '')
-  const normalized = value => value.replace(/\r\n/g, '\n').replace(/\u00A0/g, ' ').trim()
+
+  /* eslint-disable unicorn/prefer-dom-node-text-content -- Read rendered Draft.js line breaks, not concatenated text nodes. */
+  const read = (el) => {
+    if (el.CodeMirror)
+      return el.CodeMirror.getValue()
+    if ('value' in el)
+      return el.value
+    const blocks = [...(el.querySelectorAll?.('[data-block="true"]') || [])]
+    // Draft.js block boundaries carry the exact newlines; layout innerText can add extra blank lines.
+    if (blocks.length)
+      return blocks.map(block => block.innerText === '\n' ? '' : (block.innerText ?? block.textContent ?? '')).join('\n')
+    return el.innerText || el.textContent || ''
+  }
+  /* eslint-enable unicorn/prefer-dom-node-text-content */
+  const normalized = value => value.replace(/\r\n/g, '\n').replace(/\u00A0/g, ' ').replace(/[\u200B\uFEFF]/g, '').trim()
   if (phase === 'verify') {
     const success = normalized(read(editor)) === normalized(text)
-    return { success, manual: !success, message: success ? '已完整填入正文；请检查后手动发布。' : '正文回读不一致，请检查页面，未自动重复填写。' }
+    return { success, manual: !success, retryable: !success, code: success ? '' : 'READBACK_MISMATCH', message: success ? '已完整填入正文；请检查后手动发布。' : '正文回读不一致，请检查页面，未自动重复填写。' }
   }
   if (read(editor).trim())
     return { success: false, manual: true, message: '发布框已有内容，为避免覆盖，请手动检查或打开空白草稿。' }
@@ -86,9 +99,34 @@ export function fillEditor({ platformId, title, text, contentType, phase = 'fill
     range.collapse(false)
     selection.removeAllRanges()
     selection.addRange(range)
-    return { success: false, needsNativeInput: true, inputText: body }
+    if (inputToken)
+      editor.setAttribute('data-adm-input-token', inputToken)
+    return { success: false, needsNativeInput: true, inputText: body, intent: inputToken ? { token: inputToken, url: location.href } : undefined }
   }
   if (!setNative(editor, body))
-    return { success: false, manual: true, message: '未能确认正文完整填入，请检查当前页面，勿重复提交。' }
+    return { success: false, needsVerification: true, inputText: body, message: '等待正文回读确认，未自动重复填写。' }
   return { success: true, message: '已填入发布框；请检查格式、图片和链接后手动发布。' }
+}
+
+// Recheck the same empty editor after attaching debugger, before native input.
+export function focusNativeEditor(intent) {
+  if (location.href !== intent.url)
+    return { ready: false, reason: '页面已跳转，未继续输入' }
+  const editors = [...document.querySelectorAll('[data-adm-input-token]')].filter(el => el.getAttribute('data-adm-input-token') === intent.token && el.getClientRects().length)
+  if (editors.length !== 1)
+    return { ready: false, reason: '原编辑框已消失，未继续输入' }
+  const editor = editors[0]
+  // eslint-disable-next-line unicorn/prefer-dom-node-text-content
+  if ((editor.innerText || editor.textContent || '').trim())
+    return { ready: false, reason: '编辑框已有内容，未重复输入' }
+  editor.scrollIntoView({ block: 'center' })
+  editor.focus()
+  if (document.activeElement !== editor && !editor.contains(document.activeElement))
+    return { ready: false, reason: '无法聚焦原编辑框，未继续输入' }
+  const rect = editor.getBoundingClientRect()
+  const x = Math.min(rect.right - 1, rect.left + 8); const y = Math.min(rect.bottom - 1, rect.top + 8)
+  const hit = document.elementFromPoint(x, y)
+  if (!hit || (hit !== editor && !editor.contains(hit)))
+    return { ready: false, reason: '编辑框被其他内容遮挡，未继续输入' }
+  return { ready: true, x, y }
 }
